@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "fedmoe"
+version = "0.1.0"
+description = ""
+license = "Apache-2.0"
+authors = ["Vector AI Engineering <fl4health@vectorinstitute.ai>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.10.14"
+fl4health = "^0.1.15"
+torch = "^2.3.0"
+EchoTorch = "^0.1.1"
+numpy = "^1.26.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
