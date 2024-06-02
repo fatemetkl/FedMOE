@@ -14,6 +14,22 @@ EchoTorch = "^0.1.1"
 numpy = "^1.26.4"
 
 
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.7.1"
+black = "^24.4.2"
+flake8 = "^7.0.0"
+mypy = "^1.10.0"
+pytest = "^8.2.1"
+isort = "5.11.5"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 119
+
+[tool.isort]
+line_length = 119
+profile = "black"
+skip_gitignore = true
