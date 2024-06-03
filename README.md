@@ -17,3 +17,17 @@ poetry install --with "dev"
 ```
 
 Note that the with command is installing all libraries required for the full development workflow.
+
+
+### Format checks and coding guidelines
+To invoke pre-commit hooks, you can install the pre-commit hooks to be run locally. Activate your environment and run:
+
+```bash
+pre-commit install
+```
+To run the checks on all the files:
+
+```bash
+pre-commit run --all-files
+
+```
