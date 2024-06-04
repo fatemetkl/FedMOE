@@ -1,6 +1,12 @@
 # FedMOE
 Codebase for federated mixture of experts.
 
+## Experiments
+Run experiments:
+
+```bash
+bash experiments/run_experiment.sh experiments/config.yaml
+```
 
 ## Developing
 
@@ -31,3 +37,4 @@ To run the checks on all the files:
 pre-commit run --all-files
 
 ```
+

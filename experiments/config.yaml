@@ -1,0 +1,22 @@
+# Experiment variables
+experiment_name: "sync_freq-experiment"
+client_type : 0 # 0: Random feature networks, 1: Transformer based clients, 2: Echo State Network clients
+num_clients : 5  # The number of experts or clients
+total_rounds : 100 # The number of total rounds
+sync_freq : 10 # Frequency in terms of time steps for doing synchronization (T)
+d_z : 10 # The size of the hidden state (int)
+alpha : 0.1 # alpha defines our emphasize on previous time steps in the local objective functions, and has direct relation with discounting factor.
+gamma : 0.1 # gamma is the weight of weight regularization in the local objective functions.
+
+# Data variables
+data: "periodic_signal"
+n_samples: 20 # The number of sequences generated for the data
+data_length: 200 # The size of each of the data samples
+
+
+# Variables for pre-training the transformer models, and the dataset used
+data_size: 10 # The number of data samples
+batch_size: 16
+# data_length is the same as used for online prediction
+pre_training_lr: 0.01
+pre_training_epochs: 10
