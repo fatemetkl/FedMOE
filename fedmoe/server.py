@@ -13,10 +13,10 @@ class Server:
         self.num_clients = client_manager.num_clients
         self.client_manager = client_manager
         self.game = game
-        self.server_outputs: List[torch.Tensor]
-        self.mixture_weights: List[torch.Tensor]
-        self.observed_values: List[torch.Tensor]
-        self.clients_predictions: List[torch.Tensor]
+        self.server_outputs: List[torch.Tensor] = []
+        self.mixture_weights: List[torch.Tensor] = []
+        self.observed_values: List[torch.Tensor] = []
+        self.clients_predictions: List[torch.Tensor] = []
         self.d_z = self.client_manager.d_z
         self.rmse_metric = RMSEMetric()
 
@@ -115,7 +115,7 @@ class Server:
         # New betas for t = 0 to T-1
         return past_T_betas
 
-    def fit(self, num_rounds: int) -> None:
+    def fit(self, num_rounds: int) -> dict[str, float]:
         for t in range(0, num_rounds):
             y_t = self.client_manager.get_y(t)
             y_t = y_t.reshape(self.y_dim, 1)
@@ -156,4 +156,6 @@ class Server:
             self.rmse_metric.update(server_output, y_t)
 
         # Compute metric
-        print("Final metric value", self.rmse_metric.compute())
+        final_metric_value = self.rmse_metric.compute()
+        print("Final metric value", final_metric_value)
+        return {f"Final {self.rmse_metric.name} metric value ": final_metric_value}

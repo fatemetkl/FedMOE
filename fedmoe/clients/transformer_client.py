@@ -1,55 +1,48 @@
-from typing import Tuple
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from fedmoe.clients.client import Client
-from fedmoe.datasets.periodic_dataset import load_periodic_dataset
 from fedmoe.metrics import MSEMetric
 from fedmoe.models.transformer import TransformerTimeSeriesModel
 
 
 class TransformerClient(Client):
+
     def __init__(
         self,
         id: int,
         sync_steps: int,
         d_z: int,
         data_length: int,
+        pre_training_dataloader: DataLoader,
         y_dim: int = 1,
         alpha: float = 0.01,
         gamma: float = 0.1,
         sigma: float = 2,
+        pre_training_epochs: int = 3,
+        pre_training_learning_rate: float = 0.01,
     ) -> None:
         super().__init__(id, sync_steps, d_z, data_length, y_dim, alpha, gamma, sigma)
+        self.pre_training_epochs = pre_training_epochs
+        self.pre_training_learning_rate = pre_training_learning_rate
+        self.pre_training_dataloader = pre_training_dataloader
 
     def feed_encoder(self, input: torch.Tensor) -> torch.Tensor:
         self.encoder.eval()
         # Create a batch-first sample with batch size of 1 for inference
         return self.encoder(input.reshape(1, self.y_dim).double())[0]
 
-    def _get_pre_training_data(self) -> Tuple[DataLoader, DataLoader]:
-        train_dataloader, val_dataloader, num_examples = load_periodic_dataset(
-            train_data_size=100,
-            val_data_size=50,
-            batch_size=16,
-            data_length=self.data_length,
-        )
-        return train_dataloader, val_dataloader
-
     def pre_train_model(self, model: nn.Module) -> nn.Module:
-        self.pre_training_epochs = 3
         self.pre_training_criterion = nn.MSELoss()
         self.pre_training_metric = MSEMetric("MSE")
-        learning_rate = 0.01
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-        train_loader, val_loader = self._get_pre_training_data()
+        optimizer = optim.Adam(model.parameters(), lr=self.pre_training_learning_rate)
+
         model.train()
         for epoch in range(0, self.pre_training_epochs):
             self.pre_training_metric.clear()
-            for inputs, targets in train_loader:
+            for inputs, targets in self.pre_training_dataloader:
                 optimizer.zero_grad()
                 outputs = model(inputs.double(), pre_training=True)
                 loss = self.pre_training_criterion(outputs, targets)
