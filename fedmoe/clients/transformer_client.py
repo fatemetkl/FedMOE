@@ -24,10 +24,10 @@ class TransformerClient(Client):
         pre_training_epochs: int = 3,
         pre_training_learning_rate: float = 0.01,
     ) -> None:
-        super().__init__(id, sync_steps, d_z, data_length, y_dim, alpha, gamma, sigma)
         self.pre_training_epochs = pre_training_epochs
         self.pre_training_learning_rate = pre_training_learning_rate
         self.pre_training_dataloader = pre_training_dataloader
+        super().__init__(id, sync_steps, d_z, data_length, y_dim, alpha, gamma, sigma)
 
     def feed_encoder(self, input: torch.Tensor) -> torch.Tensor:
         self.encoder.eval()
@@ -45,10 +45,15 @@ class TransformerClient(Client):
             for inputs, targets in self.pre_training_dataloader:
                 optimizer.zero_grad()
                 outputs = model(inputs.double(), pre_training=True)
-                loss = self.pre_training_criterion(outputs, targets)
+                loss = self.pre_training_criterion(outputs.double(), targets.double())
                 loss.backward()
                 optimizer.step()
-                self.pre_training_metric.update(outputs, targets)
+                # The outputs and targets here are batch-first, therefore each one is a 3D tensor.
+                # Metrics only accepts up to 2D, so we have to reshape these tensors
+                self.pre_training_metric.update(
+                    outputs.reshape((outputs.size(0), outputs.size(1) * outputs.size(2))),
+                    targets.reshape((targets.size(0), targets.size(1) * targets.size(2))),
+                )
             print(
                 f"Transformer pre-training phase: {self.pre_training_metric.name} client {self.id}\
                     results at epoch {epoch}: {self.pre_training_metric.compute()}"

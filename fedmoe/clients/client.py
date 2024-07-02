@@ -64,6 +64,9 @@ class ClientState:
 
     def replace_prediction_t(self, new_pred: torch.Tensor, time: int) -> None:
         assert 0 <= time <= self._current_time, "Error: this prediction value is not set yet"
+        # print("time-----------", time)
+        # print("previous prediction:", self._predictions[time])
+        # print("replaced with ", new_pred)
         self._predictions[time] = new_pred
 
     def replace_beta_t(self, new_beta: torch.Tensor, time: int) -> None:
@@ -89,10 +92,10 @@ class Client(ABC):
         sync_steps: int,
         d_z: int,
         data_length: int,
-        y_dim: int = 1,
-        alpha: float = 0.01,
-        gamma: float = 0.1,
-        sigma: float = 2.0,
+        y_dim: int,
+        alpha: float,
+        gamma: float,
+        sigma: float,
     ) -> None:
         super().__init__()
         self.id = id
@@ -130,9 +133,9 @@ class Client(ABC):
         init_prediction: Union[torch.Tensor, None] = None,
     ) -> None:
         if init_hidden_state is None:
-            init_hidden_state = torch.randn(self.d_z)  # Z shape is: d_z
+            init_hidden_state = torch.randn((self.y_dim, self.d_z))  # Z shape is: d_z --> changed to dy*dz
         if init_prediction is None:
-            init_prediction = torch.randn(self.y_dim)
+            init_prediction = torch.randn((self.y_dim, 1))
         assert init_hidden_state is not None and init_prediction is not None
         self.state.init_state(init_hidden_state, init_prediction, data_length=self.data_length)
 
@@ -152,7 +155,7 @@ class Client(ABC):
         return self._target[t].reshape(self.y_dim, 1)
 
     def get_e(self, num_clients: int) -> torch.Tensor:
-        return torch.nn.functional.one_hot(torch.tensor(self.id), num_clients).double()
+        return torch.nn.functional.one_hot(torch.tensor(self.id), num_clients).unsqueeze(1).double()
 
     def compute_X_t(self, t: int) -> torch.Tensor:
         X = []
@@ -161,18 +164,26 @@ class Client(ABC):
         for s in range(lower_bound, t + 1):
             X.append(
                 torch.mul(
-                    pow(math.e, -1 * self.alpha * (t - s)),
-                    self.state.get_hidden_state_t(s),
+                    pow(math.e, -1 * self.alpha * ((t - s) / 2)),
+                    self.state.get_hidden_state_t(s).transpose(0, 1),
                 )
             )
-        return torch.stack(X)
+        prev_time_steps = len(X)
+        x = torch.stack(X).reshape(self.d_z, prev_time_steps * self.y_dim)
+        return x.transpose(0, 1)
 
     def compute_y_t(self, t: int) -> torch.Tensor:
         y = []
         lower_bound = max(t - self.sync_steps, 0)
         for s in range(lower_bound, t + 1):
-            y.append(pow(math.e, -1 * self.alpha * (t - s)) * (self._target[s] - self.state.get_prediction_t(s)))
-        return torch.stack(y)
+            y.append(
+                pow(math.e, -1 * self.alpha * ((t - s) / 2))
+                * (self._target[s] - self.state.get_prediction_t(s)).transpose(0, 1)
+            )
+
+        prev_time_steps = len(y)
+        y_bar = torch.stack(y).reshape(1, prev_time_steps * self.y_dim)
+        return y_bar.transpose(0, 1)
 
     def update_prediction_with_beta(self, t: int, nash_beta: torch.Tensor) -> torch.Tensor:
         # Replace previous beta
@@ -180,8 +191,7 @@ class Client(ABC):
         # Use the previous Z
         # Update prediction based on Z_t and beta_t
         next_prediction = self.state.get_prediction_t((t - 1)).double() + torch.matmul(
-            torch.transpose(nash_beta.double(), 0, 1),
-            self.state.get_hidden_state_t(t).double(),
+            self.state.get_hidden_state_t(t).double(), nash_beta.double()
         )
         # next_prediction shape: y_dim*1
         self.state.replace_prediction_t(next_prediction, t)
@@ -193,6 +203,7 @@ class Client(ABC):
         # Update X_t
         X_t = self.compute_X_t(t)
         y_t = self.compute_y_t(t)
+
         X_t_T = torch.transpose(X_t, 0, 1)
         identity_matrix = torch.eye(self.d_z, dtype=torch.float64)
         first_term = torch.matmul(X_t_T, X_t) + self.gamma * identity_matrix
@@ -204,14 +215,14 @@ class Client(ABC):
 
         # Generate Random State and Update Hidden State
         updated_z = self.feed_encoder(self._current_sequence[t].reshape(self.y_dim, 1))
+
         self.state.set_next_hidden_state(updated_z, current_time=t)
 
         # Update prediction based on Z_t and beta_t
-        next_prediction = self.state.get_prediction_t(t - 1) + torch.matmul(
-            torch.transpose(beta_t, 0, 1).double(),
-            self.state.get_hidden_state_t(t).double(),
+        t_prediction = self.state.get_prediction_t(t - 1) + torch.matmul(
+            self.state.get_hidden_state_t(t).double(), beta_t.double()
         )
 
         # next_prediction shape: y_dim*1
-        self.state.set_prediction(next_prediction, t)
-        return next_prediction
+        self.state.set_prediction(t_prediction, t)
+        return t_prediction

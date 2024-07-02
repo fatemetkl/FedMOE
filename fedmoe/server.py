@@ -1,16 +1,24 @@
-from typing import List
+from typing import Dict, List, Sequence, Tuple
 
 import torch
+from fl4health.utils.metrics import Metric, MetricManager
 
 from fedmoe.client_manager import ClientManager
 from fedmoe.game import Game
-from fedmoe.metrics import RMSEMetric
 
 
 class Server:
-    def __init__(self, sync_freq: int, client_manager: ClientManager, game: Game) -> None:
+
+    def __init__(
+        self,
+        sync_freq: int,
+        client_manager: ClientManager,
+        game: Game,
+        metrics: Sequence[Metric],
+    ) -> None:
         self.sync_freq = sync_freq
         self.num_clients = client_manager.num_clients
+        self.y_dim = client_manager.y_dim
         self.client_manager = client_manager
         self.game = game
         self.server_outputs: List[torch.Tensor] = []
@@ -18,10 +26,9 @@ class Server:
         self.observed_values: List[torch.Tensor] = []
         self.clients_predictions: List[torch.Tensor] = []
         self.d_z = self.client_manager.d_z
-        self.rmse_metric = RMSEMetric()
-
-        self.y_dim = self.client_manager.y_dim
-        self.K: float = 0.1
+        self.metrics = metrics
+        self.metric_manager = MetricManager(metrics=self.metrics, metric_manager_name="average")
+        self.K: float = 3
         self.eta: int = 1
 
     def compute_mixture_weights(self, predictions: torch.Tensor, y_t: torch.Tensor) -> torch.Tensor:
@@ -31,6 +38,7 @@ class Server:
             self.K * torch.eye(self.num_clients)
         )
         b = 2 * torch.transpose(torch.matmul(y_t.transpose(0, 1).double(), predictions.double()), 0, 1)
+
         numerator = (
             torch.matmul(
                 torch.matmul(one_N.transpose(0, 1).double(), torch.inverse(A).double()),
@@ -43,7 +51,7 @@ class Server:
             one_N.double(),
         )
         division = numerator.double() / denominator.double()
-        w_t = torch.matmul(torch.inverse(A).double(), b.double() - (division.double() * one_N.double()))
+        w_t = torch.matmul(torch.inverse(A).double(), (b.double() - (division.double() * one_N.double())))
         return w_t
 
     def sync_round(
@@ -52,7 +60,7 @@ class Server:
         past_observed_values: List[torch.Tensor],
         past_mixture_weights: List[torch.Tensor],
         past_predictions: List[torch.Tensor],
-    ) -> List[torch.Tensor]:
+    ) -> List:
         # T+1 last steps are considered
         # Server has the observed values of all clients for the past T time steps
         # Server has the mixture weights of all the clients for the past T time steps
@@ -88,7 +96,7 @@ class Server:
             )
 
             initial_term = torch.matmul(w_t, w_t.transpose(0, 1))
-            wtyt = torch.matmul(w_t.double(), past_observed_values[t])
+            wtyt = torch.matmul(w_t.double(), past_observed_values[t].double())
             for client_id in range(0, self.num_clients):
                 client_pt = self.game.calculate_pt_client(
                     t,
@@ -109,23 +117,24 @@ class Server:
         past_T_betas = []
         # 0 to T-1
         for t in range(0, self.sync_freq):
-            beta_t = self.game.compute_beta(t, past_predictions)
+            beta_t = self.game.compute_beta(t, past_predictions[t])
             # Beta shape: Nd_z * d_y
             past_T_betas.append(beta_t)
         # New betas for t = 0 to T-1
         return past_T_betas
 
-    def fit(self, num_rounds: int) -> dict[str, float]:
+    def fit(self, num_rounds: int, have_sync: bool = True) -> Tuple[Dict[str, float], Dict[str, List]]:
+        self.metric_manager.clear()
+        per_round_results: Dict[str, List] = {metric.name: [] for metric in self.metrics}
         for t in range(0, num_rounds):
             y_t = self.client_manager.get_y(t)
-            y_t = y_t.reshape(self.y_dim, 1)
             # Store observed target values
             self.observed_values.append(y_t)
 
             # Compute predictions locally
             # Update Experts and return predictions
             predictions = self.client_manager.fit_clients(t)
-            predictions = predictions.reshape(self.y_dim, self.num_clients)
+
             self.clients_predictions.append(predictions)
 
             # Server synchronize Local Expert predictions
@@ -134,28 +143,41 @@ class Server:
 
             # if t%T == 0, we improve predictions based on Nash game
             # Predictions are generated based on Nash game
-            if t % self.sync_freq == 0 and t > 0:
-                start_point = max(t - self.sync_freq, 0)
-                #  Sending the past T observations (including the current t) and mixture weights for Nash game
-                past_T_betas = self.sync_round(
-                    t,
-                    self.observed_values[start_point:t],
-                    self.mixture_weights[start_point:t],
-                    self.clients_predictions[start_point:t],
-                )
+            if have_sync:
+                if t % self.sync_freq == 0 and t > 0:
+                    start_point = max(t - self.sync_freq, 0)
+                    #  Sending the past T observations (including the current t) and mixture weights for Nash game
+                    past_T_betas = self.sync_round(
+                        t,
+                        self.observed_values[start_point:t],
+                        self.mixture_weights[start_point:t],
+                        self.clients_predictions[start_point:t],
+                    )
 
-                # Improve step Ts predictions with the new beta_T <-- beta_(T-1)
-                improved_predictions = self.client_manager.get_predictions_with_beta(t, past_T_betas[-1])
-                predictions = improved_predictions
-                w_t = self.compute_mixture_weights(predictions.double(), y_t.double())
-                self.mixture_weights[t] = w_t
+                    # Improve step Ts predictions with the new beta_T <-- beta_(T-1)
+                    improved_predictions = self.client_manager.get_predictions_with_beta(t, past_T_betas[-1])
+                    # Optional: update past T predictions in each client
+                    # self.client_manager.update_past_predictions(t, past_T_betas)
+
+                    predictions = improved_predictions
+
+                    w_t = self.compute_mixture_weights(predictions.double(), y_t.double())
+                    self.mixture_weights[t] = w_t
+
+                    # Compute the prediction improvement in Nash step
+                    # old_server_output = torch.matmul(predictions.double(), w_t.double())
+                    # print("old server output", old_server_output)
+                    # new_pred = torch.matmul(predictions.double(), w_t.double())
+                    # improvement = (torch.abs(old_server_output - y_t)) - (torch.abs(new_pred - y_t))
+                    # print("-------improvement--------", improvement)
 
             server_output = torch.matmul(predictions.double(), w_t.double())
 
             self.server_outputs.append(server_output)
-            self.rmse_metric.update(server_output, y_t)
+
+            # self.metric_manager.update({"server_predictions": server_output}, y_t)
 
         # Compute metric
-        final_metric_value = self.rmse_metric.compute()
+        final_metric_value = self.metric_manager.compute()
         print("Final metric value", final_metric_value)
-        return {f"Final {self.rmse_metric.name} metric value ": final_metric_value}
+        return final_metric_value, per_round_results

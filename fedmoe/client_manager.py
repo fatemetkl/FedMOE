@@ -22,17 +22,20 @@ class ClientManager:
         d_z: int,
         alpha: float,
         gamma: float,
+        sigma: float,
     ) -> None:
         self.client_type = client_type
         self.num_clients = num_clients
         self.d_z = d_z
         self.alpha = alpha
         self.gamma = gamma
+        self.sigma = sigma
         self.y_dim = 1
         self.data = data_sequence
         self.data_length = data_length
         self.common_target_sequence = self.set_target()
         self.clients = self.initiate_clients(sync_freq)
+        self.sync_freq = sync_freq
 
     def set_target(self) -> torch.Tensor:
         assert self.data is not None, " data should be set first"
@@ -51,6 +54,9 @@ class ClientManager:
                     d_z=self.d_z,
                     data_length=self.data_length,
                     y_dim=self.y_dim,
+                    alpha=self.alpha,
+                    gamma=self.gamma,
+                    sigma=self.sigma,
                 )
             elif self.client_type == ClientType.ESN.value:
                 client = EchoStateNetworkClient(
@@ -59,6 +65,9 @@ class ClientManager:
                     d_z=self.d_z,
                     data_length=self.data_length,
                     y_dim=self.y_dim,
+                    alpha=self.alpha,
+                    gamma=self.gamma,
+                    sigma=self.sigma,
                 )
             else:
                 raise TypeError
@@ -70,8 +79,8 @@ class ClientManager:
     def fit_clients(self, round: int) -> torch.Tensor:
         round_predictions = []
         for client in self.clients:
-            next_predictions = client.update_expert(round)
-            round_predictions.append(next_predictions)
+            t_prediction = client.update_expert(round)
+            round_predictions.append(t_prediction)
         return torch.stack(round_predictions).reshape(self.y_dim, self.num_clients)
 
     def get_predictions_with_beta(self, round: int, betas: torch.Tensor) -> torch.Tensor:
@@ -84,6 +93,19 @@ class ClientManager:
             i += 1
             new_round_predictions.append(new_pred)
         return torch.stack(new_round_predictions).reshape(self.y_dim, self.num_clients)
+
+    def update_past_predictions(self, current_round: int, betas: List[torch.Tensor]) -> None:
+        # Update client predictions for past T time steps (not including the current time step)
+        past_time_steps = [current_round - t for t in range(1, self.sync_freq)]
+        round_counter = -1
+        for prev_round in past_time_steps:
+            # print("fixing time step:", prev_round)
+            round_counter -= 1
+            round_betas = betas[round_counter].reshape(self.num_clients, self.d_z, self.y_dim)
+            client_counter = 0
+            for client in self.clients:
+                client.update_prediction_with_beta(prev_round, round_betas[client_counter])
+                client_counter += 1
 
     def get_y(self, t: int) -> torch.Tensor:
         #  All clients have the same target sequence
@@ -106,10 +128,11 @@ class PreTrainingClientManager(ClientManager):
         pre_training_epochs: int = 3,
         pre_training_learning_rate: float = 0.01,
     ) -> None:
-        super().__init__(client_type, num_clients, data_length, data_sequence, sync_freq, d_z, alpha, gamma)
         self.pre_training_epochs = pre_training_epochs
         self.pre_training_learning_rate = pre_training_learning_rate
         self.pre_training_dataloader = pre_training_dataloader
+        # The pre-trained transformer does not have a sigma parameter, so it is initialized to 0.0.
+        super().__init__(client_type, num_clients, data_length, data_sequence, sync_freq, d_z, alpha, gamma, sigma=0.0)
 
     def initiate_clients(self, sync_freq: int) -> List[Client]:
         clients: List[Client] = []
@@ -122,6 +145,9 @@ class PreTrainingClientManager(ClientManager):
                 data_length=self.data_length,
                 pre_training_dataloader=self.pre_training_dataloader,
                 y_dim=self.y_dim,
+                alpha=self.alpha,
+                gamma=self.gamma,
+                sigma=0.0,  # The pre-trained transformer does not have a sigma parameter
                 pre_training_epochs=self.pre_training_epochs,
                 pre_training_learning_rate=self.pre_training_learning_rate,
             )

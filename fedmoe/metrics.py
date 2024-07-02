@@ -19,10 +19,11 @@ class MSEMetric(SimpleMetric):
 
     def __call__(self, logits: torch.Tensor, target: torch.Tensor) -> Scalar:
         assert logits.shape[0] == target.shape[0]
+        print(logits.shape[1], target.shape[1])
         # Assuming data is batch-first
         target = target.cpu().detach()
         logits = logits.cpu().detach()
         return sklearn_metrics.mean_squared_error(
-            target.reshape((target.size(0), target.size(1) * target.size(2))),
-            logits.reshape((logits.size(0), logits.size(1) * logits.size(2))),
+            target,
+            logits,
         )

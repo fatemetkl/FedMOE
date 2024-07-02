@@ -15,7 +15,6 @@ class Game(ABC):
         self.num_clients = len(clients)
         self.sync_freq = sync_freq
         self.d_z = d_z
-        self.e_alpha_gamma = self.init_e_alpha_gamma()
         self.y_dim = self.clients[0].y_dim
 
     @abstractmethod
@@ -26,10 +25,12 @@ class Game(ABC):
     def get_expectation_e_zt(self, time: int, client: Client) -> torch.Tensor:
         raise NotImplementedError
 
-    def init_e_alpha_gamma(self) -> torch.Tensor:
-        bold_alpha = torch.diag(torch.tensor([-1 * client.alpha for client in self.clients]))
-        bold_gamma = torch.diag(torch.tensor([client.gamma for client in self.clients]))
-        e_alpha = torch.linalg.matrix_exp(bold_alpha)
+    def get_e_alpha_gamma(self, t: int) -> torch.Tensor:
+        Iz = torch.eye(self.d_z).double()
+        bold_alpha = torch.block_diag(*[client.alpha * Iz for client in self.clients])
+        bold_gamma = torch.block_diag(*[client.gamma * Iz for client in self.clients])
+        e_alpha = torch.linalg.matrix_exp(-1 * bold_alpha * (self.sync_freq - t))
+        # Output shape: Nd_z * Nd_z
         return torch.matmul(e_alpha, bold_gamma)
 
     def init_game_round_variables(self, latest_mixture_weights: torch.Tensor, y_T: torch.Tensor) -> None:
@@ -72,6 +73,7 @@ class Game(ABC):
             for j in range(self.num_clients):
                 item = self.get_A_ij_t(time, i, j)
                 At[i][j] = item
+        # A_t shape: N*N*d_z*d_z
         return At
 
     def calculate_b(self, t: int) -> torch.Tensor:
@@ -108,23 +110,11 @@ class Game(ABC):
         self.D[t] = D_t
 
     def get_e_alpha_gamma_A_inv(self, t: int) -> torch.Tensor:
-        A_t = self.A[t].reshape(self.num_clients, self.num_clients, self.d_z, self.d_z)
-        temp = torch.zeros(
-            self.num_clients,
-            self.num_clients,
-            self.d_z,
-            self.d_z,
-            dtype=torch.float64,
-        )
-        for i in range(self.num_clients):
-            for j in range(self.num_clients):
-                # sub_matrix: shape dz*dz
-                temp[i][j] = torch.add(A_t[i][j], self.e_alpha_gamma[i][j])
-        # output shape: N*N*dz*dz
-        temp = temp.reshape(self.num_clients * self.d_z, self.num_clients * self.d_z)
-        e_alpha_gamma_A_inv = torch.inverse(temp)
-        e_alpha_gamma_A_inv = e_alpha_gamma_A_inv.reshape((self.num_clients * self.d_z, self.num_clients * self.d_z))
-        return e_alpha_gamma_A_inv
+        A_t = self.A[t]
+        e_alpha_gamma_t = self.get_e_alpha_gamma(t)  # output: Nd_z * Nd_z
+        # output shape: N*dz*N*dz
+        e_alpha_gamma_A = torch.add(e_alpha_gamma_t, A_t)
+        return torch.inverse(e_alpha_gamma_A)
 
     def calculate_pt_client(
         self,
@@ -137,39 +127,28 @@ class Game(ABC):
         client_alpha = client.alpha
         client_gamma = client.gamma
         p_next = client.P[t + 1]
-        # e_i : shape [dz, N*dz]
-        bold_e_i = torch.kron(client.get_e(self.num_clients).unsqueeze(1), torch.eye(self.d_z))
-        e_neg_alpha = torch.exp(torch.tensor(-1 * client_alpha))
+        # e_i : shape [N*dy, dy]
+        e_client_alpha_t = torch.exp(torch.tensor(-1 * client_alpha) * (self.sync_freq - t))
+        e_client_alpha_t_gamma = e_client_alpha_t * client_gamma
 
-        I_matrix = torch.eye(self.num_clients).double()
+        I_matrix = torch.eye(self.num_clients * self.y_dim).double()
 
         x = torch.matmul(self.D[t].double(), e_alpha_gamma_A_inv)
         m = torch.matmul(x.double(), self.B[t].double())
         term_1_pre = (m - I_matrix).transpose(0, 1)
 
-        # New: client_alpha*term_1_pre
-
         # term_1 shape: N*N
-        term_1 = torch.matmul(e_neg_alpha * term_1_pre, p_next)
+        term_1 = torch.matmul(term_1_pre, p_next)
         term_2 = torch.matmul(torch.matmul(self.D[t], e_alpha_gamma_A_inv).double(), self.B[t].double()) - I_matrix
         # term_2 shape: N*N
         term_1_2 = torch.matmul(term_1, term_2)
-        # dz*N*dz
-        # D shape: N, N*dz
-        # Previously ->
-        # bold_e_i = bold_e_i.reshape(num_clients, d_z * d_z)
-        # bold_e_i_T = torch.matmul(bold_e_i.transpose(0, 1), D_t)
-        # Now ->
-        bold_e_i_T = bold_e_i.transpose(0, 1)
 
-        term_3 = torch.matmul(torch.matmul(bold_e_i_T, e_alpha_gamma_A_inv).double(), self.B[t].double()).transpose(
-            0, 1
-        )
-        term_4 = torch.matmul(torch.matmul(bold_e_i_T.double(), e_alpha_gamma_A_inv), self.B[t])
-        term_3_4 = torch.matmul(client_gamma * term_3, term_4)
-        p_term = torch.add(term_1_2, term_3_4) + initial_term
-
-        return p_term
+        term_3_part2 = torch.matmul(e_alpha_gamma_A_inv, self.B[t].double())
+        term_3_part1 = e_client_alpha_t_gamma * term_3_part2.transpose(0, 1)
+        term_3 = torch.matmul(term_3_part1, term_3_part2)
+        term_4 = e_client_alpha_t * initial_term
+        #  size should be (N*dz, N*dz)
+        return term_1_2 + term_3 + term_4
 
     def calculate_st_client(
         self, t: int, client_id: int, e_alpha_gamma_A_inv: torch.Tensor, wtyt: torch.Tensor
@@ -179,28 +158,26 @@ class Game(ABC):
         client_gamma = client.gamma
         p_next = client.P[t + 1]
         s_next = client.S[t + 1]
-        # e_i : shape [dz, N*dz]
-        bold_e_i = torch.kron(client.get_e(self.num_clients).unsqueeze(1), torch.eye(self.d_z))
-
-        e_pow_neg_alpha = torch.exp(torch.tensor(-1 * client_alpha))
+        e_client_alpha_t = torch.exp(torch.tensor(-1 * client_alpha) * (self.sync_freq - t))
+        I_matrix = torch.eye(self.num_clients * self.d_z).double()
 
         term_1_1 = torch.matmul(self.B[t].transpose(0, 1), e_alpha_gamma_A_inv)
-        DPD = torch.matmul(torch.matmul(e_pow_neg_alpha * self.D[t].transpose(0, 1), p_next), self.D[t])
-        term_1_2 = torch.add(torch.matmul(client_gamma * bold_e_i, bold_e_i.transpose(0, 1)), DPD)
+        DPD = torch.matmul(torch.matmul(self.D[t].transpose(0, 1), p_next), self.D[t])
+        term_1_2 = torch.add(e_client_alpha_t * client_gamma * I_matrix, DPD)
         term_1_3 = torch.matmul(e_alpha_gamma_A_inv, self.C[t])
         term_2 = torch.matmul(
-            torch.matmul(torch.matmul(e_pow_neg_alpha * p_next, self.D[t]), e_alpha_gamma_A_inv),
+            torch.matmul(torch.matmul(p_next, self.D[t]), e_alpha_gamma_A_inv),
             self.C[t],
         )
         term_3 = torch.matmul(
             torch.matmul(
-                torch.matmul(e_pow_neg_alpha * self.B[t].transpose(0, 1), e_alpha_gamma_A_inv),
+                torch.matmul(self.B[t].transpose(0, 1), e_alpha_gamma_A_inv),
                 self.D[t].transpose(0, 1),
             ),
             s_next,
         )
         s_term = torch.matmul(torch.matmul(term_1_1, term_1_2), term_1_3) - term_2 - term_3
-        s_term = s_term + e_pow_neg_alpha * s_next - wtyt
+        s_term = s_term + s_next - e_client_alpha_t * wtyt
 
         return s_term
 
@@ -210,12 +187,12 @@ class Game(ABC):
     def set_client_st(self, t: int, client_id: int, st_value: torch.Tensor) -> None:
         self.clients[client_id].S[t] = st_value
 
-    def compute_beta(self, t: int, past_predictions: List[torch.Tensor]) -> torch.Tensor:
+    def compute_beta(self, t: int, past_predictions: torch.Tensor) -> torch.Tensor:
         e_alpha_gamma_A_inv = self.get_e_alpha_gamma_A_inv(t)
         return torch.matmul(
             -1 * e_alpha_gamma_A_inv.double(),
             torch.add(
-                torch.matmul(self.B[t].double(), past_predictions[t].transpose(0, 1).double()),
+                torch.matmul(self.B[t].double(), past_predictions.transpose(0, 1).double()),
                 self.C[t].double(),
             ),
         )
@@ -306,7 +283,7 @@ class RfnGame(Game):
         super().__init__(clients, sync_freq, d_z)
 
     def get_a_t(self, time: int, client: Client) -> torch.Tensor:
-        # some part of the forwards pass (without randomness)
+        # some parts of the forwards pass (without randomness)
         a_t = (torch.matmul(client.encoder.A.float(), client.get_x(time).float()).squeeze(1)) + client.encoder.b
         return a_t
 
@@ -314,44 +291,66 @@ class RfnGame(Game):
         a_t = self.get_a_t(time, client)
         phi = torch.distributions.Normal(0, 1).cdf((torch.mul((-1 / client.sigma), a_t)))
         one_bar = torch.ones(client.d_z)
-        exp_term = torch.exp(-1 * torch.square(a_t) / (2 * client.sigma))
-        second_term = math.sqrt(client.sigma / 2 * math.pi) * exp_term
-
+        exp_term = torch.exp((-1 / (2 * (client.sigma) ** 2)) * torch.mul(a_t, a_t))
+        second_term = client.sigma / math.sqrt(2 * math.pi) * exp_term
         a_ti = torch.mul(a_t, (one_bar - phi)) + second_term
 
         return a_ti
 
     def get_expectation_e_zt(self, time: int, client: Client) -> torch.Tensor:
-        a_ti = self.get_expectation_zt(time, client)
-        a_ti = a_ti.unsqueeze(1)
-        e_i = client.get_e(self.num_clients)
-        return torch.matmul(e_i.unsqueeze(1).double(), a_ti.transpose(0, 1).double())
+        a_ti = self.get_expectation_zt(time, client)  # shape: 1*d_z
+        e_i = client.get_e(self.num_clients)  # shape: N*1
+        return torch.matmul(e_i.double(), a_ti.double())  # output shape: Nd_y*d_z
+
+    def calculate_b(self, t: int) -> torch.Tensor:
+        B = []
+        for client in self.clients:
+            expected_e_ZT = self.get_expectation_e_zt(t, client)
+            B.append(torch.matmul(client.P[t + 1].double(), expected_e_ZT.double()))
+        return torch.stack(B).reshape(self.num_clients * self.d_z, self.num_clients)
+
+    def calculate_c(self, t: int) -> torch.Tensor:
+        C = []
+        #  client.S[t + 1] shape: Nd_y * 1
+        for client in self.clients:
+            expected_e_ZT = self.get_expectation_e_zt(t, client)
+            C.append(torch.matmul(client.S[t + 1].transpose(0, 1).double(), expected_e_ZT.double()))
+        assert self.y_dim == 1
+        # output shape: Nd_z * 1
+        return torch.stack(C).reshape(self.num_clients * self.d_z, 1)
 
     def get_A_ij_t(self, time: int, i: int, j: int) -> torch.Tensor:
         client_i = self.clients[i]
         client_j = self.clients[j]
+        next_p = client_i.P[time + 1].reshape((self.num_clients, self.num_clients, self.y_dim, self.y_dim))
+        # a_ti is a(t,i) which is the E[Z_t^i] for RFNs; shape: 1*d_z
+        # at is a partial forward pass without randomness used in a(t,i) calculations. shape: 1*d_Z
         if i != j:
             a_ti = self.get_expectation_zt(time, client_i)
             a_tj = self.get_expectation_zt(time, client_j)
-            a_tj = a_tj.unsqueeze(1)
-            A_ij = torch.matmul((a_ti * client_i.P[time + 1][i][j]).unsqueeze(1), a_tj.transpose(0, 1))
-
+            A_ij = torch.matmul((a_ti.transpose(0, 1) * next_p[i][j]), a_tj)
+            # A_ij shape: d_z*d_z
             return A_ij
         else:
             A_ii = torch.zeros(client_i.d_z, client_i.d_z, dtype=torch.float64)
-            a_ti = self.get_expectation_zt(time, client_i)
-            at = self.get_a_t(time, client_i)
+            #  Shape of the following to tensors: 1*d_Z --> squeeze to remove extra first dimension
+            a_ti = self.get_expectation_zt(time, client_i).squeeze(0)
+            at = self.get_a_t(time, client_i).squeeze(0)
 
             for p in range(client_i.d_z):
                 for k in range(client_i.d_z):
                     if p == k:
                         phi = torch.distributions.Normal(0, 1).cdf(-at[p] / client_i.sigma)
 
-                        second_term = torch.mul((at[p] ** 2 + client_i.sigma), (1 - phi)) + at[p] * math.sqrt(
-                            client_i.sigma / 2 * math.pi
-                        ) * torch.exp(-1 * (at[p] ** 2) / (2 * client_i.sigma))
+                        second_term = (torch.mul(at, at)[p] + client_i.sigma**2) * (1 - phi) + at[
+                            p
+                        ] * client_i.sigma / math.sqrt(2 * math.pi) * torch.exp(
+                            -1 * (torch.mul(at, at)[p]) / (2 * (client_i.sigma**2))
+                        )
                     else:
                         second_term = a_ti[p] * a_ti[k]
-
-                    A_ii[p][k] = client_i.P[time + 1][i][i] * second_term
+                    # Considering that dy=1
+                    assert self.y_dim == 1
+                    A_ii[p][k] = next_p[i][i] * second_term
+            # A_ii shape: d_z*d_z
             return A_ii
