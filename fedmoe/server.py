@@ -126,50 +126,53 @@ class Server:
     def fit(self, num_rounds: int, have_sync: bool = True) -> Tuple[Dict[str, float], Dict[str, List]]:
         self.metric_manager.clear()
         per_round_results: Dict[str, List] = {metric.name: [] for metric in self.metrics}
-        for t in range(0, num_rounds):
-            y_t = self.client_manager.get_y(t)
+        # We start from t =1 instead of t = 0 zero.
+        # Because to make predictions at each step we need beta, Z, y, and everything from the previous step.
+        # Also y_0 is initialized in the client class, so we don't need to predict it
+        for t in range(1, num_rounds):
+            # last_observed_value = y_{t-1}
+            last_observed_value = self.client_manager.get_y(t - 1)
             # Store observed target values
-            self.observed_values.append(y_t)
+            self.observed_values.append(last_observed_value)
 
             # Compute predictions locally
             # Update Experts and return predictions
             predictions = self.client_manager.fit_clients(t)
-
-            self.clients_predictions.append(predictions)
-
-            # Server synchronize Local Expert predictions
-            w_t = self.compute_mixture_weights(predictions, y_t)
-            self.mixture_weights.append(w_t)
-
             # if t%T == 0, we improve predictions based on Nash game
             # Predictions are generated based on Nash game
             if have_sync:
                 if t % self.sync_freq == 0 and t > 0:
                     start_point = max(t - self.sync_freq, 0)
-                    #  Sending the past T observations (including the current t) and mixture weights for Nash game
+                    #  Sending the past T-1 observations and mixture weights for Nash game
+                    #  (last 0 to T-1) --> time[t-T-1, t-0]
+                    assert len(self.clients_predictions) == (t - 1)
                     past_T_betas = self.sync_round(
                         t,
-                        self.observed_values[start_point:t],
-                        self.mixture_weights[start_point:t],
-                        self.clients_predictions[start_point:t],
+                        self.observed_values[start_point : t - 2],
+                        self.mixture_weights[start_point : t - 2],
+                        self.clients_predictions[start_point : t - 2],
                     )
-
                     # Improve step Ts predictions with the new beta_T <-- beta_(T-1)
                     improved_predictions = self.client_manager.get_predictions_with_beta(t, past_T_betas[-1])
+                    predictions = improved_predictions
+
                     # Optional: update past T predictions in each client
                     # self.client_manager.update_past_predictions(t, past_T_betas)
 
-                    predictions = improved_predictions
+                    # Optional: improve previous client predictions (Y^i_{t-1})
+                    #  We can use Y^i_{t-1} in this round's mixture weight computation
+                    self.clients_predictions[t - 1] = self.client_manager.get_predictions_with_beta(
+                        t - 1, past_T_betas[-1]
+                    )
 
-                    w_t = self.compute_mixture_weights(predictions.double(), y_t.double())
-                    self.mixture_weights[t] = w_t
+            # A list of clients predictions is appended (Y_t^i for every i in N)
+            self.clients_predictions.append(predictions)
 
-                    # Compute the prediction improvement in Nash step
-                    # old_server_output = torch.matmul(predictions.double(), w_t.double())
-                    # print("old server output", old_server_output)
-                    # new_pred = torch.matmul(predictions.double(), w_t.double())
-                    # improvement = (torch.abs(old_server_output - y_t)) - (torch.abs(new_pred - y_t))
-                    # print("-------improvement--------", improvement)
+            #  Now optimize mixture weights based on clients' previous time-step predictions (Y_{t-1})
+            #  We use t-1 predictions because we also need ground truth (y_{t-1}).
+            assert len(self.clients_predictions) == t
+            w_t = self.compute_mixture_weights(self.clients_predictions[t - 1].double(), last_observed_value.double())
+            self.mixture_weights.append(w_t)
 
             server_output = torch.matmul(predictions.double(), w_t.double())
 

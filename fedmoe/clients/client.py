@@ -19,7 +19,7 @@ class ClientState:
     _hidden_states: List[torch.Tensor] = field(default_factory=list)
     _predictions: List[torch.Tensor] = field(default_factory=list)
     _betas: List[torch.Tensor] = field(default_factory=list)
-    _current_time: int = -1
+    _current_time: int = 0
     max_time: int = 0
     Z_neg1: torch.Tensor = torch.Tensor([0.0])
     Y_0: torch.Tensor = torch.Tensor([0.0])
@@ -53,20 +53,19 @@ class ClientState:
 
     def set_beta(self, beta: torch.Tensor, time: int) -> None:
         # Add new beta
-        assert self._current_time == time, "Error: time is not the same as current time, check time steps"
+        assert self._current_time == time + 1, "Error: time is not the same as current time, check time steps"
         self._betas.append(beta)
-        assert (len(self._betas) - 1) == self._current_time
+        assert len(self._betas) == self._current_time
 
     def next_time_step(self, next_time: int) -> None:
         assert next_time == (self._current_time + 1)
         self._current_time += 1
 
-    def set_next_hidden_state(self, z: torch.Tensor, current_time: int) -> None:
-        assert current_time == self._current_time
+    def set_hidden_state(self, z: torch.Tensor, time: int) -> None:
+        assert time == self._current_time - 1  # Just allows for setting (t-1)'s hidden state.
         self._hidden_states.append(z)
 
     def set_prediction(self, Y: torch.Tensor, time: int) -> None:
-        assert time == self._current_time
         self._predictions.append(Y)
 
     def replace_prediction_t(self, new_pred: torch.Tensor, time: int) -> None:
@@ -88,7 +87,7 @@ class ClientState:
     def clear_state(self) -> None:
         self._hidden_states.clear()
         self._predictions.clear()
-        self._current_time = -1
+        self._current_time = 0
 
 
 class Client(ABC):
@@ -207,7 +206,7 @@ class Client(ABC):
         # Use the previous Z
         # Update prediction based on Z_t and beta_t
         next_prediction = self.state.get_prediction_t((t - 1)).double() + torch.matmul(
-            self.state.get_hidden_state_t(t).double(), nash_beta.double()
+            self.state.get_hidden_state_t(t - 1).double(), nash_beta.double()
         )
         # next_prediction shape: y_dim*1
         self.state.replace_prediction_t(next_prediction, t)
@@ -217,8 +216,8 @@ class Client(ABC):
         self.state.next_time_step(next_time=t)
         assert self.state.get_current_time() == t, "Error: time step mismatch"
         # Update X_t
-        X_t = self.compute_X_t(t)
-        y_t = self.compute_y_t(t)
+        X_t = self.compute_X_t(t - 1)
+        y_t = self.compute_y_t(t - 1)
 
         X_t_T = torch.transpose(X_t, 0, 1)
         identity_matrix = torch.eye(self.d_z, dtype=torch.float64)
@@ -226,17 +225,17 @@ class Client(ABC):
         second_term = torch.matmul(torch.inverse(first_term).double(), X_t_T.double())
 
         beta_t = torch.matmul(second_term.double(), y_t.double())
-        # Place beta_t at the t position in beta list
-        self.state.set_beta(beta_t, t)
+        # Place beta_t at the t-1's position in beta list
+        self.state.set_beta(beta_t, t - 1)
 
         # Generate Random State and Update Hidden State
-        updated_z = self.feed_encoder(self._current_sequence[t].reshape(self.y_dim, 1))
+        updated_z = self.feed_encoder(self._current_sequence[t - 1].reshape(self.y_dim, 1))
 
-        self.state.set_next_hidden_state(updated_z, current_time=t)
+        self.state.set_hidden_state(updated_z, time=(t - 1))
 
         # Update prediction based on Z_t and beta_t
         t_prediction = self.state.get_prediction_t(t - 1) + torch.matmul(
-            self.state.get_hidden_state_t(t).double(), beta_t.double()
+            self.state.get_hidden_state_t(t - 1).double(), beta_t.double()
         )
 
         # next_prediction shape: y_dim*1
