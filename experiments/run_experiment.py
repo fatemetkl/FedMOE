@@ -2,7 +2,7 @@ import argparse
 import logging
 import os
 import random
-from typing import Any, Dict, List, Union
+from typing import Any, Dict
 
 import matplotlib.pyplot as plt
 import torch
@@ -30,7 +30,7 @@ def plot_sequence(
     plt.plot(sequence2, label="pred", color="blue", alpha=0.5, linewidth=2)
 
     if config["have_sync"]:
-        T_indices = [i * T for i in range(1, int((len(sequence2) - 1) / T) + 1)]
+        T_indices = [i * T for i in range(1, int((sequence2.size(0) - 1) / T) + 1)]
         T_values = [sequence2[i] for i in T_indices]
         plt.scatter(T_indices, T_values, color="r", marker="o", label="T")
 
@@ -62,12 +62,12 @@ def plot_sequence(
     plt.show()
 
 
-def plot_results(results: Union[torch.Tensor, List[int]], final_value: float, T: int) -> None:
+def plot_results(results: torch.Tensor, final_value: float, T: int) -> None:
     plt.plot(results, label="Results", color="gray", alpha=0.5)
     # Add a dot on each data point
-    plt.scatter(range(len(results)), results, color="b", marker="o")
+    plt.scatter(range(results.size(0)), results, color="b", marker="o")
     # Highlight synchronization steps in red
-    highlighted_indices = [i * T for i in range(int(len(results) / T) + 1)]
+    highlighted_indices = [i * T for i in range(int((results.size(0)) / T) + 1)]
     highlighted_values = torch.Tensor([results[i] for i in highlighted_indices])
     plt.scatter(highlighted_indices, highlighted_values, color="r", marker="o", label="Highlighted Points")
 
@@ -190,7 +190,7 @@ def main(config: Dict[str, Any], results_dir: str) -> None:
 
     final_metric_value, per_round_results = server.fit(config["total_rounds"], config["have_sync"])
     # plot server predictions and the input data sequence
-    server_preds = torch.Tensor([item.squeeze().detach().numpy() for item in server.server_outputs])
+    server_preds = torch.Tensor([item.squeeze().detach() for item in server.server_outputs])
     plot_sequence(client_manager.common_target_sequence, server_preds, config["sync_freq"], config)
 
     # with open(results_dir + "/" + config["experiment_name"] + ".txt", "w") as text_file:

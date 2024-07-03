@@ -21,28 +21,35 @@ class ClientState:
     _betas: List[torch.Tensor] = field(default_factory=list)
     _current_time: int = -1
     max_time: int = 0
-    Z_0: torch.Tensor = torch.Tensor([0.0])
+    Z_neg1: torch.Tensor = torch.Tensor([0.0])
+    Y_0: torch.Tensor = torch.Tensor([0.0])
+    Y_neg1: torch.Tensor = torch.Tensor([0.0])
 
     def get_current_time(self) -> int:
         return self._current_time
 
     def get_hidden_state_t(self, time: int) -> torch.Tensor:
         assert time <= self._current_time, "Error: this hidden state value is not set yet"
+        if time == -1:
+            return self.Z_neg1
         return self._hidden_states[time]
 
     def get_prediction_t(self, time: int) -> torch.Tensor:
         assert time <= self._current_time, "Error: this prediction value is not set yet"
+        if time == -1:
+            return self.Y_neg1
         return self._predictions[time]
 
     def get_beta_t(self, time: int) -> torch.Tensor:
         assert time <= self._current_time, "Error: this beta value is not set yet"
         return self._betas[time]
 
-    def init_state(self, z: torch.Tensor, Y: torch.Tensor, data_length: int) -> None:
-        self._hidden_states.append(z)
-        self._predictions.append(Y)
+    def init_state(self, Z_neg1: torch.Tensor, Y_0: torch.Tensor, Y_neg1: torch.Tensor, data_length: int) -> None:
         self.max_time = data_length
-        self.Z_0 = z
+        self.Z_neg1 = Z_neg1
+        self.Y_0 = Y_0
+        self._predictions.append(Y_0)
+        self.Y_neg1 = Y_neg1
 
     def set_beta(self, beta: torch.Tensor, time: int) -> None:
         # Add new beta
@@ -133,11 +140,20 @@ class Client(ABC):
         init_prediction: Union[torch.Tensor, None] = None,
     ) -> None:
         if init_hidden_state is None:
-            init_hidden_state = torch.randn((self.y_dim, self.d_z))  # Z shape is: d_z --> changed to dy*dz
+            # init_hidden_state = torch.randn((self.y_dim, self.d_z))  # Z shape is: d_z --> changed to dy*dz
+            # Initializing Z to zero rather than a random value
+            init_hidden_state_neg1 = torch.zeros((self.y_dim, self.d_z))
         if init_prediction is None:
-            init_prediction = torch.randn((self.y_dim, 1))
-        assert init_hidden_state is not None and init_prediction is not None
-        self.state.init_state(init_hidden_state, init_prediction, data_length=self.data_length)
+            # Initializing with zero rather than a random value
+            # init_prediction = torch.randn((self.y_dim, 1))
+            init_prediction_0 = torch.zeros((self.y_dim, 1))
+            init_prediction_neg1 = torch.zeros((self.y_dim, 1))
+        assert (
+            init_prediction_0 is not None and init_prediction_neg1 is not None and init_hidden_state_neg1 is not None
+        )
+        self.state.init_state(
+            init_hidden_state_neg1, init_prediction_0, init_prediction_neg1, data_length=self.data_length
+        )
 
     def init_p_s(self, num_clients: int) -> None:
         self.P = torch.zeros(
@@ -165,7 +181,7 @@ class Client(ABC):
             X.append(
                 torch.mul(
                     pow(math.e, -1 * self.alpha * ((t - s) / 2)),
-                    self.state.get_hidden_state_t(s).transpose(0, 1),
+                    self.state.get_hidden_state_t(s - 1).transpose(0, 1),
                 )
             )
         prev_time_steps = len(X)
@@ -178,7 +194,7 @@ class Client(ABC):
         for s in range(lower_bound, t + 1):
             y.append(
                 pow(math.e, -1 * self.alpha * ((t - s) / 2))
-                * (self._target[s] - self.state.get_prediction_t(s)).transpose(0, 1)
+                * (self._target[s] - self.state.get_prediction_t(s - 1)).transpose(0, 1)
             )
 
         prev_time_steps = len(y)
