@@ -40,6 +40,7 @@ class ClientManager:
     def set_target(self) -> torch.Tensor:
         assert self.data is not None, " data should be set first"
         # Target is the shifted input to the left
+        #  y_0 = x_1 (predict next input)
         return self.data[1:]
 
     def initiate_clients(self, sync_freq: int) -> List[Client]:
@@ -110,6 +111,13 @@ class ClientManager:
     def get_y(self, t: int) -> torch.Tensor:
         #  All clients have the same target sequence
         return self.common_target_sequence[t].reshape(self.y_dim, 1)
+
+    def get_Y_0(self) -> torch.Tensor:
+        init_Y_0 = []
+        for client in self.clients:
+            init_Y_0_client = client.state.Y_0
+            init_Y_0.append(init_Y_0_client)
+        return torch.stack(init_Y_0).reshape(self.y_dim, self.num_clients)
 
 
 class PreTrainingClientManager(ClientManager):

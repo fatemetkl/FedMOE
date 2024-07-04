@@ -202,7 +202,7 @@ class Client(ABC):
 
     def update_prediction_with_beta(self, t: int, nash_beta: torch.Tensor) -> torch.Tensor:
         # Replace previous beta
-        self.state.replace_beta_t(nash_beta, t)
+        self.state.replace_beta_t(nash_beta, t - 1)
         # Use the previous Z
         # Update prediction based on Z_t and beta_t
         next_prediction = self.state.get_prediction_t((t - 1)).double() + torch.matmul(
