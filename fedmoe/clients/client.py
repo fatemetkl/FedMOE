@@ -44,8 +44,7 @@ class ClientState:
         assert time <= self._current_time, "Error: this beta value is not set yet"
         return self._betas[time]
 
-    def init_state(self, Z_neg1: torch.Tensor, Y_0: torch.Tensor, Y_neg1: torch.Tensor, data_length: int) -> None:
-        self.max_time = data_length
+    def init_state(self, Z_neg1: torch.Tensor, Y_0: torch.Tensor, Y_neg1: torch.Tensor) -> None:
         self.Z_neg1 = Z_neg1
         self.Y_0 = Y_0
         self._predictions.append(Y_0)
@@ -97,7 +96,6 @@ class Client(ABC):
         id: int,
         sync_steps: int,
         d_z: int,
-        data_length: int,
         y_dim: int,
         alpha: float,
         gamma: float,
@@ -107,7 +105,6 @@ class Client(ABC):
         self.id = id
         self.d_z = d_z
         self.sync_steps = sync_steps
-        self.data_length = data_length
         self.y_dim = y_dim
         self.alpha = alpha
         self.gamma = gamma
@@ -150,9 +147,7 @@ class Client(ABC):
         assert (
             init_prediction_0 is not None and init_prediction_neg1 is not None and init_hidden_state_neg1 is not None
         )
-        self.state.init_state(
-            init_hidden_state_neg1, init_prediction_0, init_prediction_neg1, data_length=self.data_length
-        )
+        self.state.init_state(init_hidden_state_neg1, init_prediction_0, init_prediction_neg1)
 
     def init_p_s(self, num_clients: int) -> None:
         self.P = torch.zeros(

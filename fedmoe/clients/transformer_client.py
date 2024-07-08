@@ -15,7 +15,6 @@ class TransformerClient(Client):
         id: int,
         sync_steps: int,
         d_z: int,
-        data_length: int,
         pre_training_dataloader: DataLoader,
         y_dim: int = 1,
         alpha: float = 0.01,
@@ -27,7 +26,7 @@ class TransformerClient(Client):
         self.pre_training_epochs = pre_training_epochs
         self.pre_training_learning_rate = pre_training_learning_rate
         self.pre_training_dataloader = pre_training_dataloader
-        super().__init__(id, sync_steps, d_z, data_length, y_dim, alpha, gamma, sigma)
+        super().__init__(id, sync_steps, d_z, y_dim, alpha, gamma, sigma)
 
     def feed_encoder(self, input: torch.Tensor) -> torch.Tensor:
         self.encoder.eval()

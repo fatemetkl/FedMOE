@@ -136,7 +136,6 @@ def main(config: Dict[str, Any], results_dir: str) -> None:
         client_manager: ClientManager = PreTrainingClientManager(
             config["client_type"],
             config["num_clients"],
-            config["total_rounds"] + 1,
             data_sequence,
             config["sync_freq"],
             config["d_z"],
@@ -156,7 +155,6 @@ def main(config: Dict[str, Any], results_dir: str) -> None:
         client_manager = ClientManager(
             config["client_type"],
             config["num_clients"],
-            config["total_rounds"] + 1,
             data_sequence,
             config["sync_freq"],
             config["d_z"],
@@ -186,26 +184,18 @@ def main(config: Dict[str, Any], results_dir: str) -> None:
         client_manager=client_manager,
         game=game,
         metrics=[RMSEMetric("RSME")],
+        K=config["K"],
+        eta=config["eta"],
     )
 
-    final_metric_value, per_round_results = server.fit(config["total_rounds"], config["have_sync"])
+    final_metric_value = server.fit(config["total_rounds"], config["have_sync"], config["update_last_Y_sync"])
+
     # plot server predictions and the input data sequence
     server_preds = torch.Tensor([item.squeeze().detach() for item in server.server_outputs])
     plot_sequence(client_manager.common_target_sequence, server_preds, config["sync_freq"], config)
 
-    # with open(results_dir + "/" + config["experiment_name"] + ".txt", "w") as text_file:
-    #     text_file.write(str(final_metric_value) + str(per_round_results))
-
-    # for metric in per_round_results:
-    #     x = int(len(per_round_results[metric]) / config["sync_freq"])
-    #     our_list = [i*config["sync_freq"] for i in range(x)]
-    #     main = per_round_results[metric]
-    #     print([main[i] for i in our_list])
-    #     plot_results(
-    #         per_round_results[metric], final_metric_value["average - server_predictions - RSME"],
-    #  config["sync_freq"],"experiment"
-    #     )
-    #     plt.show()
+    with open(results_dir + "/" + config["experiment_name"] + ".txt", "w") as file:
+        file.write(str(final_metric_value))
 
 
 if __name__ == "__main__":

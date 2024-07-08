@@ -16,7 +16,6 @@ class ClientManager:
         self,
         client_type: ClientType,
         num_clients: int,
-        data_length: int,
         data_sequence: torch.Tensor,
         sync_freq: int,
         d_z: int,
@@ -32,7 +31,6 @@ class ClientManager:
         self.sigma = sigma
         self.y_dim = 1
         self.data = data_sequence
-        self.data_length = data_length
         self.common_target_sequence = self.set_target()
         self.clients = self.initiate_clients(sync_freq)
         self.sync_freq = sync_freq
@@ -53,7 +51,6 @@ class ClientManager:
                     id=i,
                     sync_steps=sync_freq,
                     d_z=self.d_z,
-                    data_length=self.data_length,
                     y_dim=self.y_dim,
                     alpha=self.alpha,
                     gamma=self.gamma,
@@ -64,7 +61,6 @@ class ClientManager:
                     id=i,
                     sync_steps=sync_freq,
                     d_z=self.d_z,
-                    data_length=self.data_length,
                     y_dim=self.y_dim,
                     alpha=self.alpha,
                     gamma=self.gamma,
@@ -126,7 +122,6 @@ class PreTrainingClientManager(ClientManager):
         self,
         client_type: ClientType,
         num_clients: int,
-        data_length: int,
         data_sequence: BaseDataset,
         sync_freq: int,
         d_z: int,
@@ -140,7 +135,7 @@ class PreTrainingClientManager(ClientManager):
         self.pre_training_learning_rate = pre_training_learning_rate
         self.pre_training_dataloader = pre_training_dataloader
         # The pre-trained transformer does not have a sigma parameter, so it is initialized to 0.0.
-        super().__init__(client_type, num_clients, data_length, data_sequence, sync_freq, d_z, alpha, gamma, sigma=0.0)
+        super().__init__(client_type, num_clients, data_sequence, sync_freq, d_z, alpha, gamma, sigma=0.0)
 
     def initiate_clients(self, sync_freq: int) -> List[Client]:
         clients: List[Client] = []
@@ -150,7 +145,6 @@ class PreTrainingClientManager(ClientManager):
                 id=i,
                 sync_steps=sync_freq,
                 d_z=self.d_z,
-                data_length=self.data_length,
                 pre_training_dataloader=self.pre_training_dataloader,
                 y_dim=self.y_dim,
                 alpha=self.alpha,

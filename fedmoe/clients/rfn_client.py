@@ -11,13 +11,12 @@ class RandomFeatureNetworkClient(Client):
         id: int,
         sync_steps: int,
         d_z: int,
-        data_length: int,
         y_dim: int = 1,
         alpha: float = 0.01,
         gamma: float = 0.1,
         sigma: float = 0.001,
     ) -> None:
-        super().__init__(id, sync_steps, d_z, data_length, y_dim, alpha, gamma, sigma)
+        super().__init__(id, sync_steps, d_z, y_dim, alpha, gamma, sigma)
 
     def init_model(self) -> nn.Module:
         A = torch.randn((self.y_dim, self.y_dim)).double()

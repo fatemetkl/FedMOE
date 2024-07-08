@@ -15,6 +15,8 @@ class Server:
         client_manager: ClientManager,
         game: Game,
         metrics: Sequence[Metric],
+        K: float,
+        eta: int,
     ) -> None:
         self.sync_freq = sync_freq
         self.num_clients = client_manager.num_clients
@@ -28,8 +30,8 @@ class Server:
         self.d_z = self.client_manager.d_z
         self.metrics = metrics
         self.metric_manager = MetricManager(metrics=self.metrics, metric_manager_name="average")
-        self.K: float = 3
-        self.eta: int = 1
+        self.K: float = K
+        self.eta: int = eta
 
     def compute_mixture_weights(self, predictions: torch.Tensor, y_t: torch.Tensor) -> torch.Tensor:
         one_N = torch.ones(self.num_clients, 1).double()
@@ -127,7 +129,6 @@ class Server:
         self, num_rounds: int, have_sync: bool = True, update_last_Y_sync: bool = True
     ) -> Tuple[Dict[str, float], Dict[str, List]]:
         self.metric_manager.clear()
-        per_round_results: Dict[str, List] = {metric.name: [] for metric in self.metrics}
         # We start from t =1 instead of t = 0 zero.
         # Because to make predictions at step 0, we would need beta_0 which need Y{-2} and Z{-2} that we don't have.
         # so we have to initialize y_0 and beta_0 initialized in the client class, so we don't need to predict it
@@ -189,9 +190,9 @@ class Server:
 
             self.server_outputs.append(server_output)
 
-            # self.metric_manager.update({"server_predictions": server_output}, y_t)
+            self.metric_manager.update({"server_predictions": server_output}, self.client_manager.get_y(t))
 
         # Compute metric
         final_metric_value = self.metric_manager.compute()
-        print("Final metric value", final_metric_value)
-        return final_metric_value, per_round_results
+        print("Final metric value:", "\n", final_metric_value["average - server_predictions - RSME"])
+        return final_metric_value
