@@ -89,8 +89,12 @@ def main(
         "gamma": gamma,
         "sigma": sigma,
     }
-    server_preds = torch.Tensor([item.squeeze().detach() for item in server.server_outputs])
-    plot_sequence(client_manager.common_target_sequence, server_preds, T, config["have_sync"], plot_info, results_dir)
+
+    if config["save_plot"]:
+        server_preds = torch.Tensor([item.squeeze().detach() for item in server.server_outputs])
+        plot_sequence(
+            client_manager.common_target_sequence, server_preds, T, config["have_sync"], plot_info, results_dir
+        )
 
 
 if __name__ == "__main__":

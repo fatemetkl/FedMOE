@@ -96,7 +96,6 @@ class ClientManager:
         past_time_steps = [current_round - t for t in range(1, self.sync_freq)]
         round_counter = -1
         for prev_round in past_time_steps:
-            # print("fixing time step:", prev_round)
             round_counter -= 1
             round_betas = betas[round_counter].reshape(self.num_clients, self.d_z, self.y_dim)
             client_counter = 0

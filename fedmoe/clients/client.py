@@ -69,19 +69,11 @@ class ClientState:
 
     def replace_prediction_t(self, new_pred: torch.Tensor, time: int) -> None:
         assert 0 <= time <= self._current_time, "Error: this prediction value is not set yet"
-        # print("time-----------", time)
-        # print("previous prediction:", self._predictions[time])
-        # print("replaced with ", new_pred)
         self._predictions[time] = new_pred
 
     def replace_beta_t(self, new_beta: torch.Tensor, time: int) -> None:
         assert 0 <= time <= self._current_time, "Error: this beta value is not set yet"
         self._betas[time] = new_beta
-
-    def edit_past_prediction(self, Y: torch.Tensor, time: int) -> None:
-        assert 0 <= time < self.max_time, "Error: going over data length"
-        assert time <= self._current_time, "Error: this prediction value is not set yet"
-        self._predictions[time] = Y
 
     def clear_state(self) -> None:
         self._hidden_states.clear()
@@ -136,12 +128,10 @@ class Client(ABC):
         init_prediction: Union[torch.Tensor, None] = None,
     ) -> None:
         if init_hidden_state is None:
-            # init_hidden_state = torch.randn((self.y_dim, self.d_z))  # Z shape is: d_z --> changed to dy*dz
             # Initializing Z to zero rather than a random value
             init_hidden_state_neg1 = torch.zeros((self.y_dim, self.d_z))
         if init_prediction is None:
             # Initializing with zero rather than a random value
-            # init_prediction = torch.randn((self.y_dim, 1))
             init_prediction_0 = torch.zeros((self.y_dim, 1))
             init_prediction_neg1 = torch.zeros((self.y_dim, 1))
         assert (
@@ -170,8 +160,8 @@ class Client(ABC):
     def compute_X_t(self, t: int) -> torch.Tensor:
         X = []
         # t-T is the distance from t to the previous sync point (previous T).
-        lower_bound = max(t - self.sync_steps, 0)
-        for s in range(lower_bound, t + 1):
+        start_point = max(t - self.sync_steps, 0)
+        for s in range(start_point, t + 1):
             X.append(
                 torch.mul(
                     pow(math.e, -1 * self.alpha * ((t - s) / 2)),
@@ -184,8 +174,8 @@ class Client(ABC):
 
     def compute_y_t(self, t: int) -> torch.Tensor:
         y = []
-        lower_bound = max(t - self.sync_steps, 0)
-        for s in range(lower_bound, t + 1):
+        start_point = max(t - self.sync_steps, 0)
+        for s in range(start_point, t + 1):
             y.append(
                 pow(math.e, -1 * self.alpha * ((t - s) / 2))
                 * (self._target[s] - self.state.get_prediction_t(s - 1)).transpose(0, 1)
@@ -223,7 +213,7 @@ class Client(ABC):
         # Place beta_t at the t-1's position in beta list
         self.state.set_beta(beta_t, t - 1)
 
-        # Generate Random State and Update Hidden State
+        # Generate Random State and update Hidden State
         updated_z = self.feed_encoder(self._current_sequence[t - 1].reshape(self.y_dim, 1))
 
         self.state.set_hidden_state(updated_z, time=(t - 1))

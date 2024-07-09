@@ -130,16 +130,14 @@ class Server:
     ) -> Tuple[Dict[str, float], Dict[str, List]]:
         self.metric_manager.clear()
         # We start from t =1 instead of t = 0 zero.
-        # Because to make predictions at step 0, we would need beta_0 which need Y{-2} and Z{-2} that we don't have.
-        # so we have to initialize y_0 and beta_0 initialized in the client class, so we don't need to predict it
+        # Because to make predictions at step 0, we would need beta_0 which needs Y{-2} and Z{-2} that we don't have.
 
         # Initialized self.clients_predictions with Y_0^i in clients
         self.clients_predictions.append(self.client_manager.get_Y_0())
-        #  Initialize W_0 to zero because we need it for the first round of synchronization.
+        #  Initialize W_0 to ones because we need it for the first round of synchronization.
         self.mixture_weights.append(torch.zeros((self.num_clients, 1)))
 
         for t in range(1, num_rounds):
-
             # last_observed_value = y_{t-1}
             last_observed_value = self.client_manager.get_y(t - 1)
             # Store observed target values
@@ -148,12 +146,11 @@ class Server:
             # Compute predictions locally
             # Update Experts and return predictions
             predictions = self.client_manager.fit_clients(t)
-            # if t%T == 0, we improve predictions based on Nash game
-            # Predictions are generated based on Nash game
+            # if t%T == 0, we update predictions based on Nash game
             if have_sync:
                 if t % self.sync_freq == 0:
                     start_point = max(t - self.sync_freq, 0)
-                    #  Sending the past T-1 observations and mixture weights for Nash game
+                    #  Sending the last T-1 observations and mixture weights for Nash game
                     #  (last 0 to T-1) --> time[t-T-1, t-0]
                     assert len(self.clients_predictions) == len(self.mixture_weights) == len(self.observed_values)
                     past_T_betas = self.sync_round(
@@ -163,8 +160,7 @@ class Server:
                         self.clients_predictions[start_point : t - 1],
                     )
                     # Improve step Ts predictions with the new beta_T <-- beta_(T-1)
-                    improved_predictions = self.client_manager.get_predictions_with_beta(t, past_T_betas[-1])
-                    predictions = improved_predictions
+                    predictions = self.client_manager.get_predictions_with_beta(t, past_T_betas[-1])
 
                     # Optional: update past T predictions in each client
                     # self.client_manager.update_past_predictions(t, past_T_betas)
