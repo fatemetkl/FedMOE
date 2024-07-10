@@ -11,20 +11,20 @@ mkdir -p $RESULTS_DIR
 # Hyper-parameters
 # ALPHA_VALUES=( 0.001 0.01 1.0 10)
 # GAMMA_VALUES=( 0.01 1 )
-# SIGMA_VALUES=( 0.001 0.01 1.0 10)
-# HIDDENDIM_VALUES=( 5 10 20 )
-# T_VALUES=( 5 10 20 )
-# K_VALUES=( 1 2 3 )
-# ETA_VALUES=( 1.0 2.0  )
+# SIGMA_VALUES=( 0.01 )
+# HIDDENDIM_VALUES=( 5 10 )
+# T_VALUES=( 5 10 )
+# K_VALUES=( 3 )
+# ETA_VALUES=( 1 )
 
-ALPHA_VALUES=( 0.01 0.1 1.0 10.0)
-GAMMA_VALUES=( 0.01 )
+ALPHA_VALUES=( 1.0 )
+GAMMA_VALUES=( 1.0 )
 SIGMA_VALUES=( 0.01 )
-HIDDENDIM_VALUES=( 5 10 )
-T_VALUES=( 5 )
+HIDDENDIM_VALUES=( 10 )
+T_VALUES=( 8 )
 K_VALUES=( 3.0 )
 # eta values shuold be int
-ETA_VALUES=( 1 )
+ETA_VALUES=( 2 )
 
 
 RUN_NAMES=( "Run1" "Run2" "Run3" )
@@ -64,6 +64,8 @@ do
                   --T ${T_Value} \
                   --experiment_setup ${EXPERIMENT_SETUP} \
                   > ${RUN_OUTPUT_FILE} 2>&1 &
+              # wait 2 seconds before running the next command
+              sleep 2
               done
             done
           done

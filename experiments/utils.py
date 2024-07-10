@@ -2,9 +2,17 @@ from typing import Any, Dict
 
 import matplotlib.pyplot as plt
 import torch
+import yaml
 
+from experiments.experimental_data import create_linear_line, quadratic_data, sine_signal
 from fedmoe.datasets.logistic_map_dataset import get_logistic_map_sequence
 from fedmoe.datasets.periodic_dataset import get_periodic_signal_sequence
+
+
+def load_config(config_path: str) -> Dict[str, Any]:
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+    return config
 
 
 def load_data(dataset_name: str, total_rounds: int) -> torch.Tensor:
@@ -13,8 +21,14 @@ def load_data(dataset_name: str, total_rounds: int) -> torch.Tensor:
         data_sequence = get_periodic_signal_sequence(n_samples=1, data_length=total_rounds + 1)
     elif dataset_name == "logistic_map":
         data_sequence = get_logistic_map_sequence(n_samples=1, data_length=total_rounds + 1)
+    elif dataset_name == "horizontal_line":
+        data_sequence = create_linear_line(num_points=total_rounds + 1, a=0.0, b=0.5)
     elif dataset_name == "linear_line":
-        data_sequence = torch.Tensor([0.5 for i in range(total_rounds + 1)])
+        data_sequence = create_linear_line(total_rounds + 1, a=3.0, b=2.0)
+    elif dataset_name == "quadratic_data":
+        data_sequence = quadratic_data(total_rounds + 1)
+    elif dataset_name == "sine_signal":
+        data_sequence = sine_signal(total_rounds + 1)
     else:
         raise ValueError("dataset name is not valid.")
     return data_sequence
@@ -52,7 +66,7 @@ def plot_sequence(
     plt.xlabel("Time")
     plt.ylabel("Value")
     plt.title("Experiment data")
-    plt.ylim((-2, 2))
+    plt.ylim((torch.min(input_sequence) - 1, torch.max(input_sequence) + 1))
     plt.legend()
     if show:
         plt.show()

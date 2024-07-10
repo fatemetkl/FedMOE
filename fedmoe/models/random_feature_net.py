@@ -23,8 +23,6 @@ class RFN(nn.Module):
         random_state = self.generate_random_state(sigma_t)
         #  X shape: y_dim * 1
         AX = torch.matmul(self.A, x_t.double()).squeeze(1)
-        # print("AX shape", AX.shape)
-        # print("random_state shape", self.b.shape)
         Z = nn.ReLU()(AX + self.b + random_state)
         # Output size should be d_z*d_y
         return Z

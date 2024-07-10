@@ -6,9 +6,8 @@ import os
 from typing import Any, Dict
 
 import torch
-import yaml
 
-from experiments.utils import load_data, plot_sequence
+from experiments.utils import load_config, load_data, plot_sequence
 
 # from fl4health.utils.metrics import Metric
 from fedmoe.client_manager import ClientManager
@@ -16,12 +15,6 @@ from fedmoe.clients.client import ClientType
 from fedmoe.game import RfnGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
-
-
-def load_config(config_path: str) -> Dict[str, Any]:
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
-    return config
 
 
 def main(
