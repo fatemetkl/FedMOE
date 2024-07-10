@@ -1,7 +1,6 @@
 # Experiment variables
-experiment_name: "rfn-experiment-sin"
+experiment_name: "rfn-experiment"
 client_type : 0 # 0: Random feature networks (fixed for this experiment)
-# Data variables
 data: "sine_signal"  # periodic_signal, logistic_map, sine_signal, quadratic_data, linear_line, or horizontal_line
 
 num_clients : 4 # The number of experts or clients
