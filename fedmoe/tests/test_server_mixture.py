@@ -3,7 +3,7 @@ import torch
 from fedmoe.game import RfnGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
-from fedmoe.tests.utils import get_client_manager, get_data_and_target_sequences
+from fedmoe.tests.utils import get_client_manager, get_data_and_target_sequences, get_client_manager_dy_dx_1
 
 
 def compute_objective(
@@ -77,7 +77,7 @@ def test_server_mixture_weights_in_flow() -> None:
     eta = 1.0
     N = 3
 
-    data_sequence, target_sequence = get_data_and_target_sequences()
+    _, target_sequence = get_data_and_target_sequences()
 
     client_manager = get_client_manager(alpha, gamma, sigma, z_dim, N)
     game = RfnGame(client_manager.clients, 3, z_dim)
@@ -125,3 +125,23 @@ def test_server_mixture_weights_in_flow() -> None:
         server.clients_predictions, server.mixture_weights, server.server_outputs
     ):
         torch.allclose(torch.matmul(client_preds.double(), weights.double()), server_output, rtol=0.0, atol=1e-6)
+
+
+def test_full_flow_with_dy_dx_one() -> None:
+    alpha = 1.5
+    gamma = 2.0
+    z_dim = 3
+    kappa = 0.5
+    eta = 1.0
+    N = 3
+
+    client_manager = get_client_manager_dy_dx_1(alpha, gamma, z_dim, N)
+    game = RfnGame(client_manager.clients, 3, z_dim)
+
+    server = Server(
+        sync_freq=3, client_manager=client_manager, game=game, metrics=[RMSEMetric("RSME")], kappa=kappa, eta=eta
+    )
+
+    # Perform 5 rounds of client stepping and mixing without synchronization, just making sure it runs all the way
+    # through
+    server.fit(num_rounds=5, have_sync=False, update_last_Y_sync=False)

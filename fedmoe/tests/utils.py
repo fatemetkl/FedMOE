@@ -3,6 +3,7 @@ from typing import Tuple
 import torch
 
 from fedmoe.client_manager import ClientManager, ClientType
+from experiments.utils import load_data
 
 
 def get_data_and_target_sequences() -> Tuple[torch.Tensor, torch.Tensor]:
@@ -45,6 +46,36 @@ def get_client_manager(
         init_hidden_state_neg1 = torch.rand((3, z_dim))
         init_prediction_0 = torch.rand((3, 1))
         init_prediction_neg1 = torch.rand((3, 1))
+        client.state.Z_neg1 = init_hidden_state_neg1
+        client.state.Y_0 = init_prediction_0
+        client.state.Y_neg1 = init_prediction_neg1
+        client.state._predictions[0] = init_prediction_0
+
+    return client_manager
+
+def get_client_manager_dy_dx_1(alpha: float, gamma: float, z_dim: int, num_clients: int = 2) -> None:
+    # Set seed for reproducibility
+    torch.manual_seed(42)
+
+    data_sequence = load_data("periodic_signal", 10)
+
+    client_manager = ClientManager(
+        ClientType.RFN,
+        num_clients,
+        data_sequence,
+        sync_freq=3,
+        z_dim=z_dim,
+        alpha=alpha,
+        gamma=gamma,
+        sigma=1.0,
+        target_sequence=None,
+    )
+
+    # Patching the initial conditions with random values to make calculations more complex
+    for client in client_manager.clients:
+        init_hidden_state_neg1 = torch.rand((1, z_dim))
+        init_prediction_0 = torch.rand((1, 1))
+        init_prediction_neg1 = torch.rand((1, 1))
         client.state.Z_neg1 = init_hidden_state_neg1
         client.state.Y_0 = init_prediction_0
         client.state.Y_neg1 = init_prediction_neg1
