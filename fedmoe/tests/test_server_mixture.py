@@ -3,7 +3,7 @@ import torch
 from fedmoe.game import RfnGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
-from fedmoe.tests.utils import get_client_manager, get_data_and_target_sequences, get_client_manager_dy_dx_1
+from fedmoe.tests.utils import get_client_manager, get_client_manager_dy_dx_1, get_data_and_target_sequences
 
 
 def compute_objective(

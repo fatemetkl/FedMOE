@@ -2,8 +2,6 @@ import math
 
 import torch
 
-from fedmoe.client_manager import ClientManager
-from fedmoe.clients.client import Client, ClientType
 from fedmoe.tests.utils import get_client_manager, get_data_and_target_sequences
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()

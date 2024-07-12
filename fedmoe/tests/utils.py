@@ -2,8 +2,8 @@ from typing import Tuple
 
 import torch
 
-from fedmoe.client_manager import ClientManager, ClientType
 from experiments.utils import load_data
+from fedmoe.client_manager import ClientManager, ClientType
 
 
 def get_data_and_target_sequences() -> Tuple[torch.Tensor, torch.Tensor]:
@@ -52,6 +52,7 @@ def get_client_manager(
         client.state._predictions[0] = init_prediction_0
 
     return client_manager
+
 
 def get_client_manager_dy_dx_1(alpha: float, gamma: float, z_dim: int, num_clients: int = 2) -> None:
     # Set seed for reproducibility
