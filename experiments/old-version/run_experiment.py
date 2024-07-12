@@ -166,7 +166,7 @@ def main(config: Dict[str, Any], results_dir: str) -> None:
             game = RfnGame(
                 client_manager.clients,
                 sync_freq=config["sync_freq"],
-                d_z=config["d_z"],
+                z_dim=config["d_z"],
             )
             logger.info("RFN clients initiated")
         elif config["client_type"] == ClientType.ESN.value:
@@ -184,7 +184,7 @@ def main(config: Dict[str, Any], results_dir: str) -> None:
         client_manager=client_manager,
         game=game,
         metrics=[RMSEMetric("RSME")],
-        K=config["K"],
+        kappa=config["K"],
         eta=config["eta"],
     )
 

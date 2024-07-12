@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Union
 
 import torch
 from fl4health.utils.dataset import BaseDataset
@@ -18,20 +18,34 @@ class ClientManager:
         num_clients: int,
         data_sequence: torch.Tensor,
         sync_freq: int,
-        d_z: int,
+        z_dim: int,
         alpha: float,
         gamma: float,
-        sigma: float,
+        sigma: Union[float, torch.Tensor],
+        target_sequence: Optional[torch.Tensor] = None,
     ) -> None:
         self.client_type = client_type
         self.num_clients = num_clients
-        self.d_z = d_z
+        self.z_dim = z_dim
         self.alpha = alpha
         self.gamma = gamma
-        self.sigma = sigma
-        self.y_dim = 1
+
+        # Shape is time x x_dim
         self.data = data_sequence
-        self.common_target_sequence = self.set_target()
+        assert len(data_sequence.shape) == 2
+        self.x_dim = self.data.shape[1]
+
+        # Shape of common_target_sequence is time x y_dim
+        if target_sequence is None:
+            self.common_target_sequence = self.set_target()
+        else:
+            self.common_target_sequence = target_sequence
+        assert len(data_sequence.shape) == 2
+        self.y_dim = self.common_target_sequence.shape[1]
+
+        self.sigma = sigma if isinstance(sigma, torch.Tensor) else torch.Tensor([sigma]).repeat(1, self.y_dim).T
+        assert self.sigma.shape == (self.y_dim, 1)
+
         self.clients = self.initiate_clients(sync_freq)
         self.sync_freq = sync_freq
 
@@ -46,22 +60,24 @@ class ClientManager:
         #  Every tensor type is float64
         for i in range(self.num_clients):
             client: RandomFeatureNetworkClient | EchoStateNetworkClient
-            if self.client_type == ClientType.RFN.value:
+            if self.client_type == ClientType.RFN:
                 client = RandomFeatureNetworkClient(
                     id=i,
                     sync_steps=sync_freq,
-                    d_z=self.d_z,
+                    x_dim=self.x_dim,
                     y_dim=self.y_dim,
+                    z_dim=self.z_dim,
                     alpha=self.alpha,
                     gamma=self.gamma,
                     sigma=self.sigma,
                 )
-            elif self.client_type == ClientType.ESN.value:
+            elif self.client_type == ClientType.ESN:
                 client = EchoStateNetworkClient(
                     id=i,
                     sync_steps=sync_freq,
-                    d_z=self.d_z,
+                    x_dim=self.x_dim,
                     y_dim=self.y_dim,
+                    z_dim=self.z_dim,
                     alpha=self.alpha,
                     gamma=self.gamma,
                     sigma=self.sigma,
@@ -78,11 +94,12 @@ class ClientManager:
         for client in self.clients:
             t_prediction = client.update_expert(round)
             round_predictions.append(t_prediction)
-        return torch.stack(round_predictions).reshape(self.y_dim, self.num_clients)
+
+        return torch.cat(round_predictions, dim=1)
 
     def get_predictions_with_beta(self, round: int, betas: torch.Tensor) -> torch.Tensor:
         # beta shape is Nd_z x d_y ---> to N x d_z x d_y
-        betas = betas.reshape(self.num_clients, self.d_z, self.y_dim)
+        betas = betas.reshape(self.num_clients, self.z_dim, self.y_dim)
         new_round_predictions = []
         i = 0
         for client in self.clients:
@@ -97,7 +114,7 @@ class ClientManager:
         round_counter = -1
         for prev_round in past_time_steps:
             round_counter -= 1
-            round_betas = betas[round_counter].reshape(self.num_clients, self.d_z, self.y_dim)
+            round_betas = betas[round_counter].reshape(self.num_clients, self.z_dim, self.y_dim)
             client_counter = 0
             for client in self.clients:
                 client.update_prediction_with_beta(prev_round, round_betas[client_counter])
@@ -112,7 +129,7 @@ class ClientManager:
         for client in self.clients:
             init_Y_0_client = client.state.Y_0
             init_Y_0.append(init_Y_0_client)
-        return torch.stack(init_Y_0).reshape(self.y_dim, self.num_clients)
+        return torch.cat(init_Y_0, dim=1)
 
 
 class PreTrainingClientManager(ClientManager):
@@ -123,18 +140,29 @@ class PreTrainingClientManager(ClientManager):
         num_clients: int,
         data_sequence: BaseDataset,
         sync_freq: int,
-        d_z: int,
+        z_dim: int,
         alpha: float,
         gamma: float,
         pre_training_dataloader: DataLoader,
         pre_training_epochs: int = 3,
         pre_training_learning_rate: float = 0.01,
+        target_sequence: Optional[torch.Tensor] = None,
     ) -> None:
         self.pre_training_epochs = pre_training_epochs
         self.pre_training_learning_rate = pre_training_learning_rate
         self.pre_training_dataloader = pre_training_dataloader
-        # The pre-trained transformer does not have a sigma parameter, so it is initialized to 0.0.
-        super().__init__(client_type, num_clients, data_sequence, sync_freq, d_z, alpha, gamma, sigma=0.0)
+        super().__init__(
+            client_type=client_type,
+            num_clients=num_clients,
+            data_sequence=data_sequence,
+            sync_freq=sync_freq,
+            z_dim=z_dim,
+            alpha=alpha,
+            gamma=gamma,
+            # The pre-trained transformer does not have a sigma parameter, so it is initialized to 0.0.
+            sigma=0.0,
+            target_sequence=target_sequence,
+        )
 
     def initiate_clients(self, sync_freq: int) -> List[Client]:
         clients: List[Client] = []
@@ -143,12 +171,13 @@ class PreTrainingClientManager(ClientManager):
             client = TransformerClient(
                 id=i,
                 sync_steps=sync_freq,
-                d_z=self.d_z,
                 pre_training_dataloader=self.pre_training_dataloader,
+                x_dim=self.x_dim,
                 y_dim=self.y_dim,
+                z_dim=self.z_dim,
                 alpha=self.alpha,
                 gamma=self.gamma,
-                sigma=0.0,  # The pre-trained transformer does not have a sigma parameter
+                sigma=None,  # The pre-trained transformer does not have a sigma parameter
                 pre_training_epochs=self.pre_training_epochs,
                 pre_training_learning_rate=self.pre_training_learning_rate,
             )

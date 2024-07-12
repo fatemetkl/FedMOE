@@ -1,8 +1,11 @@
+from typing import Optional
+
 import torch
 import torch.nn as nn
 
 from fedmoe.clients.client import Client
-from fedmoe.models.echo_state_net import ESN
+from fedmoe.models.echo_state_net import Esn
+from fedmoe.utils import TensorGenerationType
 
 
 class EchoStateNetworkClient(Client):
@@ -10,23 +13,36 @@ class EchoStateNetworkClient(Client):
         self,
         id: int,
         sync_steps: int,
-        d_z: int,
-        y_dim: int = 1,
+        x_dim: int,
+        y_dim: int,
+        z_dim: int,
         alpha: float = 0.01,
         gamma: float = 0.1,
-        sigma: float = 2,
+        sigma: Optional[torch.Tensor] = None,
+        affine_map_generator: TensorGenerationType = TensorGenerationType.STANDARD_GAUSSIAN,
     ) -> None:
-        super().__init__(id, sync_steps, d_z, y_dim, alpha, gamma, sigma)
+        self.affine_map_generator = affine_map_generator
+        if sigma is None:
+            sigma = torch.Tensor([2.0]).repeat(1, y_dim).T
+        assert sigma.shape == (y_dim, 1)
+        super().__init__(
+            id=id, sync_steps=sync_steps, x_dim=x_dim, y_dim=y_dim, z_dim=z_dim, alpha=alpha, gamma=gamma, sigma=sigma
+        )
         self.latest_Z_T: torch.Tensor
 
     def init_model(self) -> nn.Module:
-        A = torch.rand(self.d_z, self.y_dim).double()
-        B = torch.rand(self.d_z, self.d_z).double()
-        b = torch.rand(self.d_z).double()
-        encoder = ESN(A, B, b)
+        encoder = Esn(
+            x_dim=self.z_dim, y_dim=self.y_dim, z_dim=self.z_dim, affine_map_generator=self.affine_map_generator
+        )
         return encoder
 
     def feed_encoder(self, input: torch.Tensor) -> torch.Tensor:
+        # The input should be a 2D tensor of dimension x_dim x 1.
+        assert input.shape == (self.x_dim, 1)
+        # Repeating the input by columns to expand into the latent space dimension. Should result in a x_dim x z_dim
+        # tensor for encoding.
+        input_matrix = input.repeat(1, self.z_dim)
+        assert input_matrix.shape == (self.x_dim, self.z_dim)
         return self.encoder(
             input,
             self.state.get_hidden_state_t(self.state.get_current_time()),

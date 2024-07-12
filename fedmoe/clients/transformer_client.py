@@ -1,3 +1,5 @@
+from typing import Optional
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -14,19 +16,24 @@ class TransformerClient(Client):
         self,
         id: int,
         sync_steps: int,
-        d_z: int,
         pre_training_dataloader: DataLoader,
-        y_dim: int = 1,
+        x_dim: int,
+        y_dim: int,
+        z_dim: int,
         alpha: float = 0.01,
         gamma: float = 0.1,
-        sigma: float = 2,
+        sigma: Optional[torch.Tensor] = None,
         pre_training_epochs: int = 3,
         pre_training_learning_rate: float = 0.01,
     ) -> None:
         self.pre_training_epochs = pre_training_epochs
         self.pre_training_learning_rate = pre_training_learning_rate
         self.pre_training_dataloader = pre_training_dataloader
-        super().__init__(id, sync_steps, d_z, y_dim, alpha, gamma, sigma)
+        if sigma is None:
+            sigma = torch.Tensor([])
+        super().__init__(
+            id=id, sync_steps=sync_steps, x_dim=x_dim, y_dim=y_dim, z_dim=z_dim, alpha=alpha, gamma=gamma, sigma=sigma
+        )
 
     def feed_encoder(self, input: torch.Tensor) -> torch.Tensor:
         self.encoder.eval()
@@ -63,7 +70,7 @@ class TransformerClient(Client):
         # 1) Do pre-training: each client trains its model seperately
         # Hyperparameters
         input_dim = self.y_dim
-        hidden_dim = self.d_z
+        hidden_dim = self.z_dim
         nhead = 4  # Number of heads in multihead attention
         num_encoder_layers = 3  # Number of encoder layers
         dim_feedforward = 128  # Dimension of the feedforward network model

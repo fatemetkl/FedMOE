@@ -17,7 +17,8 @@ def load_data(dataset_name: str, total_rounds: int) -> torch.Tensor:
         data_sequence = torch.Tensor([0.5 for i in range(total_rounds + 1)])
     else:
         raise ValueError("dataset name is not valid.")
-    return data_sequence
+    # Assumption is that the data_sequence has shape time x x_dim (1 here)
+    return data_sequence.reshape(-1, 1)
 
 
 def plot_sequence(

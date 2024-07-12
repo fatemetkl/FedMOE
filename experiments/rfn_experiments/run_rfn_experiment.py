@@ -63,7 +63,7 @@ def main(
     game = RfnGame(
         client_manager.clients,
         sync_freq=T,
-        d_z=hidden_dim,
+        z_dim=hidden_dim,
     )
     logger.info("RFN clients initiated")
 
@@ -73,7 +73,7 @@ def main(
         client_manager=client_manager,
         game=game,
         metrics=[RMSEMetric("RSME")],
-        K=K,
+        kappa=K,
         eta=eta,
     )
     logger.info("Server initiated")
