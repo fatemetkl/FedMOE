@@ -36,15 +36,14 @@ class Rfn(nn.Module):
         assert x_t.shape[1] == self.z_dim
 
         random_state = self.generate_random_state(sigma_t)
-        # print("random_state shape", self.b.shape)
 
         AX = torch.matmul(self.A, x_t.double())
         #  AX shape should be y_dim x z_dim
         assert AX.shape == (self.y_dim, self.z_dim)
-        # print("AX shape", AX.shape)
 
         Z_t = nn.ReLU()(AX + self.b + random_state)
         # Latent space size should be y_dim x z_dim
         assert Z_t.shape == (self.y_dim, self.z_dim)
 
         return Z_t
+
