@@ -279,8 +279,8 @@ class EchoStateGame(Game):
 
 class RfnGame(Game):
 
-    def __init__(self, clients: List[Client], sync_freq: int, d_z: int) -> None:
-        super().__init__(clients, sync_freq, d_z)
+    def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
+        super().__init__(clients, sync_freq, z_dim)
 
     def get_a_t(self, time: int, client: Client) -> torch.Tensor:
         # some parts of the forwards pass (without randomness)
@@ -290,7 +290,7 @@ class RfnGame(Game):
     def get_expectation_zt(self, time: int, client: Client) -> torch.Tensor:
         a_t = self.get_a_t(time, client)
         phi = torch.distributions.Normal(0, 1).cdf((torch.mul((-1 / client.sigma), a_t)))
-        one_bar = torch.ones(client.d_z)
+        one_bar = torch.ones(client.z_dim)
         exp_term = torch.exp((-1 / (2 * (client.sigma) ** 2)) * torch.mul(a_t, a_t))
         second_term = client.sigma / math.sqrt(2 * math.pi) * exp_term
         a_ti = torch.mul(a_t, (one_bar - phi)) + second_term
@@ -332,13 +332,13 @@ class RfnGame(Game):
             # A_ij shape: d_z*d_z
             return A_ij
         else:
-            A_ii = torch.zeros(client_i.d_z, client_i.d_z, dtype=torch.float64)
+            A_ii = torch.zeros(client_i.z_dim, client_i.z_dim, dtype=torch.float64)
             #  Shape of the following to tensors: 1*d_Z --> squeeze to remove extra first dimension
             a_ti = self.get_expectation_zt(time, client_i).squeeze(0)
             at = self.get_a_t(time, client_i).squeeze(0)
 
-            for p in range(client_i.d_z):
-                for k in range(client_i.d_z):
+            for p in range(client_i.z_dim):
+                for k in range(client_i.z_dim):
                     if p == k:
                         phi = torch.distributions.Normal(0, 1).cdf(-at[p] / client_i.sigma)
 

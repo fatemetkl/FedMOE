@@ -135,5 +135,9 @@ dmypy.json
 # macOS
 .DS_Store
 
+# vscode
+launch.json
+settings.json
+
 # results
 experiments/results/

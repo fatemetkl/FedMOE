@@ -15,9 +15,14 @@ class Server:
         client_manager: ClientManager,
         game: Game,
         metrics: Sequence[Metric],
-        K: float,
+        kappa: float,
         eta: int,
     ) -> None:
+        assert (
+            sync_freq == client_manager.sync_freq
+        ), "Sync Frequency of Server is not the same as Sync Frequency of Client Manager"
+        assert sync_freq == game.sync_freq, "Sync Frequency of Server is not the same as the Sync Frequency of Game"
+        assert client_manager.z_dim == game.d_z, "Latent dimension of Client Manager is not the same as the Game"
         self.sync_freq = sync_freq
         self.num_clients = client_manager.num_clients
         self.y_dim = client_manager.y_dim
@@ -27,18 +32,21 @@ class Server:
         self.mixture_weights: List[torch.Tensor] = []
         self.observed_values: List[torch.Tensor] = []
         self.clients_predictions: List[torch.Tensor] = []
-        self.d_z = self.client_manager.d_z
+        self.z_dim = self.client_manager.z_dim
         self.metrics = metrics
         self.metric_manager = MetricManager(metrics=self.metrics, metric_manager_name="average")
-        self.K: float = K
+        self.kappa: float = kappa
         self.eta: int = eta
 
     def compute_mixture_weights(self, predictions: torch.Tensor, y_t: torch.Tensor) -> torch.Tensor:
+        # Size of predictions is dy x N (corresponds to \mathbf{\hat{Y}}_t) and y_t is dy x 1.
+
+        assert predictions.shape == (self.y_dim, self.num_clients)
+        assert y_t.shape == (self.y_dim, 1)
+
         one_N = torch.ones(self.num_clients, 1).double()
 
-        A = 2 * self.num_clients * torch.matmul(predictions.transpose(0, 1), predictions) + (
-            self.K * torch.eye(self.num_clients)
-        )
+        A = 2 * (torch.matmul(predictions.transpose(0, 1), predictions) + self.kappa * torch.eye(self.num_clients))
         b = 2 * torch.transpose(torch.matmul(y_t.transpose(0, 1).double(), predictions.double()), 0, 1)
 
         numerator = (
@@ -54,6 +62,7 @@ class Server:
         )
         division = numerator.double() / denominator.double()
         w_t = torch.matmul(torch.inverse(A).double(), (b.double() - (division.double() * one_N.double())))
+
         return w_t
 
     def sync_round(
@@ -75,7 +84,7 @@ class Server:
             B_t = None
             C_t = None
             D_t = None
-            # Shape = Nx1
+            # Shape = N x 1
             w_t = torch.tensor(
                 [torch.matmul(w_Tn.double(), torch.eye(self.y_dim).double()) for w_Tn in past_mixture_weights[t]]
             ).reshape(self.num_clients * self.y_dim, self.y_dim)
@@ -94,7 +103,7 @@ class Server:
             e_alpha_gamma_A_inv = self.game.get_e_alpha_gamma_A_inv(t)
             # e_alpha_gamma_A_inv shape: N*N*dz*dz
             e_alpha_gamma_A_inv = e_alpha_gamma_A_inv.reshape(
-                (self.num_clients * self.d_z, self.num_clients * self.d_z)
+                (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
             )
 
             initial_term = torch.matmul(w_t, w_t.transpose(0, 1))
@@ -129,15 +138,19 @@ class Server:
         self, num_rounds: int, have_sync: bool = True, update_last_Y_sync: bool = True
     ) -> Tuple[Dict[str, float], Dict[str, List]]:
         self.metric_manager.clear()
-        # We start from t =1 instead of t = 0 zero.
+        # We start from t = 1 instead of t = 0 zero.
         # Because to make predictions at step 0, we would need beta_0 which needs Y{-2} and Z{-2} that we don't have.
 
         # Initialized self.clients_predictions with Y_0^i in clients
         self.clients_predictions.append(self.client_manager.get_Y_0())
-        #  Initialize W_0 to ones because we need it for the first round of synchronization.
-        self.mixture_weights.append(torch.zeros((self.num_clients, 1)))
 
-        for t in range(1, num_rounds):
+        # Initialize W_0 randomly satisfying the constraint that the elements sum to eta.
+        # We need it for the first round of synchronization.
+        w_0 = torch.randn((self.num_clients, 1))
+        w_0 = self.eta * w_0 / torch.sum(w_0)
+        self.mixture_weights.append(w_0)
+
+        for t in range(1, num_rounds + 1):
             # last_observed_value = y_{t-1}
             last_observed_value = self.client_manager.get_y(t - 1)
             # Store observed target values
@@ -147,31 +160,30 @@ class Server:
             # Update Experts and return predictions
             predictions = self.client_manager.fit_clients(t)
             # if t%T == 0, we update predictions based on Nash game
-            if have_sync:
-                if t % self.sync_freq == 0:
-                    start_point = max(t - self.sync_freq, 0)
-                    #  Sending the last T-1 observations and mixture weights for Nash game
-                    #  (last 0 to T-1) --> time[t-T-1, t-0]
-                    assert len(self.clients_predictions) == len(self.mixture_weights) == len(self.observed_values)
-                    past_T_betas = self.sync_round(
-                        t,
-                        self.observed_values[start_point : t - 1],
-                        self.mixture_weights[start_point : t - 1],
-                        self.clients_predictions[start_point : t - 1],
+            if have_sync and t % self.sync_freq == 0:
+                start_point = max(t - self.sync_freq, 0)
+                #  Sending the last T-1 observations and mixture weights for Nash game
+                #  (last 0 to T-1) --> time[t-T-1, t-0]
+                assert len(self.clients_predictions) == len(self.mixture_weights) == len(self.observed_values)
+                past_T_betas = self.sync_round(
+                    t,
+                    self.observed_values[start_point : t - 1],
+                    self.mixture_weights[start_point : t - 1],
+                    self.clients_predictions[start_point : t - 1],
+                )
+                # Improve step Ts predictions with the new beta_T <-- beta_(T-1)
+                predictions = self.client_manager.get_predictions_with_beta(t, past_T_betas[-1])
+
+                # Optional: update past T predictions in each client
+                # self.client_manager.update_past_predictions(t, past_T_betas)
+
+                if update_last_Y_sync:
+                    # Optional: improve previous client predictions (Y^i_{t-1})
+                    # We can use Y^i_{t-1} in this round's mixture weight computation.
+                    # Uses beta_{t-1} for updating predictions at t-1 (we used the same beta for updating Y_t)
+                    self.clients_predictions[t - 1] = self.client_manager.get_predictions_with_beta(
+                        t - 1, past_T_betas[-1]
                     )
-                    # Improve step Ts predictions with the new beta_T <-- beta_(T-1)
-                    predictions = self.client_manager.get_predictions_with_beta(t, past_T_betas[-1])
-
-                    # Optional: update past T predictions in each client
-                    # self.client_manager.update_past_predictions(t, past_T_betas)
-
-                    if update_last_Y_sync:
-                        # Optional: improve previous client predictions (Y^i_{t-1})
-                        # We can use Y^i_{t-1} in this round's mixture weight computation.
-                        # Uses beta_{t-1} for updating predictions at t-1 (we used the same beta for updating Y_t)
-                        self.clients_predictions[t - 1] = self.client_manager.get_predictions_with_beta(
-                            t - 1, past_T_betas[-1]
-                        )
 
             #  Now optimize mixture weights based on clients' previous time-step predictions (Y_{t-1})
             #  We use t-1 predictions because we also need ground truth (y_{t-1}).

@@ -1,8 +1,11 @@
+from typing import Optional
+
 import torch
 import torch.nn as nn
 
 from fedmoe.clients.client import Client
-from fedmoe.models.random_feature_net import RFN
+from fedmoe.models.random_feature_net import Rfn
+from fedmoe.utils import TensorGenerationType
 
 
 class RandomFeatureNetworkClient(Client):
@@ -10,20 +13,32 @@ class RandomFeatureNetworkClient(Client):
         self,
         id: int,
         sync_steps: int,
-        d_z: int,
-        y_dim: int = 1,
+        x_dim: int,
+        y_dim: int,
+        z_dim: int,
         alpha: float = 0.01,
         gamma: float = 0.1,
-        sigma: float = 0.001,
+        sigma: Optional[torch.Tensor] = None,
+        affine_map_generator: TensorGenerationType = TensorGenerationType.STANDARD_GAUSSIAN,
     ) -> None:
-        super().__init__(id, sync_steps, d_z, y_dim, alpha, gamma, sigma)
+        self.affine_map_generator = affine_map_generator
+        if sigma is None:
+            sigma = torch.Tensor([0.001]).repeat(1, y_dim).T
+        assert sigma.shape == (y_dim, 1)
+        super().__init__(
+            id, sync_steps=sync_steps, x_dim=x_dim, y_dim=y_dim, z_dim=z_dim, alpha=alpha, gamma=gamma, sigma=sigma
+        )
 
     def init_model(self) -> nn.Module:
-        A = torch.randn((self.y_dim, self.y_dim)).double()
-        b = torch.randn((self.y_dim, self.d_z)).double()
-        encoder = RFN(A, b)
-        return encoder
+        return Rfn(
+            x_dim=self.x_dim, y_dim=self.y_dim, z_dim=self.z_dim, affine_map_generator=self.affine_map_generator
+        )
 
     def feed_encoder(self, input: torch.Tensor) -> torch.Tensor:
-        input_matrix = input.repeat(1, self.d_z)
-        return self.encoder(input_matrix, torch.Tensor([self.sigma]).reshape(self.y_dim, 1))
+        # The input should be a 2D tensor of dimension x_dim x 1.
+        assert input.shape == (self.x_dim, 1)
+        # Repeating the input by columns to expand into the latent space dimension. Should result in a x_dim x z_dim
+        # tensor for encoding.
+        input_matrix = input.repeat(1, self.z_dim)
+        assert input_matrix.shape == (self.x_dim, self.z_dim)
+        return self.encoder(input_matrix, self.sigma)
