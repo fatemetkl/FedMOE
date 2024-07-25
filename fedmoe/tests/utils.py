@@ -20,7 +20,41 @@ def get_data_and_target_sequences() -> Tuple[torch.Tensor, torch.Tensor]:
     return data_sequence, target_sequence
 
 
-def get_client_manager(
+def get_esn_client_manager(
+    alpha: float, gamma: float, sigma: torch.Tensor, z_dim: int, num_clients: int = 2
+) -> ClientManager:
+
+    data_sequence, target_sequence = get_data_and_target_sequences()
+
+    # Set seed for reproducibility
+    torch.manual_seed(42)
+
+    client_manager = ClientManager(
+        ClientType.ESN,
+        num_clients,
+        data_sequence,
+        sync_freq=3,
+        z_dim=z_dim,
+        alpha=alpha,
+        gamma=gamma,
+        sigma=sigma,
+        target_sequence=target_sequence,
+    )
+
+    # Patching the initial conditions with random values to make calculations more complex
+    for client in client_manager.clients:
+        init_hidden_state_neg1 = torch.rand((3, z_dim))
+        init_prediction_0 = torch.rand((3, 1))
+        init_prediction_neg1 = torch.rand((3, 1))
+        client.state.Z_neg1 = init_hidden_state_neg1
+        client.state.Y_0 = init_prediction_0
+        client.state.Y_neg1 = init_prediction_neg1
+        client.state._predictions[0] = init_prediction_0
+
+    return client_manager
+
+
+def get_rfn_client_manager(
     alpha: float, gamma: float, sigma: torch.Tensor, z_dim: int, num_clients: int = 2
 ) -> ClientManager:
 
@@ -54,7 +88,7 @@ def get_client_manager(
     return client_manager
 
 
-def get_client_manager_dy_dx_1(alpha: float, gamma: float, z_dim: int, num_clients: int = 2) -> None:
+def get_rfn_client_manager_dy_dx_1(alpha: float, gamma: float, z_dim: int, num_clients: int = 2) -> None:
     # Set seed for reproducibility
     torch.manual_seed(42)
 

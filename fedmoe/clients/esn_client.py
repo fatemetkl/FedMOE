@@ -32,7 +32,7 @@ class EchoStateNetworkClient(Client):
 
     def init_model(self) -> nn.Module:
         encoder = Esn(
-            x_dim=self.z_dim, y_dim=self.y_dim, z_dim=self.z_dim, affine_map_generator=self.affine_map_generator
+            x_dim=self.x_dim, y_dim=self.y_dim, z_dim=self.z_dim, affine_map_generator=self.affine_map_generator
         )
         return encoder
 
@@ -44,8 +44,11 @@ class EchoStateNetworkClient(Client):
         input_matrix = input.repeat(1, self.z_dim)
         assert input_matrix.shape == (self.x_dim, self.z_dim)
         return self.encoder(
-            input,
-            self.state.get_hidden_state_t(self.state.get_current_time()),
+            input_matrix,
+            # Need to subtract two from the current time, since we're predicting for t,
+            # using \hat{Y}_{t-1}^i + \beta_{t-1} Z_{t-1}, and Z_{t-1} comes from using Z_{t-1}
+            # Concretely, for t=1, \hat{Y}_{1}^i = \hat{Y}_{0}^i + \beta_{0} Z_{0}, and Z_{0} comes from using Z_{-1}
+            self.state.get_hidden_state_t(self.state.get_current_time() - 2),
             self.sigma,
         )
 

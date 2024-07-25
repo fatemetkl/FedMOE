@@ -46,4 +46,3 @@ class Rfn(nn.Module):
         assert Z_t.shape == (self.y_dim, self.z_dim)
 
         return Z_t
-

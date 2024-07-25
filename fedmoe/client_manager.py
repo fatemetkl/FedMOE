@@ -93,8 +93,10 @@ class ClientManager:
         round_predictions = []
         for client in self.clients:
             t_prediction = client.update_expert(round)
+            # Each t_prediction is a column tensor d_y x 1
             round_predictions.append(t_prediction)
 
+        # Shape of returned tensor is y_dim x N (number of clients)
         return torch.cat(round_predictions, dim=1)
 
     def get_predictions_with_beta(self, round: int, betas: torch.Tensor) -> torch.Tensor:

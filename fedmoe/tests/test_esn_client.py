@@ -3,7 +3,7 @@ import math
 import torch
 
 from fedmoe.clients.client import Client
-from fedmoe.tests.utils import get_data_and_target_sequences, get_rfn_client_manager
+from fedmoe.tests.utils import get_data_and_target_sequences, get_esn_client_manager
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 
@@ -33,10 +33,13 @@ def test_client_side_optimization() -> None:
     sigma = torch.Tensor([[0.1], [0.2], [0.3]])
     z_dim = 3
 
-    client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim)
+    client_manager = get_esn_client_manager(alpha, gamma, sigma, z_dim)
 
     # Making prediction for t=1
     t = 1
+    # Temporarily bumping the time to make everything, will reset after.
+    for client in client_manager.clients:
+        client.state.next_time_step(t)
     # grab y_0
     last_observed_value = client_manager.get_y(t - 1)
     target_last_observed_value = torch.Tensor([0.3, 0.1 * 0.1 + 0.2, 0.7]).reshape(-1, 1)
@@ -77,11 +80,17 @@ def test_client_side_optimization() -> None:
 
     # Update Experts and return predictions
     torch.manual_seed(42)
+    # Need to put the time back one notch on all clients for this to work (because we bumped it above)
+    for client in client_manager.clients:
+        client.state._current_time -= 1
     predictions = client_manager.fit_clients(t)
     assert torch.allclose(predictions[:, 0], client_0_preds_target_t1.squeeze())
 
     # Making prediction for t=2
     t = 2
+    # Temporarily bumping the time to make everything, will reset after.
+    for client in client_manager.clients:
+        client.state.next_time_step(t)
 
     # grab y_1
     last_observed_value = client_manager.get_y(t - 1)
@@ -128,6 +137,9 @@ def test_client_side_optimization() -> None:
 
     # Update Experts and return predictions
     torch.manual_seed(42)
+    # Need to put the time back one notch on all clients for this to work (because we bumped it above)
+    for client in client_manager.clients:
+        client.state._current_time -= 1
     predictions = client_manager.fit_clients(t)
     assert torch.allclose(predictions[:, 0], client_0_preds_target_t2.squeeze())
 
@@ -136,7 +148,9 @@ def test_client_side_optimization() -> None:
         client_manager.fit_clients(t)
     # predicting for t=5
     t = 5
-
+    # Temporarily bumping the time to make everything, will reset after.
+    for client in client_manager.clients:
+        client.state.next_time_step(t)
     # grab y_4
     last_observed_value = client_manager.get_y(t - 1)
     target_last_observed_value = torch.Tensor([1.5, 0.5 * 0.5 + 1.0, 3.5]).reshape(-1, 1)
@@ -195,6 +209,9 @@ def test_client_side_optimization() -> None:
 
     # Update Experts and return predictions
     torch.manual_seed(42)
+    # Need to put the time back one notch on all clients for this to work (because we bumped it above)
+    for client in client_manager.clients:
+        client.state._current_time -= 1
     predictions = client_manager.fit_clients(t)
     assert torch.allclose(predictions[:, 0], client_0_preds_target_t5.squeeze())
 
