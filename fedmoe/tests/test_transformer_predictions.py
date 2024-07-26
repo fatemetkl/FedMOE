@@ -2,64 +2,19 @@ import math
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 
-from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.clients.transformer_client import TransformerClient
-from fedmoe.datasets.periodic_dataset import load_periodic_dataloader
-from fedmoe.tests.utils import TransformerTestModel, get_data_and_target_sequences
+from fedmoe.tests.utils import get_data_and_target_sequences, get_transformer_client_manager
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 Z_DIM = 5
 
-
-def get_pre_training_data() -> DataLoader:
-    train_dataloader, _, _ = load_periodic_dataloader(
-        train_data_size=200,
-        val_data_size=200,
-        batch_size=5,
-        data_length=10 + 1,
-    )
-    return train_dataloader
-
-
-def init_model_patch(self) -> nn.Module:
-    # x_dim = 2, y_dim = 3, z_dim = 5
-    return TransformerTestModel(2, 3, Z_DIM)
-
-
-def test_tranformer_client_prediction_process() -> None:
+def test_transformer_client_prediction_process() -> None:
 
     # Fixing seed for reproducible sampling trajectory
     torch.manual_seed(42)
 
-    # Monkey patch the init_model function to bypass pre-training and just return a simple network in the
-    # TransformerClient to make life easier
-    TransformerClient.init_model = init_model_patch
-
-    data_loader = get_pre_training_data()
-    client_manager = PreTrainingClientManager(
-        num_clients=2,
-        data_sequence=DATA_SEQUENCE,
-        sync_freq=10,
-        z_dim=Z_DIM,
-        alpha=1.5,
-        gamma=2.0,
-        pre_training_dataloader=data_loader,
-        pre_training_epochs=1,
-        pre_training_learning_rate=0.1,
-        target_sequence=TARGET_SEQUENCE,
-    )
-
-    # Patching the initial conditions with random values to make calculations more complex
-    for client in client_manager.clients:
-        init_hidden_state_neg1 = torch.rand((3, Z_DIM))
-        init_prediction_0 = torch.rand((3, 1))
-        init_prediction_neg1 = torch.rand((3, 1))
-        client.state.Z_neg1 = init_hidden_state_neg1
-        client.state.Y_0 = init_prediction_0
-        client.state.Y_neg1 = init_prediction_neg1
-        client.state._predictions[0] = init_prediction_0
+    client_manager = get_transformer_client_manager(Z_DIM)
 
     # Transforms in the linear model (fixed by the random seed)
     linear_1 = torch.Tensor([[0.5406, 0.5869], [-0.1657, 0.6496], [-0.1549, 0.1427], [-0.3443, 0.4153]]).double()

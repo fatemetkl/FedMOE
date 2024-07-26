@@ -4,7 +4,10 @@ import torch
 import torch.nn as nn
 
 from experiments.utils import load_data
-from fedmoe.client_manager import ClientManager, ClientType
+from fedmoe.client_manager import ClientManager, ClientType, PreTrainingClientManager
+from torch.utils.data import DataLoader
+from fedmoe.datasets.periodic_dataset import load_periodic_dataloader
+from fedmoe.clients.transformer_client import TransformerClient
 
 
 def get_data_and_target_sequences() -> Tuple[torch.Tensor, torch.Tensor]:
@@ -131,3 +134,51 @@ class TransformerTestModel(nn.Module):
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         outputs = self.linear_1(input.T)
         return self.linear_2(outputs).reshape(self.y_dim, self.z_dim)
+    
+# Helper function for transformer tests
+def get_pre_training_data() -> DataLoader:
+    train_dataloader, _, _ = load_periodic_dataloader(
+        train_data_size=200,
+        val_data_size=200,
+        batch_size=5,
+        data_length=10 + 1,
+    )
+    return train_dataloader
+
+def init_model_patch(self) -> nn.Module:
+    # x_dim = 2, y_dim = 3, z_dim = 5
+    return TransformerTestModel(2, 3, 5)
+
+def get_transformer_client_manager(z_dim: int, sync_freq: int = 3) -> PreTrainingClientManager:
+
+    # Monkey patch the init_model function to bypass pre-training and just return a simple network in the
+    # TransformerClient to make life easier
+    TransformerClient.init_model = init_model_patch
+
+    data_sequence, target_sequence = get_data_and_target_sequences()
+
+    data_loader = get_pre_training_data()
+    client_manager = PreTrainingClientManager(
+        num_clients=2,
+        data_sequence=data_sequence,
+        sync_freq=sync_freq,
+        z_dim=z_dim,
+        alpha=1.5,
+        gamma=2.0,
+        pre_training_dataloader=data_loader,
+        pre_training_epochs=1,
+        pre_training_learning_rate=0.1,
+        target_sequence=target_sequence,
+    )
+
+    # Patching the initial conditions with random values to make calculations more complex
+    for client in client_manager.clients:
+        init_hidden_state_neg1 = torch.rand((3, z_dim))
+        init_prediction_0 = torch.rand((3, 1))
+        init_prediction_neg1 = torch.rand((3, 1))
+        client.state.Z_neg1 = init_hidden_state_neg1
+        client.state.Y_0 = init_prediction_0
+        client.state.Y_neg1 = init_prediction_neg1
+        client.state._predictions[0] = init_prediction_0
+
+    return client_manager
