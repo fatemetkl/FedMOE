@@ -39,7 +39,8 @@ class TransformerClient(Client):
         # The input should be a 2D tensor of dimension x_dim x 1.
         assert input.shape == (self.x_dim, 1)
         self.encoder.eval()
-        # Create a batch-first sample with batch size of 1 for inference
+        # The encoder model should take in a 2D tensor (single time step) of shape (x_dim, 1) and output
+        # a tensor of shape y_dim x z_dim
         return self.encoder(input)
 
     def pre_train_model(self, model: nn.Module) -> nn.Module:
