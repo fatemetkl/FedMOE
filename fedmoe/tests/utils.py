@@ -1,6 +1,7 @@
 from typing import Tuple
 
 import torch
+import torch.nn as nn
 
 from experiments.utils import load_data
 from fedmoe.client_manager import ClientManager, ClientType
@@ -117,3 +118,16 @@ def get_rfn_client_manager_dy_dx_1(alpha: float, gamma: float, z_dim: int, num_c
         client.state._predictions[0] = init_prediction_0
 
     return client_manager
+
+
+class TransformerTestModel(nn.Module):
+    def __init__(self, x_dim: int, y_dim: int, z_dim: int) -> None:
+        super().__init__()
+        self.y_dim = y_dim
+        self.z_dim = z_dim
+        self.linear_1 = torch.nn.Linear(x_dim, 4, bias=False)
+        self.linear_2 = torch.nn.Linear(4, y_dim * z_dim, bias=False)
+
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        outputs = self.linear_1(input.T)
+        return self.linear_2(outputs).reshape(self.y_dim, self.z_dim)

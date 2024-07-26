@@ -1,7 +1,6 @@
 from typing import List, Optional, Union
 
 import torch
-from fl4health.utils.dataset import BaseDataset
 from torch.utils.data import DataLoader
 
 from fedmoe.clients.client import Client, ClientType
@@ -138,9 +137,8 @@ class PreTrainingClientManager(ClientManager):
 
     def __init__(
         self,
-        client_type: ClientType,
         num_clients: int,
-        data_sequence: BaseDataset,
+        data_sequence: torch.Tensor,
         sync_freq: int,
         z_dim: int,
         alpha: float,
@@ -154,7 +152,7 @@ class PreTrainingClientManager(ClientManager):
         self.pre_training_learning_rate = pre_training_learning_rate
         self.pre_training_dataloader = pre_training_dataloader
         super().__init__(
-            client_type=client_type,
+            client_type=ClientType.TRANSFORMER,
             num_clients=num_clients,
             data_sequence=data_sequence,
             sync_freq=sync_freq,
@@ -168,7 +166,7 @@ class PreTrainingClientManager(ClientManager):
 
     def initiate_clients(self, sync_freq: int) -> List[Client]:
         clients: List[Client] = []
-        assert self.client_type == ClientType.TRANSFORMER.value, "Error: client should be a transformer based client"
+        assert self.client_type == ClientType.TRANSFORMER, "Error: client should be a transformer based client"
         for i in range(self.num_clients):
             client = TransformerClient(
                 id=i,

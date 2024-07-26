@@ -134,7 +134,6 @@ def main(config: Dict[str, Any], results_dir: str) -> None:
         data_loader = get_pre_training_data(config)
         logger.info("Pre-training data loaded")
         client_manager: ClientManager = PreTrainingClientManager(
-            config["client_type"],
             config["num_clients"],
             data_sequence,
             config["sync_freq"],

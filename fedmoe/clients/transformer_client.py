@@ -36,9 +36,11 @@ class TransformerClient(Client):
         )
 
     def feed_encoder(self, input: torch.Tensor) -> torch.Tensor:
+        # The input should be a 2D tensor of dimension x_dim x 1.
+        assert input.shape == (self.x_dim, 1)
         self.encoder.eval()
         # Create a batch-first sample with batch size of 1 for inference
-        return self.encoder(input.reshape(1, self.y_dim).double())[0]
+        return self.encoder(input)
 
     def pre_train_model(self, model: nn.Module) -> nn.Module:
         self.pre_training_criterion = nn.MSELoss()
@@ -67,15 +69,15 @@ class TransformerClient(Client):
         return model
 
     def init_model(self) -> nn.Module:
-        # 1) Do pre-training: each client trains its model seperately
+        # 1) Do pre-training: each client trains its model separately
         # Hyperparameters
-        input_dim = self.y_dim
+        input_dim = self.x_dim
         hidden_dim = self.z_dim
         nhead = 4  # Number of heads in multihead attention
         num_encoder_layers = 3  # Number of encoder layers
         dim_feedforward = 128  # Dimension of the feedforward network model
         output_dim = self.y_dim
-        assert hidden_dim % nhead == 0, "Error: mbed_dim must be divisible by num_heads"
+        assert hidden_dim % nhead == 0, "Error: embed_dim must be divisible by num_heads"
         # Create the model
         model = TransformerTimeSeriesModel(
             input_dim,
