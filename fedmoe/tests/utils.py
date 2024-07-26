@@ -54,17 +54,19 @@ def get_client_manager(
     return client_manager
 
 
-def get_client_manager_dy_dx_1(alpha: float, gamma: float, z_dim: int, num_clients: int = 2) -> None:
+def get_client_manager_dy_dx_1(
+    alpha: float, gamma: float, z_dim: int, num_clients: int = 2, data_length: int = 10, sync_freq: int = 3
+) -> ClientManager:
     # Set seed for reproducibility
     torch.manual_seed(42)
 
-    data_sequence = load_data("periodic_signal", 10)
+    data_sequence = load_data("periodic_signal", data_length)
 
     client_manager = ClientManager(
         ClientType.RFN,
         num_clients,
         data_sequence,
-        sync_freq=3,
+        sync_freq=sync_freq,
         z_dim=z_dim,
         alpha=alpha,
         gamma=gamma,
@@ -83,3 +85,8 @@ def get_client_manager_dy_dx_1(alpha: float, gamma: float, z_dim: int, num_clien
         client.state._predictions[0] = init_prediction_0
 
     return client_manager
+
+
+def print_clients_state(client_manager: ClientManager) -> None:
+    for client in client_manager.clients:
+        print("client id:", client.id, "---->", repr(client.state))

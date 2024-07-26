@@ -35,15 +35,12 @@ def main(
     logger.info("Configuration loaded")
 
     assert os.path.exists(results_dir), "Error: result path does not exists"
-    assert (
-        config["client_type"] == ClientType.RFN.value
-    ), "Error: this experiment file only runs Random Feature Example"
 
     # Load data
-    data_sequence = load_data(config["data"], config["total_rounds"])
+    data_sequence = load_data(config["data"], config["total_rounds"] + 1)
 
     client_manager = ClientManager(
-        config["client_type"],
+        ClientType.RFN,
         config["num_clients"],
         data_sequence,
         T,
@@ -71,8 +68,8 @@ def main(
     )
     logger.info("Server initiated")
 
-    server.fit(config["total_rounds"], config["have_sync"], config["update_last_Y_sync"])
-
+    final_metric_value = server.fit(config["total_rounds"], config["have_sync"], config["update_last_Y_sync"])
+    print("Final metric value:", "\n", final_metric_value["average - server_predictions - RSME"])
     # Plot or save server predictions and the input data sequence
     plot_info = {
         "num_clients": config["num_clients"],

@@ -45,15 +45,23 @@ class ClientState:
         assert time <= self._current_time, "Error: this beta value is not set yet"
         return self._betas[time]
 
-    def init_state(self, Z_neg1: torch.Tensor, Y_0: torch.Tensor, Y_neg1: torch.Tensor) -> None:
+    def init_state(
+        self, z_dim: int, y_dim: int, Z_neg1: torch.Tensor, Y_0: torch.Tensor, Y_neg1: torch.Tensor
+    ) -> None:
+        self.z_dim = z_dim
+        self.y_dim = y_dim
+        assert Z_neg1.shape == (self.y_dim, self.z_dim)
         self.Z_neg1 = Z_neg1
+        assert Y_0.shape == (self.y_dim, 1)
         self.Y_0 = Y_0
         self._predictions.append(Y_0)
+        assert Y_neg1.shape == (self.y_dim, 1)
         self.Y_neg1 = Y_neg1
 
     def set_beta(self, beta: torch.Tensor, time: int) -> None:
         # Add new beta
         assert self._current_time == time + 1, "Error: time is not the same as current time, check time steps"
+        assert beta.shape == (self.z_dim, 1)
         self._betas.append(beta)
         assert len(self._betas) == self._current_time
 
@@ -63,23 +71,39 @@ class ClientState:
 
     def set_hidden_state(self, z: torch.Tensor, time: int) -> None:
         assert time == self._current_time - 1  # Just allows for setting (t-1)'s hidden state.
+        assert z.shape == (self.y_dim, self.z_dim)
         self._hidden_states.append(z)
 
     def set_prediction(self, Y: torch.Tensor, time: int) -> None:
+        assert Y.shape == (self.y_dim, 1)
         self._predictions.append(Y)
 
     def replace_prediction_t(self, new_pred: torch.Tensor, time: int) -> None:
         assert 0 <= time <= self._current_time, "Error: this prediction value is not set yet"
+        assert new_pred.shape == (self.y_dim, 1)
         self._predictions[time] = new_pred
 
     def replace_beta_t(self, new_beta: torch.Tensor, time: int) -> None:
         assert 0 <= time <= self._current_time, "Error: this beta value is not set yet"
+        assert new_beta.shape == (self.z_dim, 1)
         self._betas[time] = new_beta
 
     def clear_state(self) -> None:
         self._hidden_states.clear()
         self._predictions.clear()
+        self._betas.clear()
         self._current_time = 0
+
+    def __repr__(self) -> str:
+        dz_rep = "____hidden_states____\n"
+        Y_rep = "____predictions____\n"
+        for time in range(self._current_time):
+            dz_rep += f"| time {time}: {self._hidden_states[time]}___|\n"
+
+        for time in range(self._current_time + 1):
+            Y_rep += f"| time {time}: {self._predictions[time]}___|\n"
+
+        return dz_rep + Y_rep
 
 
 class Client(ABC):
@@ -133,39 +157,47 @@ class Client(ABC):
     ) -> None:
         if init_hidden_state_neg1 is None:
             # Initializing Z to zero rather than a random value
-            init_hidden_state_neg1 = torch.zeros((self.y_dim, self.z_dim))
+            init_hidden_state_neg1 = torch.zeros((self.y_dim, self.z_dim)).double()
         if init_prediction_0 is None:
             # Initializing with zero rather than a random value
-            init_prediction_0 = torch.zeros((self.y_dim, 1))
+            init_prediction_0 = torch.zeros((self.y_dim, 1)).double()
         if init_prediction_neg1 is None:
             # Initializing with zero rather than a random value
-            init_prediction_neg1 = torch.zeros((self.y_dim, 1))
+            init_prediction_neg1 = torch.zeros((self.y_dim, 1)).double()
         assert (
             init_prediction_0 is not None and init_prediction_neg1 is not None and init_hidden_state_neg1 is not None
         )
-        # Make sure everything is the right shape
-        assert init_hidden_state_neg1.shape == (self.y_dim, self.z_dim)
-        assert init_prediction_0.shape == (self.y_dim, 1)
-        assert init_prediction_neg1.shape == (self.y_dim, 1)
-        self.state.init_state(init_hidden_state_neg1, init_prediction_0, init_prediction_neg1)
+
+        self.state.init_state(self.z_dim, self.y_dim, init_hidden_state_neg1, init_prediction_0, init_prediction_neg1)
 
     def init_p_s(self, num_clients: int) -> None:
         self.P = torch.zeros(
-            self.sync_steps + 1,
+            self.sync_steps,
             num_clients * self.y_dim,
             num_clients * self.y_dim,
             dtype=torch.float64,
         )
-        self.S = torch.zeros(self.sync_steps + 1, num_clients, self.y_dim, dtype=torch.float64)
+        self.S = torch.zeros(self.sync_steps, num_clients, self.y_dim, dtype=torch.float64)
 
     def get_x(self, t: int) -> torch.Tensor:
         return self._current_sequence[t].reshape(-1, 1)
+
+    def get_input_matrix(self, t: int) -> torch.Tensor:
+        x = self.get_x(t)
+        # The input should be a 2D tensor of dimension x_dim x 1.
+        assert x.shape == (self.x_dim, 1)
+        # Repeating the input by columns to expand into the latent space dimension. Should result in a x_dim x z_dim
+        # tensor for encoding.
+        input_matrix = x.repeat(1, self.z_dim)
+        assert input_matrix.shape == (self.x_dim, self.z_dim)
+        return input_matrix
 
     def get_y(self, t: int) -> torch.Tensor:
         return self._target[t].reshape(self.y_dim, 1)
 
     def get_e(self, num_clients: int) -> torch.Tensor:
-        return torch.nn.functional.one_hot(torch.tensor(self.id), num_clients).unsqueeze(1).double()
+        e = torch.nn.functional.one_hot(torch.tensor(self.id), num_clients).double()
+        return torch.kron(e, torch.eye(self.y_dim)).T
 
     def compute_X_t(self, t: int) -> torch.Tensor:
         X = []
@@ -186,6 +218,7 @@ class Client(ABC):
         return torch.cat(y)
 
     def update_prediction_with_beta(self, t: int, nash_beta: torch.Tensor) -> torch.Tensor:
+        # TODO: beta should not be self.z_dim x self.y_dim, rather self.z_dim x 1
         # Replace previous beta
         self.state.replace_beta_t(nash_beta, t - 1)
         # Use the previous Z
@@ -194,7 +227,7 @@ class Client(ABC):
             self.state.get_hidden_state_t(t - 1).double(), nash_beta.double()
         )
         # next_prediction shape: y_dim*1
-        self.state.replace_prediction_t(next_prediction, t)
+        assert next_prediction.shape == (self.y_dim, 1)
         return next_prediction
 
     def optimize_beta(self, t: int) -> torch.Tensor:

@@ -9,17 +9,10 @@ from torch.utils.data import DataLoader
 from fedmoe.datasets.echotorch_datasets.periodic_signal import PeriodicSignalDataset  # type: ignore
 
 
-def min_max_scaling(data_tensor: torch.Tensor) -> torch.Tensor:
-    min_val = torch.min(data_tensor)
-    max_val = torch.max(data_tensor)
-    scaled_tensor = (data_tensor - min_val) / (max_val - min_val)
-    return scaled_tensor
-
-
 class TimeSeriesPeriodicDataset(BaseDataset):
     def __init__(self, data_length: int, data_size: int) -> None:
-        data = PeriodicSignalDataset(sample_len=data_length, n_samples=data_size, period=[5, 6])
-        self.data = min_max_scaling(data.outputs[0])
+        data = PeriodicSignalDataset(sample_len=data_length, n_samples=data_size, period=[5, 6, 12, 20])
+        self.data = data.outputs[0]
         # Using teacher forcing method in training
         # Shift input elements to the left to create target
         self.targets = self.data[1:]  # type: ignore
@@ -48,6 +41,6 @@ def load_periodic_dataloader(
 def get_periodic_signal_sequence(n_samples: int, data_length: int) -> torch.Tensor:
     """The concatenated data sequences are used for the main algorithm (online prediction)"""
     #  For now we assume there is only one data sequence
-    periodic_ds = PeriodicSignalDataset(sample_len=data_length, n_samples=n_samples, period=[5, 6])
+    periodic_ds = PeriodicSignalDataset(sample_len=data_length, n_samples=n_samples, period=[5, 6, 12, 20])
     periodic_ds_tensor = torch.cat([periodic_ds[i] for i in range(0, len(periodic_ds))]).reshape(-1)
-    return min_max_scaling(periodic_ds_tensor)
+    return periodic_ds_tensor
