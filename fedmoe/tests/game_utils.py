@@ -15,13 +15,13 @@ def compute_game_regret_objective(
     # Equation 9
     # First index in each input sequences corresponds to the value for T
     # If backward is 0, we just consider T, but if it is more, we go back
+    assert len(past_betas_i) == len(target_seq) == len(server_pred_seq)
     sync_step_residual = target_seq[0] - server_pred_seq[0]
     residual_inner_product = torch.pow(torch.linalg.norm(sync_step_residual), 2.0)
     T_regularizer = gamma * torch.pow(torch.linalg.norm(past_betas_i[0]), 2.0)
     past_losses = 0
     if backward_time_length > 0:
-        for past_time_i in (1, backward_time_length + 1):
-            print(past_time_i)
+        for past_time_i in (1, backward_time_length):
             # e^{-alpha * past_time_i} --> the further past we go, the smaller our discounting factor gets
             residual = target_seq[past_time_i] - server_pred_seq[past_time_i]
             past_residual_inner_product = torch.pow(torch.linalg.norm(residual), 2.0)
