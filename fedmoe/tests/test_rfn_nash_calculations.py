@@ -213,7 +213,7 @@ def test_server_game() -> None:
             [torch.matmul(predictions_3, w_3)],
             exp_var.gamma,
             exp_var.alpha,
-            0,
+            1,
         )
         game_no_Y_regret = compute_game_regret_objective(
             [game_beta_1[-1][client_id]],
@@ -221,7 +221,7 @@ def test_server_game() -> None:
             [torch.matmul(new_predictions_3, w_3)],
             exp_var.gamma,
             exp_var.alpha,
-            0,
+            1,
         )
         # I think the below functionality does not make a lot of sense now.
         # game_regret = compute_game_regret_objective(

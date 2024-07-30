@@ -3,7 +3,7 @@ import torch
 from fedmoe.game import RfnGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
-from fedmoe.tests.utils import get_client_manager, get_client_manager_dy_dx_1, get_data_and_target_sequences
+from fedmoe.tests.utils import get_data_and_target_sequences, get_rfn_client_manager, get_rfn_client_manager_dy_dx_1
 
 
 def compute_objective(
@@ -25,7 +25,7 @@ def test_server_optimization() -> None:
     eta = 1
     N = 3
 
-    client_manager = get_client_manager(alpha, gamma, sigma, z_dim, N)
+    client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim, N)
     game = RfnGame(client_manager.clients, 3, z_dim)
 
     server = Server(sync_freq=3, client_manager=client_manager, game=game, metrics=[], kappa=kappa, eta=eta)
@@ -79,7 +79,7 @@ def test_server_mixture_weights_in_flow() -> None:
 
     _, target_sequence = get_data_and_target_sequences()
 
-    client_manager = get_client_manager(alpha, gamma, sigma, z_dim, N)
+    client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim, N)
     game = RfnGame(client_manager.clients, 3, z_dim)
 
     server = Server(
@@ -135,7 +135,7 @@ def test_full_flow_with_dy_dx_one() -> None:
     eta = 1
     N = 3
 
-    client_manager = get_client_manager_dy_dx_1(alpha, gamma, z_dim, N)
+    client_manager = get_rfn_client_manager_dy_dx_1(alpha, gamma, z_dim, N)
     game = RfnGame(client_manager.clients, 3, z_dim)
 
     server = Server(
