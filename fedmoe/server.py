@@ -22,7 +22,7 @@ class Server:
             sync_freq == client_manager.sync_freq
         ), "Sync Frequency of Server is not the same as Sync Frequency of Client Manager"
         assert sync_freq == game.sync_freq, "Sync Frequency of Server is not the same as the Sync Frequency of Game"
-        assert client_manager.z_dim == game.d_z, "Latent dimension of Client Manager is not the same as the Game"
+        assert client_manager.z_dim == game.z_dim, "Latent dimension of Client Manager is not the same as the Game"
         self.sync_freq = sync_freq
         self.num_clients = client_manager.num_clients
         self.y_dim = client_manager.y_dim
@@ -72,7 +72,7 @@ class Server:
         past_mixture_weights: List[torch.Tensor],
         past_predictions: List[torch.Tensor],
     ) -> List:
-        # T+1 last steps are considered
+        # T last steps are considered
         # Server has the observed values of all clients for the past T time steps
         # Server has the mixture weights of all the clients for the past T time steps
         # Last time step (T)
@@ -144,7 +144,7 @@ class Server:
         self.mixture_weights.append(w_0)
 
         for t in range(1, num_rounds + 1):
-            # last_observed_value = y_{t-1}
+            # last_observed_value = y_{t-1} since we're predicting for t.
             last_observed_value = self.client_manager.get_y(t - 1)
             # Store observed target values
             self.observed_values.append(last_observed_value)

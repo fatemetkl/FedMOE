@@ -9,7 +9,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "3.10.14"
 fl4health = "^0.1.15"
-torch = "^2.3.0"
+torch = "2.2.2"
 EchoTorch = "^0.1.1"
 numpy = "^1.26.4"
 

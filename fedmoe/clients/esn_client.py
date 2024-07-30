@@ -51,11 +51,10 @@ class EchoStateNetworkClient(Client):
             self.state.get_hidden_state_t(self.state.get_current_time() - 2),
             self.sigma,
         )
-
-    def get_latest_Z_T(self) -> torch.Tensor:
-        # Latest Z_T is used for Monte Carlo estimation as the initial state to save compute
+    
+    def get_anchor_Z_T(self) -> torch.Tensor:
+        # We look back sync steps from the current time
         current_time = self.state.get_current_time()
-        remaining_steps = current_time % self.sync_steps
         # Get the latest T hidden state
-        self.latest_Z_T = self.state.get_hidden_state_t(time=(current_time - remaining_steps))
+        self.latest_Z_T = self.state.get_hidden_state_t(time=(current_time - self.sync_steps - 1))
         return self.latest_Z_T

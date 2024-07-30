@@ -172,7 +172,7 @@ def main(config: Dict[str, Any], results_dir: str) -> None:
             game = EchoStateGame(
                 client_manager.clients,
                 sync_freq=config["sync_freq"],
-                d_z=config["d_z"],
+                z_dim=config["d_z"],
             )
             logger.info("ESN clients initiated")
         else:
