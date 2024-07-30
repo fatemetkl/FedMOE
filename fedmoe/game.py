@@ -336,7 +336,7 @@ class EchoStateGame(Game):
             # Z_3 -> Z_4 -> Z_5 -> Z_6 for our Nash game.
             # This means we start from Z_3 and use x_3, x_4, x_5, x_6 to generate these latent values.
             Z_start = client.get_anchor_Z_T()
-            Z = self.simulate_z_t(client.state.get_current_time(), client, Z_start)
+            Z = self.simulate_z_t(t, client, Z_start)
             e_i = client.get_e(self.num_clients)
             e_z_T = torch.matmul(e_i.double(), Z.double())
             samples.append(e_z_T)
