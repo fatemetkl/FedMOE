@@ -7,7 +7,6 @@ from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
 from fedmoe.game import RfnGame
 from fedmoe.server import Server
-from fedmoe.tests.game_utils import compute_game_regret_objective
 from fedmoe.tests.manual_calculations import (
     calculate_B1,
     calculate_C1,
@@ -19,6 +18,7 @@ from fedmoe.tests.manual_calculations import (
     compute_block_A_01,
     manual_block_1,
 )
+from fedmoe.tests.test_game_utils import compute_game_regret_objective
 
 
 class experiment_setup:

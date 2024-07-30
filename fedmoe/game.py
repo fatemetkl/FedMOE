@@ -22,7 +22,8 @@ class Game(ABC):
         raise NotImplementedError
 
     # @abstractmethod
-    # TODO: this function should be removed because it might be changing the order of operations
+    # TODO: check this function to make sure it is not changing the order of operations.
+    # It is removed from RFN class.
     def get_expectation_e_zt(self, time: int, client: Client) -> torch.Tensor:
         raise NotImplementedError
 

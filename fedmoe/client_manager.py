@@ -98,8 +98,8 @@ class ClientManager:
         return torch.cat(round_predictions, dim=1)
 
     def get_predictions_with_beta(self, round: int, betas: torch.Tensor) -> torch.Tensor:
-        # beta shape is Nd_z x d_y ---> to N x d_z x d_y
-        assert betas.shape == (self.num_clients, self.z_dim, self.y_dim)
+        # beta shape is Nd_z x 1 ---> to N x d_z x 1
+        assert betas.shape == (self.num_clients, self.z_dim, 1)
         new_round_predictions = []
         i = 0
         for client in self.clients:

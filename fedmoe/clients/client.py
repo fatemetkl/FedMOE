@@ -218,7 +218,6 @@ class Client(ABC):
         return torch.cat(y)
 
     def update_prediction_with_beta(self, t: int, nash_beta: torch.Tensor) -> torch.Tensor:
-        # TODO: beta should not be self.z_dim x self.y_dim, rather self.z_dim x 1
         # Replace previous beta
         self.state.replace_beta_t(nash_beta, t - 1)
         # Use the previous Z
