@@ -77,7 +77,7 @@ class Server:
         # Server has the mixture weights of all the clients for the past T time steps
         # Last time step (T)
         # print("sync round", current_t)
-        self.game.init_game_round_variables(self.client_manager.clients, current_t)
+        self.game.init_game_round_variables(current_t)
         self.game.first_block_alg2(past_mixture_weights[-1], past_observed_values[-1], time=self.sync_freq - 1)
 
         for t in range(self.sync_freq - 2, -1, -1):

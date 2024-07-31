@@ -27,11 +27,16 @@ def test_nash_game_objective_sync_step() -> None:
     _ = game_server.fit(data_length - 1, have_sync=True, update_last_Y_sync=True)
 
     # Reset clients
+    # Important: don't forget to pass the new clients to the game also!
     client_manager.clients = client_manager.initiate_clients()
+    game.clients = client_manager.clients
     simple_server = Server(sync_freq, client_manager, game, metrics=[RMSEMetric("RSME")], kappa=2.0, eta=1)
     _ = simple_server.fit(data_length - 1, have_sync=False, update_last_Y_sync=False)
 
+    # Reset clients
+    # Important: don't forget to pass the new clients to the game also!
     client_manager.clients = client_manager.initiate_clients()
+    game.clients = client_manager.clients
     game_server_no_Y = Server(sync_freq, client_manager, game, metrics=[RMSEMetric("RSME")], kappa=2.0, eta=1)
     _ = game_server_no_Y.fit(data_length - 1, have_sync=True, update_last_Y_sync=False)
 
@@ -89,12 +94,14 @@ def test_nash_game_objective_accumulative() -> None:
         sync_freq=sync_freq,
         z_dim=3,
     )
-    # Reset clients
-    client_manager.clients = client_manager.initiate_clients()
+
     simple_server = Server(sync_freq, client_manager, game, metrics=[RMSEMetric("RSME")], kappa=2.0, eta=1)
     _ = simple_server.fit(data_length - 1, have_sync=False, update_last_Y_sync=False)
 
+    # Reset clients for the new experiment
+    # Important: don't forget to pass the new clients to the game also!
     client_manager.clients = client_manager.initiate_clients()
+    game.clients = client_manager.clients
     game_server_no_Y = Server(sync_freq, client_manager, game, metrics=[RMSEMetric("RSME")], kappa=2.0, eta=1)
     _ = game_server_no_Y.fit(data_length - 1, have_sync=True, update_last_Y_sync=False)
 
@@ -148,10 +155,10 @@ def test_nash_beta() -> None:
         z_dim=3,
     )
 
-    client_manager.clients = client_manager.initiate_clients()
     game_server = Server(sync_freq, client_manager, game, metrics=[RMSEMetric("RSME")], kappa=2.0, eta=1)
     _ = game_server.fit(data_length - 1, have_sync=True, update_last_Y_sync=False)
     clients = client_manager.clients
+
     # We have to test it for both clients because game works on the mixture weights (so we need all clients).
     for i in range(0, len(target)):
         if i % game.sync_freq == 0 and i > 0:

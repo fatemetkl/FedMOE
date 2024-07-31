@@ -102,9 +102,8 @@ class Game(ABC):
             self.set_client_pt(t=time, client_id=client_id, pt_value=(torch.matmul(W_current, W_current.T)))
             self.set_client_st(t=time, client_id=client_id, st_value=torch.matmul(-1 * W_current, latest_y.double()))
 
-    def init_game_round_variables(self, clients: List[Client], current_time: int) -> None:
+    def init_game_round_variables(self, current_time: int) -> None:
         # First update the local variable of clients
-        self.clients = clients
         self.current_time = current_time
         self.init_loop_times()
 
