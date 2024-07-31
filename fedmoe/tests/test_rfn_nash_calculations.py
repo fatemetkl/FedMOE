@@ -245,7 +245,7 @@ def test_server_game() -> None:
         ), f"Failed for client {client_id} no_game_regret: {no_game_regret} < game_no_Y_regret: {game_no_Y_regret}"
 
 
-def test_get_a_t_embedding_rfn() -> None:
+def test_input_z_indices_in_game() -> None:
     seed = 2024
     random.seed(seed)
     torch.manual_seed(seed)
@@ -266,6 +266,9 @@ def test_get_a_t_embedding_rfn() -> None:
 
     for t in range(1, 9 + 1):
         client_manager.clients[0].state.next_time_step(next_time=t)
+        # First set fake hidden states : d_y x d_z.
+        client_manager.clients[0].state.set_hidden_state(torch.randn((1, 2)), time=(t - 1))
+
         if t % T == 0:
             game.init_game_round_variables(client_manager.clients, current_time=t)
 
@@ -277,3 +280,8 @@ def test_get_a_t_embedding_rfn() -> None:
                     data[index], game.get_input(back_t, client_manager.clients[0]), rtol=0.0, atol=1e-5
                 )
                 back_index += 1
+
+                client_hidden_state = client_manager.clients[0].state.get_hidden_state_t(index - 1)
+                game_z = game.get_z(back_t - 1, client=client_manager.clients[0])
+
+                assert torch.allclose(client_hidden_state, game_z, rtol=0.0, atol=1e-5)
