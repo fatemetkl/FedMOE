@@ -11,11 +11,15 @@ from fedmoe.clients.esn_client import EchoStateNetworkClient
 class Game(ABC):
     def __init__(self, clients: List[Client], sync_freq: int, d_z: int) -> None:
         super().__init__()
+        # initiated clients from client manager here is only used to get fixed parameters like alpha.
+        # A copy of P and S for each client is saved in each game round.
+        # P and S are not saved in client_manager.clients.
         self.clients = clients
         self.num_clients = len(clients)
         self.sync_freq = sync_freq
         self.d_z = d_z
         self.y_dim = self.clients[0].y_dim
+        self.current_time: int
 
     @abstractmethod
     def get_A_ij_t(self, time: int, i: int, j: int) -> torch.Tensor:
@@ -34,6 +38,36 @@ class Game(ABC):
         self._D_times_set: set[int] = set()
         self._S_time_client_set: set[Tuple[int, int]] = set()
         self._P_time_client_set: set[Tuple[int, int]] = set()
+
+    def get_input(self, t: int, client: Client, two_d_matrix: bool = True) -> torch.Tensor:
+        """
+        Maps the global time (current_time) in the server to the time scale used in game,
+        that is between 0 to T, and returns the input associated with server time.
+        """
+        # Current time gives us the current sync step
+        assert self.current_time == client.state.get_current_time()
+        if self.current_time > self.sync_freq:
+            input_index = self.current_time - self.sync_freq + t
+        else:
+            input_index = t
+        if two_d_matrix:
+            return client.get_input_matrix(input_index)
+        else:
+            # We keep the input as a 1D vector for transformer model
+            return client.get_x(input_index)
+
+    def get_z(self, t: int, client: Client) -> torch.Tensor:
+        """
+        Maps the global time (current_time) in the server to the time scale used in game,
+        that is between 0 to T, and returns the hidden space value associated with server time.
+        """
+        # Current time gives us the current sync step
+        assert self.current_time == client.state.get_current_time()
+        if self.current_time > self.sync_freq:
+            time_index = self.current_time - self.sync_freq + t
+        else:
+            time_index = t
+        return client.state.get_hidden_state_t(time=time_index)
 
     def get_e_alpha_gamma(self, t: int) -> torch.Tensor:
         Iz = torch.eye(self.d_z).double()
@@ -68,8 +102,10 @@ class Game(ABC):
             self.set_client_pt(t=time, client_id=client_id, pt_value=(torch.matmul(W_current, W_current.T)))
             self.set_client_st(t=time, client_id=client_id, st_value=torch.matmul(-1 * W_current, latest_y.double()))
 
-    def init_game_round_variables(self) -> None:
-
+    def init_game_round_variables(self, clients: List[Client], current_time: int) -> None:
+        # First update the local variable of clients
+        self.clients = clients
+        self.current_time = current_time
         self.init_loop_times()
 
         for client in self.clients:
@@ -179,9 +215,9 @@ class Game(ABC):
         e_alpha_gamma_A_inv: torch.Tensor,
         initial_term: torch.Tensor,
     ) -> torch.Tensor:
-        client = self.clients[client_id]
-        client_alpha = client.alpha
-        client_gamma = client.gamma
+
+        client_alpha = self.clients[client_id].alpha
+        client_gamma = self.clients[client_id].gamma
         p_next = self.get_client_pt(t=(t + 1), client_id=client_id)
         # e_i : shape [N*dy, dy]
         e_client_alpha_t = torch.exp(torch.tensor(-1 * client_alpha) * (self.sync_freq - t))
@@ -212,9 +248,8 @@ class Game(ABC):
     def calculate_st_client(
         self, t: int, client_id: int, e_alpha_gamma_A_inv: torch.Tensor, wtyt: torch.Tensor
     ) -> torch.Tensor:
-        client = self.clients[client_id]
-        client_alpha = client.alpha
-        client_gamma = client.gamma
+        client_alpha = self.clients[client_id].alpha
+        client_gamma = self.clients[client_id].gamma
         p_next = self.get_client_pt(t=(t + 1), client_id=client_id)
         s_next = self.get_client_st(t=(t + 1), client_id=client_id)
         e_client_alpha_t = torch.exp(torch.Tensor([(-1 * client_alpha) * (self.sync_freq - t)]))
@@ -288,7 +323,7 @@ class TransformerGame(Game):
         super().__init__(clients, sync_freq, d_z)
 
     def get_expectation_e_zt(self, t: int, client: Client) -> torch.Tensor:
-        Z = client.feed_encoder(client.get_x(t).double())
+        Z = client.feed_encoder(self.get_input(t, client, two_d_matrix=False).double())
         Z = Z.unsqueeze(1)
         e_i = client.get_e(self.num_clients)
         return torch.matmul(e_i.unsqueeze(1).double(), Z.transpose(0, 1).double())
@@ -313,46 +348,40 @@ class EchoStateGame(Game):
         super().__init__(clients, sync_freq, d_z)
         self.N_samples = N_samples
 
-    def simulate_z_t(self, input: torch.Tensor, client: Client, Z_start: torch.Tensor) -> torch.Tensor:
-        Z = Z_start
-        #  Goes self.sync_freq back for simulation
-        for _ in range(0, self.sync_freq):
-            Z = client.encoder(input, Z, client.sigma)
+    def simulate_z_t(self, t: int, client: Client) -> torch.Tensor:
+        # Setting z start, which is the last z before the last sync step.
+        # Based on the game time scale, it is t=-1.
+        Z = self.get_z(t=-1, client=client)
+        #  Starts the simulation from -1 (last sync step -1 ) to desired t
+        for back_t in range(0, t):
+            Z = client.encoder(self.get_input(back_t, client, two_d_matrix=True), Z, client.sigma)
         return Z
 
-    def get_expectation_e_zt(self, t: int, client: Client, sampling: bool = True) -> torch.Tensor:
-        input = client.get_x(t).double()
+    def get_expectation_e_zt(self, t: int, client: Client) -> torch.Tensor:
         assert type(client) is EchoStateNetworkClient
-        if sampling:
-            samples = []
-            for i in range(self.N_samples):
-                # Random init
-                Z_start = client.get_latest_Z_T()
-                Z = self.simulate_z_t(input, client, Z_start)
-                Z = Z.unsqueeze(1)
-                e_i = client.get_e(self.num_clients)
-                e_z_T = torch.matmul(e_i.unsqueeze(1).double(), Z.transpose(0, 1).double())
-                samples.append(e_z_T)
-            sum_tensor = torch.zeros_like(samples[0])
-            for sample in samples:
-                sum_tensor += sample
-            return sum_tensor / self.N_samples
-        else:
-            # One sample: one simulation
-            Z_start = client.get_latest_Z_T()
-            Z = self.simulate_z_t(input, client, Z_start)
-            Z = Z.unsqueeze(1)
+        samples = []
+        for _ in range(self.N_samples):
+            # Start from time t-T-1 for the trajectory
+            # If we're PREDICTING t=8, with sync frequency T=4, then we want to generate trajectories
+            # Z_3 -> Z_4 -> Z_5 -> Z_6 for our Nash game.
+            # This means we start from Z_3 and use x_3, x_4, x_5, x_6 to generate these latent values.
+            # To get Z_5, we again start from Z_3 -> Z_4 -> z_5
+            estimated_Z_t = self.simulate_z_t(t, client)
             e_i = client.get_e(self.num_clients)
-            e_z_T = torch.matmul(e_i.unsqueeze(1).double(), Z.transpose(0, 1).double())
-            return e_z_T
+            e_z_T = torch.matmul(e_i.double(), estimated_Z_t.double())
+            samples.append(e_z_T)
+        sum_tensor = torch.zeros_like(samples[0])
+        for sample in samples:
+            sum_tensor = sum_tensor + sample
+        return sum_tensor / self.N_samples
 
     def get_A_ij_t(self, t: int, i: int, j: int) -> torch.Tensor:
         client_i = self.clients[i]
         client_j = self.clients[j]
         samples = []
         for i in range(self.N_samples):
-            client_i_E = self.get_expectation_e_zt(t, client_i, False)
-            client_j_E = self.get_expectation_e_zt(t, client_j, False)
+            client_i_E = self.get_expectation_e_zt(t, client_i)
+            client_j_E = self.get_expectation_e_zt(t, client_j)
             sample_value = torch.matmul(torch.matmul(client_i_E.transpose(0, 1), client_i.P[t + 1]), client_j_E)
             samples.append(sample_value)
         sum_tensor = torch.zeros_like(samples[0])
@@ -368,7 +397,9 @@ class RfnGame(Game):
 
     def get_a_t_embedding(self, time: int, client: Client) -> torch.Tensor:
         # some parts of the forwards pass (without randomness)
-        a_t = (torch.matmul(client.encoder.A.double(), client.get_input_matrix(time).double())) + client.encoder.b
+        a_t = (
+            torch.matmul(client.encoder.A.double(), self.get_input(time, client, two_d_matrix=True).double())
+        ) + client.encoder.b
         assert a_t.shape == (self.y_dim, self.d_z)
         return a_t
 

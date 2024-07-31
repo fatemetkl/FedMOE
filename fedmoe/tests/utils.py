@@ -92,7 +92,7 @@ def get_rfn_client_manager(
     return client_manager
 
 
-def get_client_manager_dy_dx_1(
+def get_rfn_client_manager_dy_dx_1(
     alpha: float, gamma: float, z_dim: int, num_clients: int = 2, data_length: int = 10, sync_freq: int = 3
 ) -> ClientManager:
     # Set seed for reproducibility
