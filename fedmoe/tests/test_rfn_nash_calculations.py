@@ -39,6 +39,13 @@ def set_data_target() -> Tuple[torch.Tensor, torch.Tensor]:
     return data, target
 
 
+def set_data_target_long() -> Tuple[torch.Tensor, torch.Tensor]:
+    # F(x) = 2x
+    data = torch.Tensor([[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]])
+    target = torch.Tensor([[2], [4], [6], [8], [10], [12], [14], [16], [18], [20]])
+    return data, target
+
+
 def test_server_game() -> None:
     seed = 2024
     random.seed(seed)
@@ -95,7 +102,7 @@ def test_server_game() -> None:
     )
     #  Manual game
     #  First initiate P(T-1) and S(T-1) --> P(2) and S(2)
-    game.init_game_round_variables()
+    game.init_game_round_variables(client_manager.clients, current_time=3)
 
     # Step 1) initiate P and S for T-1 in clients (2 = T-1)
     game.first_block_alg2(w_2, y_2, time=2)
@@ -236,3 +243,37 @@ def test_server_game() -> None:
         assert (
             game_no_Y_regret < no_game_regret
         ), f"Failed for client {client_id} no_game_regret: {no_game_regret} < game_no_Y_regret: {game_no_Y_regret}"
+
+
+def test_get_a_t_embedding_rfn() -> None:
+    seed = 2024
+    random.seed(seed)
+    torch.manual_seed(seed)
+    T = 3
+    d_z = 2
+    num_clients = 2
+    data, target = set_data_target_long()
+    exp_var = experiment_setup(1, d_z, T, 0.1, 0.1, 0.001)
+
+    client_manager = ClientManager(
+        ClientType.RFN, num_clients, data, T, exp_var.d_z, exp_var.alpha, exp_var.gamma, exp_var.sigma, target
+    )
+    game = RfnGame(
+        client_manager.clients,
+        sync_freq=exp_var.sync_freq,
+        z_dim=exp_var.d_z,
+    )
+
+    for t in range(1, 9 + 1):
+        client_manager.clients[0].state.next_time_step(next_time=t)
+        if t % T == 0:
+            game.init_game_round_variables(client_manager.clients, current_time=t)
+
+            # manually map time between T to 0
+            back_index = 0
+            for back_t in range(T, -1, -1):
+                index = int((t / T) * T - back_index)
+                assert torch.allclose(
+                    data[index], game.get_input(back_t, client_manager.clients[0]), rtol=0.0, atol=1e-5
+                )
+                back_index += 1
