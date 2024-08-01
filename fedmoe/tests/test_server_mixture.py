@@ -99,7 +99,7 @@ def test_server_mixture_weights_in_flow() -> None:
     # Where the weights w_0 are pre-specified (similar to \hat{Y}_0^i)
     assert len(server.mixture_weights) == 6
     assert torch.allclose(
-        server.mixture_weights[0], torch.Tensor([[[-0.6184], [1.4100], [0.2084]]]), rtol=0.0, atol=1e-3
+        server.mixture_weights[0], torch.Tensor([[[-0.6184], [1.4100], [0.2084]]]).double(), rtol=0.0, atol=1e-3
     )
     assert torch.allclose(
         server.mixture_weights[2], torch.Tensor([[0.0773], [0.0724], [0.8503]]).double(), rtol=0.0, atol=1e-3
@@ -108,14 +108,14 @@ def test_server_mixture_weights_in_flow() -> None:
         server.mixture_weights[5], torch.Tensor([[-0.5346], [0.6333], [0.9014]]).double(), rtol=0.0, atol=1e-3
     )
 
-    # Clients should have been asked to provide predictions for t=1, ..., 5, along with the a priori initialized
+    # Clients should have been asked to provide predictions for t=1,..., 5, along with the a priori initialized
     # \hat{Y}_0^i
     assert len(server.clients_predictions) == 6
     for client_preds in server.clients_predictions:
         assert client_preds.shape == (server.y_dim, server.num_clients)
 
     # Server should have made predictions for t=1, ..., t=5
-    assert len(server.server_outputs) == 5
+    assert len(server.server_outputs) == 6
     for server_preds in server.server_outputs:
         assert server_preds.shape == (server.y_dim, 1)
 
@@ -124,7 +124,9 @@ def test_server_mixture_weights_in_flow() -> None:
     for client_preds, weights, server_output in zip(
         server.clients_predictions, server.mixture_weights, server.server_outputs
     ):
-        torch.allclose(torch.matmul(client_preds.double(), weights.double()), server_output, rtol=0.0, atol=1e-6)
+        assert torch.allclose(
+            torch.matmul(client_preds.double(), weights.double()), server_output.double(), rtol=0.0, atol=1e-6
+        )
 
 
 def test_full_flow_with_dy_dx_one() -> None:

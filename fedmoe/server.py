@@ -132,16 +132,17 @@ class Server:
         # Because to make predictions at step 0, we would need beta_0 which needs Y{-2} and Z{-2} that we don't have.
 
         # Initialized self.clients_predictions with Y_0^i in clients
-        self.clients_predictions.append(self.client_manager.get_Y_0())
-
-        # We assume that the value of y_0 is known
-        self.server_outputs.append(self.client_manager.get_y(0))
+        hat_Y_0 = self.client_manager.get_Y_0()
+        self.clients_predictions.append(hat_Y_0)
 
         # Initialize W_0 randomly satisfying the constraint that the elements sum to eta.
         # We need it for the first round of synchronization.
-        w_0 = torch.randn((self.num_clients, 1))
+        w_0 = torch.randn((self.num_clients, 1)).double()
         w_0 = self.eta * w_0 / torch.sum(w_0)
         self.mixture_weights.append(w_0)
+
+        # mixture weights produce our "server prediction here"
+        self.server_outputs.append(torch.matmul(hat_Y_0.double(), w_0))
 
         for t in range(1, num_rounds + 1):
             # last_observed_value = y_{t-1} since we're predicting for t.
