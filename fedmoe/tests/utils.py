@@ -25,7 +25,12 @@ def get_data_and_target_sequences() -> Tuple[torch.Tensor, torch.Tensor]:
 
 
 def get_esn_client_manager(
-    alpha: float, gamma: float, sigma: torch.Tensor, z_dim: int, num_clients: int = 2, sync_freq=3,
+    alpha: float,
+    gamma: float,
+    sigma: torch.Tensor,
+    z_dim: int,
+    num_clients: int = 2,
+    sync_freq=3,
 ) -> ClientManager:
 
     data_sequence, target_sequence = get_data_and_target_sequences()

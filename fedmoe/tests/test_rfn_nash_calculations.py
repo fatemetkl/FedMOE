@@ -22,9 +22,9 @@ from fedmoe.tests.test_game_utils import compute_game_regret_objective
 
 
 class experiment_setup:
-    def __init__(self, y_dim: int, d_z: int, sync_freq: int, alpha: float, gamma: float, sigma: float) -> None:
+    def __init__(self, y_dim: int, z_dim: int, sync_freq: int, alpha: float, gamma: float, sigma: float) -> None:
         self.y_dim = y_dim
-        self.d_z = d_z
+        self.z_dim = z_dim
         self.sync_freq = sync_freq
         self.alpha = alpha
         self.gamma = gamma
@@ -57,12 +57,12 @@ def test_server_game() -> None:
     exp_var = experiment_setup(1, d_z, T, 0.1, 0.1, 0.001)
 
     client_manager = ClientManager(
-        ClientType.RFN, num_clients, data, T, exp_var.d_z, exp_var.alpha, exp_var.gamma, exp_var.sigma, target
+        ClientType.RFN, num_clients, data, T, exp_var.z_dim, exp_var.alpha, exp_var.gamma, exp_var.sigma, target
     )
     game = RfnGame(
         client_manager.clients,
         sync_freq=exp_var.sync_freq,
-        z_dim=exp_var.d_z,
+        z_dim=exp_var.z_dim,
     )
 
     server = Server(T, client_manager, game, metrics=[], kappa=2.0, eta=1)
@@ -256,12 +256,12 @@ def test_input_z_indices_in_game() -> None:
     exp_var = experiment_setup(1, d_z, T, 0.1, 0.1, 0.001)
 
     client_manager = ClientManager(
-        ClientType.RFN, num_clients, data, T, exp_var.d_z, exp_var.alpha, exp_var.gamma, exp_var.sigma, target
+        ClientType.RFN, num_clients, data, T, exp_var.z_dim, exp_var.alpha, exp_var.gamma, exp_var.sigma, target
     )
     game = RfnGame(
         client_manager.clients,
         sync_freq=exp_var.sync_freq,
-        z_dim=exp_var.d_z,
+        z_dim=exp_var.z_dim,
     )
 
     for t in range(1, 9 + 1):
