@@ -51,10 +51,3 @@ class EchoStateNetworkClient(Client):
             self.state.get_hidden_state_t(self.state.get_current_time() - 2),
             self.sigma,
         )
-    
-    def get_anchor_Z_T(self) -> torch.Tensor:
-        # We look back sync steps from the current time
-        current_time = self.state.get_current_time()
-        # Get the latest T hidden state
-        self.latest_Z_T = self.state.get_hidden_state_t(time=(current_time - self.sync_steps - 1))
-        return self.latest_Z_T

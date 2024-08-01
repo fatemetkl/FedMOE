@@ -4,7 +4,7 @@ from fedmoe.game import RfnGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
 from fedmoe.tests.test_game_utils import compute_game_regret_objective
-from fedmoe.tests.utils import get_client_manager_dy_dx_1
+from fedmoe.tests.utils import get_rfn_client_manager_dy_dx_1
 
 
 def test_nash_game_objective_sync_step() -> None:
@@ -14,7 +14,7 @@ def test_nash_game_objective_sync_step() -> None:
     # Assuming that the code is correct based on the paper, let's examine the solution.
     data_length = 20
     sync_freq = 3
-    client_manager = get_client_manager_dy_dx_1(
+    client_manager = get_rfn_client_manager_dy_dx_1(
         alpha=0.1, gamma=0.1, z_dim=3, data_length=data_length, sync_freq=sync_freq
     )
     target = client_manager.common_target_sequence
@@ -80,7 +80,7 @@ def test_nash_game_objective_accumulative() -> None:
     """
     data_length = 20
     sync_freq = 3
-    client_manager = get_client_manager_dy_dx_1(
+    client_manager = get_rfn_client_manager_dy_dx_1(
         alpha=0.1, gamma=0.1, z_dim=3, data_length=data_length, sync_freq=sync_freq
     )
     target = client_manager.common_target_sequence
@@ -137,8 +137,8 @@ def test_nash_beta() -> None:
     seed = 2024
     torch.manual_seed(seed)
     data_length = 20
-    sync_freq = 3
-    client_manager = get_client_manager_dy_dx_1(
+    sync_freq = 5
+    client_manager = get_rfn_client_manager_dy_dx_1(
         alpha=0.1, gamma=0.1, z_dim=3, data_length=data_length, sync_freq=sync_freq
     )
     target = client_manager.common_target_sequence
@@ -207,3 +207,7 @@ def test_nash_beta() -> None:
                 ), f" opt regret: {opt_regret}, test regret: {test_regret}, test_beta: {test_betas},\
                       target: {target[i]}, game pred: {game_server.server_outputs[i]},\
                             random pred: {new_server_output}"
+
+
+if __name__ == "__main__":
+    test_nash_beta()
