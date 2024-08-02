@@ -22,7 +22,7 @@ class Server:
             sync_freq == client_manager.sync_freq
         ), "Sync Frequency of Server is not the same as Sync Frequency of Client Manager"
         assert sync_freq == game.sync_freq, "Sync Frequency of Server is not the same as the Sync Frequency of Game"
-        assert client_manager.z_dim == game.d_z, "Latent dimension of Client Manager is not the same as the Game"
+        assert client_manager.z_dim == game.z_dim, "Latent dimension of Client Manager is not the same as the Game"
         self.sync_freq = sync_freq
         self.num_clients = client_manager.num_clients
         self.y_dim = client_manager.y_dim
@@ -39,7 +39,7 @@ class Server:
         self.eta: int = eta
 
     def compute_mixture_weights(self, predictions: torch.Tensor, y_t: torch.Tensor) -> torch.Tensor:
-        # Size of predictions is dy x N (corresponds to \mathbf{\hat{Y}}_t) and y_t is dy x 1.
+        # Size of predictions is d_y x N (corresponds to \mathbf{\hat{Y}}_t) and y_t is d_y x 1.
 
         assert predictions.shape == (self.y_dim, self.num_clients)
         assert y_t.shape == (self.y_dim, 1)
@@ -76,7 +76,6 @@ class Server:
         # Server has the observed values of all clients for the past T time steps
         # Server has the mixture weights of all the clients for the past T time steps
         # Last time step (T)
-        # print("sync round", current_t)
         self.game.init_game_round_variables(current_t)
         self.game.first_block_alg2(past_mixture_weights[-1], past_observed_values[-1], time=self.sync_freq - 1)
 
