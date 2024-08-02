@@ -2,12 +2,12 @@ from typing import Tuple
 
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 
 from experiments.utils import load_data
 from fedmoe.client_manager import ClientManager, ClientType, PreTrainingClientManager
-from torch.utils.data import DataLoader
-from fedmoe.datasets.periodic_dataset import load_periodic_dataloader
 from fedmoe.clients.transformer_client import TransformerClient
+from fedmoe.datasets.periodic_dataset import load_periodic_dataloader
 
 
 def get_data_and_target_sequences() -> Tuple[torch.Tensor, torch.Tensor]:
@@ -92,17 +92,19 @@ def get_rfn_client_manager(
     return client_manager
 
 
-def get_rfn_client_manager_dy_dx_1(alpha: float, gamma: float, z_dim: int, num_clients: int = 2) -> None:
+def get_rfn_client_manager_dy_dx_1(
+    alpha: float, gamma: float, z_dim: int, num_clients: int = 2, data_length: int = 10, sync_freq: int = 3
+) -> ClientManager:
     # Set seed for reproducibility
     torch.manual_seed(42)
 
-    data_sequence = load_data("periodic_signal", 10)
+    data_sequence = load_data("periodic_signal", data_length)
 
     client_manager = ClientManager(
         ClientType.RFN,
         num_clients,
         data_sequence,
-        sync_freq=3,
+        sync_freq=sync_freq,
         z_dim=z_dim,
         alpha=alpha,
         gamma=gamma,
@@ -134,7 +136,8 @@ class TransformerTestModel(nn.Module):
     def forward(self, input: torch.Tensor) -> torch.Tensor:
         outputs = self.linear_1(input.T)
         return self.linear_2(outputs).reshape(self.y_dim, self.z_dim)
-    
+
+
 # Helper function for transformer tests
 def get_pre_training_data() -> DataLoader:
     train_dataloader, _, _ = load_periodic_dataloader(
@@ -145,9 +148,11 @@ def get_pre_training_data() -> DataLoader:
     )
     return train_dataloader
 
+
 def init_model_patch(self) -> nn.Module:
     # x_dim = 2, y_dim = 3, z_dim = 5
     return TransformerTestModel(2, 3, 5)
+
 
 def get_transformer_client_manager(z_dim: int, sync_freq: int = 3) -> PreTrainingClientManager:
 
@@ -182,3 +187,8 @@ def get_transformer_client_manager(z_dim: int, sync_freq: int = 3) -> PreTrainin
         client.state._predictions[0] = init_prediction_0
 
     return client_manager
+
+
+def print_clients_state(client_manager: ClientManager) -> None:
+    for client in client_manager.clients:
+        print("client id:", client.id, "---->", repr(client.state))

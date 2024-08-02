@@ -1,4 +1,4 @@
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Sequence
 
 import torch
 from fl4health.utils.metrics import Metric, MetricManager
@@ -22,7 +22,7 @@ class Server:
             sync_freq == client_manager.sync_freq
         ), "Sync Frequency of Server is not the same as Sync Frequency of Client Manager"
         assert sync_freq == game.sync_freq, "Sync Frequency of Server is not the same as the Sync Frequency of Game"
-        assert client_manager.z_dim == game.d_z, "Latent dimension of Client Manager is not the same as the Game"
+        assert client_manager.z_dim == game.z_dim, "Latent dimension of Client Manager is not the same as the Game"
         self.sync_freq = sync_freq
         self.num_clients = client_manager.num_clients
         self.y_dim = client_manager.y_dim
@@ -39,7 +39,7 @@ class Server:
         self.eta: int = eta
 
     def compute_mixture_weights(self, predictions: torch.Tensor, y_t: torch.Tensor) -> torch.Tensor:
-        # Size of predictions is dy x N (corresponds to \mathbf{\hat{Y}}_t) and y_t is dy x 1.
+        # Size of predictions is d_y x N (corresponds to \mathbf{\hat{Y}}_t) and y_t is d_y x 1.
 
         assert predictions.shape == (self.y_dim, self.num_clients)
         assert y_t.shape == (self.y_dim, 1)
@@ -76,20 +76,16 @@ class Server:
         # Server has the observed values of all clients for the past T time steps
         # Server has the mixture weights of all the clients for the past T time steps
         # Last time step (T)
-        print("sync round", current_t)
-        self.game.init_game_round_variables(past_mixture_weights[-1], past_observed_values[-1])
+        self.game.init_game_round_variables(current_t)
+        self.game.first_block_alg2(past_mixture_weights[-1], past_observed_values[-1], time=self.sync_freq - 1)
 
         for t in range(self.sync_freq - 2, -1, -1):
             A_t = None
             B_t = None
             C_t = None
             D_t = None
-            # Shape = N x 1
-            w_t = torch.tensor(
-                [torch.matmul(w_Tn.double(), torch.eye(self.y_dim).double()) for w_Tn in past_mixture_weights[t]]
-            ).reshape(self.num_clients * self.y_dim, self.y_dim)
-
-            #  Compute A, B, C, and D based on the type of generative model
+            bold_w_t = self.game.create_bold_w_t(past_mixture_weights[t])
+            #  Compute A, B, C, and D based on the type of the generative model
             A_t = self.game.calculate_a(t)
             self.game.set_A_t(t, A_t)
             B_t = self.game.calculate_b(t)
@@ -101,48 +97,44 @@ class Server:
 
             # Parallel
             e_alpha_gamma_A_inv = self.game.get_e_alpha_gamma_A_inv(t)
-            # e_alpha_gamma_A_inv shape: N*N*dz*dz
-            e_alpha_gamma_A_inv = e_alpha_gamma_A_inv.reshape(
-                (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
-            )
-
-            initial_term = torch.matmul(w_t, w_t.transpose(0, 1))
-            wtyt = torch.matmul(w_t.double(), past_observed_values[t].double())
+            w_tw_tT = torch.matmul(bold_w_t, bold_w_t.T)
+            wtyt = torch.matmul(bold_w_t, past_observed_values[t].double())
             for client_id in range(0, self.num_clients):
                 client_pt = self.game.calculate_pt_client(
                     t,
                     client_id,
-                    e_alpha_gamma_A_inv.double(),
-                    initial_term.double(),
+                    e_alpha_gamma_A_inv,
+                    w_tw_tT,
                 )
                 self.game.set_client_pt(t, client_id, pt_value=client_pt)
 
                 client_st = self.game.calculate_st_client(
                     t,
                     client_id,
-                    e_alpha_gamma_A_inv.double(),
+                    e_alpha_gamma_A_inv,
                     wtyt,
                 )
                 self.game.set_client_st(t, client_id, st_value=client_st)
 
         past_T_betas = []
-        # 0 to T-1
+        # 0 to T-2
         for t in range(0, self.sync_freq - 1):
             beta_t = self.game.compute_beta(t, past_predictions[t])
-            # Beta shape: Nd_z * d_y
+            # beta_t is a list of game calculated betas for each client.
             past_T_betas.append(beta_t)
         # New betas for t = 0 to T-1
         return past_T_betas
 
-    def fit(
-        self, num_rounds: int, have_sync: bool = True, update_last_Y_sync: bool = True
-    ) -> Tuple[Dict[str, float], Dict[str, List]]:
+    def fit(self, num_rounds: int, have_sync: bool = True, update_last_Y_sync: bool = True) -> Dict[str, float]:
         self.metric_manager.clear()
         # We start from t = 1 instead of t = 0 zero.
         # Because to make predictions at step 0, we would need beta_0 which needs Y{-2} and Z{-2} that we don't have.
 
         # Initialized self.clients_predictions with Y_0^i in clients
         self.clients_predictions.append(self.client_manager.get_Y_0())
+
+        # We assume that the value of y_0 is known
+        self.server_outputs.append(self.client_manager.get_y(0))
 
         # Initialize W_0 randomly satisfying the constraint that the elements sum to eta.
         # We need it for the first round of synchronization.
@@ -202,5 +194,4 @@ class Server:
 
         # Compute metric
         final_metric_value = self.metric_manager.compute()
-        print("Final metric value:", "\n", final_metric_value["average - server_predictions - RSME"])
         return final_metric_value

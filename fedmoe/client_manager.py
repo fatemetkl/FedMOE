@@ -45,8 +45,8 @@ class ClientManager:
         self.sigma = sigma if isinstance(sigma, torch.Tensor) else torch.Tensor([sigma]).repeat(1, self.y_dim).T
         assert self.sigma.shape == (self.y_dim, 1)
 
-        self.clients = self.initiate_clients(sync_freq)
         self.sync_freq = sync_freq
+        self.clients = self.initiate_clients()
 
     def set_target(self) -> torch.Tensor:
         assert self.data is not None, " data should be set first"
@@ -54,7 +54,7 @@ class ClientManager:
         #  y_0 = x_1 (predict next input)
         return self.data[1:]
 
-    def initiate_clients(self, sync_freq: int) -> List[Client]:
+    def initiate_clients(self) -> List[Client]:
         clients: List[Client] = []
         #  Every tensor type is float64
         for i in range(self.num_clients):
@@ -62,7 +62,7 @@ class ClientManager:
             if self.client_type == ClientType.RFN:
                 client = RandomFeatureNetworkClient(
                     id=i,
-                    sync_steps=sync_freq,
+                    sync_steps=self.sync_freq,
                     x_dim=self.x_dim,
                     y_dim=self.y_dim,
                     z_dim=self.z_dim,
@@ -73,7 +73,7 @@ class ClientManager:
             elif self.client_type == ClientType.ESN:
                 client = EchoStateNetworkClient(
                     id=i,
-                    sync_steps=sync_freq,
+                    sync_steps=self.sync_freq,
                     x_dim=self.x_dim,
                     y_dim=self.y_dim,
                     z_dim=self.z_dim,
@@ -99,8 +99,8 @@ class ClientManager:
         return torch.cat(round_predictions, dim=1)
 
     def get_predictions_with_beta(self, round: int, betas: torch.Tensor) -> torch.Tensor:
-        # beta shape is Nd_z x d_y ---> to N x d_z x d_y
-        betas = betas.reshape(self.num_clients, self.z_dim, self.y_dim)
+        # beta shape is Nd_z x 1 ---> to N x d_z x 1
+        assert betas.shape == (self.num_clients, self.z_dim, 1)
         new_round_predictions = []
         i = 0
         for client in self.clients:
@@ -164,13 +164,13 @@ class PreTrainingClientManager(ClientManager):
             target_sequence=target_sequence,
         )
 
-    def initiate_clients(self, sync_freq: int) -> List[Client]:
+    def initiate_clients(self) -> List[Client]:
         clients: List[Client] = []
         assert self.client_type == ClientType.TRANSFORMER, "Error: client should be a transformer based client"
         for i in range(self.num_clients):
             client = TransformerClient(
                 id=i,
-                sync_steps=sync_freq,
+                sync_steps=self.sync_freq,
                 pre_training_dataloader=self.pre_training_dataloader,
                 x_dim=self.x_dim,
                 y_dim=self.y_dim,

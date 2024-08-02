@@ -22,7 +22,7 @@ def test_server_optimization() -> None:
     sigma = torch.Tensor([[0.1], [0.2], [0.3]])
     z_dim = 3
     kappa = 0.5
-    eta = 1.0
+    eta = 1
     N = 3
 
     client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim, N)
@@ -74,7 +74,7 @@ def test_server_mixture_weights_in_flow() -> None:
     sigma = torch.Tensor([[0.1], [0.2], [0.3]])
     z_dim = 3
     kappa = 0.5
-    eta = 1.0
+    eta = 1
     N = 3
 
     _, target_sequence = get_data_and_target_sequences()
@@ -132,7 +132,7 @@ def test_full_flow_with_dy_dx_one() -> None:
     gamma = 2.0
     z_dim = 3
     kappa = 0.5
-    eta = 1.0
+    eta = 1
     N = 3
 
     client_manager = get_rfn_client_manager_dy_dx_1(alpha, gamma, z_dim, N)

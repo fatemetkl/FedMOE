@@ -1,14 +1,13 @@
 import math
 
 import torch
-import torch.nn as nn
 
 from fedmoe.clients.client import Client
-from fedmoe.clients.transformer_client import TransformerClient
 from fedmoe.tests.utils import get_data_and_target_sequences, get_transformer_client_manager
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 Z_DIM = 5
+
 
 def compute_objective(client: Client, beta: torch.Tensor, alpha: float, gamma: float, t: int) -> torch.Tensor:
     discount_2 = pow(math.e, -2.0 * alpha)
@@ -67,7 +66,9 @@ def test_client_side_optimization() -> None:
     # Set seed to freeze random state generation
     torch.manual_seed(42)
     client_0_hidden_state_t1 = client_0.feed_encoder(DATA_SEQUENCE[t - 1].reshape(-1, 1))
-    client_0_preds_target_t1 = client_0.state.Y_0 + torch.matmul(client_0_hidden_state_t1.double(), client_0_beta_target)
+    client_0_preds_target_t1 = client_0.state.Y_0 + torch.matmul(
+        client_0_hidden_state_t1.double(), client_0_beta_target
+    )
     # Set seed to reproduce random state generation from above.
     torch.manual_seed(42)
     _, _, client_0_preds = client_0.predict(t)

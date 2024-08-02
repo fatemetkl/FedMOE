@@ -1,5 +1,3 @@
-import math
-
 import torch
 import torch.nn as nn
 
@@ -8,6 +6,7 @@ from fedmoe.tests.utils import get_data_and_target_sequences, get_transformer_cl
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 Z_DIM = 5
+
 
 def test_transformer_client_prediction_process() -> None:
 
