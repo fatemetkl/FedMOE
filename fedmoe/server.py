@@ -140,7 +140,7 @@ class Server:
         w_0 = self.eta * w_0 / torch.sum(w_0)
         self.mixture_weights.append(w_0)
 
-        # mixture weights produce our "server prediction here"
+        # mixture weights produce our "server prediction" here
         self.server_outputs.append(torch.matmul(hat_Y_0.double(), w_0))
 
         for t in range(1, num_rounds + 1):

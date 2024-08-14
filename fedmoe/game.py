@@ -16,7 +16,6 @@ class Game(ABC):
         self.sync_freq = sync_freq
         self.z_dim = z_dim
         self.y_dim = self.clients[0].y_dim
-        self.x_dim = self.clients[0].x_dim
         assert self.z_dim == self.clients[0].z_dim, "Latent dimension for game and clients must match"
         self.current_time: int
 
