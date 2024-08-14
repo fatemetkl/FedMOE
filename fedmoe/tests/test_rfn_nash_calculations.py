@@ -51,10 +51,10 @@ def test_server_game() -> None:
     random.seed(seed)
     torch.manual_seed(seed)
     T = 3
-    d_z = 2
+    z_dim = 2
     num_clients = 2
     data, target = set_data_target()
-    exp_var = experiment_setup(1, d_z, T, 0.1, 0.1, 0.001)
+    exp_var = experiment_setup(1, z_dim, T, 0.1, 0.1, 0.001)
 
     client_manager = ClientManager(
         ClientType.RFN, num_clients, data, T, exp_var.z_dim, exp_var.alpha, exp_var.gamma, exp_var.sigma, target
@@ -102,7 +102,7 @@ def test_server_game() -> None:
     )
     #  Manual game
     #  First initiate P(T-1) and S(T-1) --> P(2) and S(2)
-    game.init_game_round_variables(client_manager.clients, current_time=3)
+    game.init_game_round_variables(current_time=3)
 
     # Step 1) initiate P and S for T-1 in clients (2 = T-1)
     game.first_block_alg2(w_2, y_2, time=2)
@@ -250,10 +250,10 @@ def test_input_z_indices_in_game() -> None:
     random.seed(seed)
     torch.manual_seed(seed)
     T = 3
-    d_z = 2
+    z_dim = 2
     num_clients = 2
     data, target = set_data_target_long()
-    exp_var = experiment_setup(1, d_z, T, 0.1, 0.1, 0.001)
+    exp_var = experiment_setup(1, z_dim, T, 0.1, 0.1, 0.001)
 
     client_manager = ClientManager(
         ClientType.RFN, num_clients, data, T, exp_var.z_dim, exp_var.alpha, exp_var.gamma, exp_var.sigma, target
@@ -270,7 +270,7 @@ def test_input_z_indices_in_game() -> None:
         client_manager.clients[0].state.set_hidden_state(torch.randn((1, 2)), time=(t - 1))
 
         if t % T == 0:
-            game.init_game_round_variables(client_manager.clients, current_time=t)
+            game.init_game_round_variables(current_time=t)
 
             # manually map time between T to 0
             back_index = 0
@@ -285,3 +285,7 @@ def test_input_z_indices_in_game() -> None:
                 game_z = game.get_z(back_t - 1, client=client_manager.clients[0])
 
                 assert torch.allclose(client_hidden_state, game_z, rtol=0.0, atol=1e-5)
+
+
+if __name__ == "__main__":
+    test_input_z_indices_in_game()

@@ -11,9 +11,6 @@ from fedmoe.clients.esn_client import EchoStateNetworkClient
 class Game(ABC):
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
         super().__init__()
-        # initiated clients from client manager here is only used to get fixed parameters like alpha.
-        # A copy of P and S for each client is saved in each game round.
-        # P and S are not saved in client_manager.clients.
         self.clients = clients
         self.num_clients = len(clients)
         self.sync_freq = sync_freq
@@ -27,7 +24,6 @@ class Game(ABC):
     def get_A_ij_t(self, time: int, i: int, j: int) -> torch.Tensor:
         raise NotImplementedError
 
-    # @abstractmethod
     # TODO: check this function to make sure it is not changing the order of operations.
     # It is removed from RFN class.
     def get_expectation_e_zt(self, time: int, client: Client) -> torch.Tensor:
@@ -42,8 +38,23 @@ class Game(ABC):
         self._P_time_client_set: set[Tuple[int, int]] = set()
 
     def map_game_time_to_server_time(self, t: int, client: Client) -> int:
-        # Maps the time t in the game (between 0 to sync_freq) to the time scale used in the server, current_time
-        # Current time gives us the current sync step (i.e. a multiple of sync_freq)
+        """
+        Maps the global time (current_time) in the server to the time scale used in game,
+        that is between 0 to T, and returns the input associated with server time.
+
+        Examples:
+
+        For example, if the server time is 3T (self.current_time is a sync step) and the game time is t (0<=t<=T), we
+        need to get the input at time 2T+t, so this function performs: 3T - T + t = 2T+t
+
+        A numerical example: assume T = 4, and we are in the third round of synchronization,
+        so self.current_time equals 12. In the game, we go from 12 to the previous sync step, which is 8,
+        and need the model input during this time.
+        When game time equals 3 (t=3), the input that we need is 8+3 based on the server time.
+        This can be calculated by self.current_time (12) - self.sync_freq (4) + t (3) =  global time (11)
+
+        """
+        # Current time gives us the current sync step
         assert self.current_time == client.state.get_current_time()
         if self.current_time > self.sync_freq:
             return self.current_time - self.sync_freq + t
@@ -94,7 +105,7 @@ class Game(ABC):
         W_current = self.create_bold_w_t(latest_mixture_weights)
 
         for client_id in range(0, self.num_clients):
-            # P_t is Ndy x Nd_y
+            # P_t is N_d_y x Nd_y
             self.set_client_pt(t=time, client_id=client_id, pt_value=(torch.matmul(W_current, W_current.T)))
             self.set_client_st(t=time, client_id=client_id, st_value=torch.matmul(-1 * W_current, latest_y.double()))
 
@@ -200,7 +211,7 @@ class Game(ABC):
     def get_e_alpha_gamma_A_inv(self, t: int) -> torch.Tensor:
         A_t = self.get_A_t(t)
         e_alpha_gamma_t = self.get_e_alpha_gamma(t)  # output: Nd_z * Nd_z
-        # output shape: N*dz*N*dz
+        # output shape: N*d_z*N*d_z
         e_alpha_gamma_A = torch.add(e_alpha_gamma_t, A_t)
         assert e_alpha_gamma_A.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
         return torch.inverse(e_alpha_gamma_A).double()
@@ -216,7 +227,7 @@ class Game(ABC):
         client_alpha = self.clients[client_id].alpha
         client_gamma = self.clients[client_id].gamma
         p_next = self.get_client_pt(t=(t + 1), client_id=client_id)
-        # e_i : shape [N*dy, dy]
+        # e_i : shape [N*d_y, d_y]
         e_client_alpha_t = torch.exp(torch.tensor(-1 * client_alpha) * (self.sync_freq - t))
         e_client_alpha_t_gamma = e_client_alpha_t * client_gamma
 
@@ -299,6 +310,8 @@ class Game(ABC):
     def compute_beta(self, t: int, past_predictions: torch.Tensor) -> torch.Tensor:
         # past_predictions is dy x N and B[t] is N*d_z x N*d_y
         # So we should change the shape of Y to N*d_y x 1, where we are stacking each row on top of each other.
+        # Transpose first changes the shape from dy x N to N x d_y, then we apply reshape.
+        # Note that in the paper bold \hat{Y} has shape d_y x N, but non-bold \hat{Y} is Nd_y x 1.
         past_predictions = past_predictions.T.reshape(-1, 1)
         e_alpha_gamma_A_inv = self.get_e_alpha_gamma_A_inv(t)
         assert e_alpha_gamma_A_inv.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
