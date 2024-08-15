@@ -22,7 +22,6 @@ from fedmoe.tests.test_game_utils import compute_game_regret_objective
 
 
 class experiment_setup:
-
     def __init__(self, y_dim: int, z_dim: int, sync_freq: int, alpha: float, gamma: float, sigma: float) -> None:
         self.y_dim = y_dim
         self.z_dim = z_dim
