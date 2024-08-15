@@ -1,0 +1,27 @@
+# Experiment variables
+experiment_name: "sync_freq-experiment"
+client_type : 0 # 0: Random feature networks, 1: Transformer based clients, 2: Echo State Network clients
+num_clients : 2 # The number of experts or clients
+total_rounds : 100 # The number of total rounds
+have_sync: True # Do we want to have Nash game and synchronization steps or not
+update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t
+sync_freq : 10 # Frequency in terms of time steps for doing synchronization (T)
+d_z : 10 # The size of the hidden state (int)
+alpha : 0.1 # alpha defines our emphasize on previous time steps in the local objective functions, and has direct relation with discounting factor.
+gamma : 0.05 # gamma is the weight of weight regularization in the local objective functions.
+sigma : 0.001 # level of randomness in generative models
+K: 3 # Controls the amount we allow  server to leverage its investment in any expert (Float).
+eta: 1  # Controls the total investment level of the server into each player (int).
+# Data variables
+data: "periodic_signal"  # periodic_signal or logistic_map, linear_line
+n_samples: 1 # The number of sequences generated for the data
+# data_length: 201 # The size of each of the data samples
+
+# Only used for transformer example:
+# d_z should be divisible by number of heads in the model (now set to 4)
+# Variables for pre-training the transformer models, and the dataset used
+data_size: 32 # The number of data samples
+batch_size: 10
+# data_length is the same as used for online prediction
+pre_training_lr: 0.001
+pre_training_epochs: 10
