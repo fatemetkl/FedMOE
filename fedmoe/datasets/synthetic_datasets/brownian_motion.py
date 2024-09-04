@@ -7,6 +7,7 @@ from torch.utils.data.dataset import Dataset
 class BrownianMotionDataset(Dataset):
     """
     Brownian motion dataset with configurable drift(mean) and Volatility (standard deviation).
+    Source: https://www.quantstart.com/articles/brownian-motion-simulation-with-python/
     """
 
     # Constructor
@@ -24,7 +25,7 @@ class BrownianMotionDataset(Dataset):
         self.dtype = dtype
 
         rng = np.random.default_rng(42)
-        # Create the initial set of random normal draws
+        # Set the initial set of random normal draws
         self.Z = rng.normal(self.mu, self.sigma, (self.paths, self.points))
 
         interval = [0.0, self.points]
@@ -80,7 +81,9 @@ class BrownianMotionDataset(Dataset):
         fig, ax = plt.subplots(1, 1, figsize=(12, 8))
         for path in range(self.paths):
             ax.plot(self.time_axis, self.w_matrix[path, :])
-        ax.set_title("Constant mean and standard deviation Brownian Motion sample paths")
+        ax.set_title(
+            f"Constant mean (mu = {self.mu}) and standard deviation (sigma = {self.sigma}) Brownian Motion paths"
+        )
         ax.set_xlabel("Time")
         ax.set_ylabel("Value")
         plt.show()
