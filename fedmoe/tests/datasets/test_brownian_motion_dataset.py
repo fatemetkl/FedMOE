@@ -2,14 +2,14 @@ import torch
 
 from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
-from fedmoe.datasets.brownian_motion_dataset import get_periodic_signal_sequence
+from fedmoe.datasets.brownian_motion_dataset import get_brownian_data_sequences
 from fedmoe.game import RfnGame
 from fedmoe.server import Server
 
 
 def test_input_output_shapes() -> None:
-    input_sequence = get_periodic_signal_sequence(n_samples=50, data_length=300)
-    assert input_sequence.shape == (300, 50)
+    input_sequence = get_brownian_data_sequences(n_brownian_trajectories=50, time_steps=100, mu=1.0, sigma=2.0)
+    assert input_sequence.shape == (100, 50)
 
     num_clients = 3
     T = 10
@@ -39,9 +39,9 @@ def test_input_output_shapes() -> None:
         kappa=0.3,
         eta=4,
     )
-    _ = server.fit(num_rounds=298, have_sync=False)
+    _ = server.fit(num_rounds=98, have_sync=False)
 
     random_time = 10
     assert client_manager.get_y(random_time).shape == (50, 1)
 
-    assert torch.cat(server.server_outputs, dim=1).shape == (50, 299)
+    assert torch.cat(server.server_outputs, dim=1).shape == (50, 99)

@@ -7,86 +7,61 @@ from torch.utils.data.dataset import Dataset
 class BrownianMotionDataset(Dataset):
     """
     Brownian motion dataset with configurable drift(mean) and Volatility (standard deviation).
-    Source: https://www.quantstart.com/articles/brownian-motion-simulation-with-python/
+    Sources: https://www.quantstart.com/articles/brownian-motion-simulation-with-python/
+    https://www.bauer.uh.edu/spirrong/Monte_Carlo_Methods_In_Financial_Enginee.pdf
+
     """
 
-    # Constructor
     def __init__(
-        self, sample_len: int, n_samples: int, mu: float = 0.0, sigma: float = 1.0, dtype: torch.dtype = torch.float64
+        self,
+        time_steps: int,
+        n_trajectories: int,
+        mu: torch.Tensor,
+        sigma: torch.Tensor,
+        random_generator_seed: int = 42,
+        dtype: torch.dtype = torch.float64,
     ) -> None:
-        # Properties
-        # Number of paths is equal to the n_samples
-        # Number of the data points is equal to sample_len
-        self.points = sample_len
-        self.paths = n_samples
-        # Normal distribution parameters
+        self.time_steps = time_steps
+        self.n_trajectories = n_trajectories
+        # Normal distributions parameters
+        assert mu.size(0) == sigma.size(0) == n_trajectories
         self.mu = mu
         self.sigma = sigma
         self.dtype = dtype
 
-        rng = np.random.default_rng(42)
-        # Set the initial set of random normal draws
-        self.Z = rng.normal(self.mu, self.sigma, (self.paths, self.points))
+        rng = np.random.default_rng(random_generator_seed)
+        # Set the initial set of random standard normal draws.
+        self.Z = rng.normal(0, 1, (self.time_steps, self.n_trajectories))
 
-        interval = [0.0, self.points]
-        self.dt = (interval[1] - interval[0]) / (self.points - 1)
-        self.time_axis = torch.linspace(interval[0], interval[1], self.points)
+        # We assume dt (length of each time step) is 1.
+        self.dt = 1
+        self.time_axis = torch.range(0, self.time_steps - 1)
 
-        self.w_matrix = torch.zeros((self.paths, self.points))
+        self.w_matrix = torch.zeros((self.time_steps, self.n_trajectories))
 
         # Generate data set
         self.outputs = self._generate()
 
-    # end __init__
+    def __getitem__(self, time_step: int) -> torch.Tensor:
+        # Returns the column of all the trajectory values at the specified time step.
+        return self.outputs[time_step, :]
 
-    # Length
-    def __len__(self) -> int:
-        """
-        Length
-        :return:
-        """
-        return self.points
-
-    # end __len__
-
-    # Get item
-    def __getitem__(self, idx: int) -> torch.Tensor:
-        """
-        Get item
-        :param idx:
-        :return:
-        """
-        return self.outputs[:, idx]
-
-    # end __getitem__
-
-    # Generate
     def _generate(self) -> torch.Tensor:
-        """
-        Generate dataset
-        :return:
-        """
-        # List of samples
-        for idx in range(self.points - 1):
-            next_idx = idx + 1
-            self.w_matrix[:, next_idx] = (
-                self.w_matrix[:, next_idx - 1] + (self.mu * self.dt) + self.sigma * np.sqrt(self.dt) * self.Z[:, idx]
+        for time_step in range(self.time_steps - 1):
+            next_time_step = time_step + 1
+            self.w_matrix[next_time_step, :] = (
+                self.w_matrix[time_step, :]
+                + (self.mu * self.dt)
+                + self.sigma * np.sqrt(self.dt) * self.Z[time_step, :]
             )
 
         return self.w_matrix
 
-    # end _generate
-
     def visualize(self) -> None:
         fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-        for path in range(self.paths):
-            ax.plot(self.time_axis, self.w_matrix[path, :])
-        ax.set_title(
-            f"Constant mean (mu = {self.mu}) and standard deviation (sigma = {self.sigma}) Brownian Motion paths"
-        )
+        for path in range(self.n_trajectories):
+            ax.plot(self.time_axis, self.w_matrix[:, path])
+        ax.set_title("Constant mean and standard deviation Brownian Motion paths")
         ax.set_xlabel("Time")
         ax.set_ylabel("Value")
         plt.show()
-
-
-# end BrownianMotionDataset
