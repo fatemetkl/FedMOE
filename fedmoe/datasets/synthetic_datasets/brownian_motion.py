@@ -47,12 +47,11 @@ class BrownianMotionDataset(Dataset):
         return self.outputs[time_step, :]
 
     def _generate(self) -> torch.Tensor:
-        for time_step in range(self.time_steps - 1):
-            next_time_step = time_step + 1
-            self.w_matrix[next_time_step, :] = (
-                self.w_matrix[time_step, :]
+        for time_step in range(1, self.time_steps):
+            self.w_matrix[time_step, :] = (
+                self.w_matrix[time_step - 1, :]
                 + (self.mu * self.dt)
-                + self.sigma * np.sqrt(self.dt) * self.Z[time_step, :]
+                + self.sigma * np.sqrt(self.dt) * self.Z[time_step - 1, :]
             )
 
         return self.w_matrix
