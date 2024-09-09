@@ -1,3 +1,5 @@
+from typing import Optional
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -20,24 +22,34 @@ class BrownianMotionDataset(Dataset):
         sigma: torch.Tensor,
         random_generator_seed: int = 42,
         dtype: torch.dtype = torch.float64,
+        offset: Optional[torch.Tensor] = None,
     ) -> None:
         self.time_steps = time_steps
         self.n_trajectories = n_trajectories
         # Normal distributions parameters
-        assert mu.size(0) == sigma.size(0) == n_trajectories
+        assert (
+            mu.shape == sigma.shape == (n_trajectories,)
+        ), "You should have equal number of trajectories as the number of distribution parameters mu and sigma"
         self.mu = mu
         self.sigma = sigma
         self.dtype = dtype
 
         rng = np.random.default_rng(random_generator_seed)
         # Set the initial set of random standard normal draws.
-        self.Z = rng.normal(0, 1, (self.time_steps, self.n_trajectories))
+        # It should be drawn from a standard distribution.
+        self.Z = rng.standard_normal((self.time_steps, self.n_trajectories))
 
         # We assume dt (length of each time step) is 1.
         self.dt = 1
         self.time_axis = torch.range(0, self.time_steps - 1)
 
         self.w_matrix = torch.zeros((self.time_steps, self.n_trajectories))
+        if offset is not None:
+            assert offset.shape == (
+                n_trajectories,
+            ), "If specifying an offset value, you should provide one for each trajectory"
+            # Setting the offset as the start value at time step zero.
+            self.w_matrix[0, :] = offset
 
         # Generate data set
         self.outputs = self._generate()

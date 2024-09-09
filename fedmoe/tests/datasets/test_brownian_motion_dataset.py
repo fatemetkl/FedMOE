@@ -8,8 +8,12 @@ from fedmoe.server import Server
 
 
 def test_input_output_shapes() -> None:
-    input_sequence = get_brownian_data_sequences(n_brownian_trajectories=50, time_steps=100, mu=1.0, sigma=2.0)
+    input_sequence = get_brownian_data_sequences(
+        n_brownian_trajectories=50, time_steps=100, mu=1.0, sigma=2.0, offset=0.1
+    )
     assert input_sequence.shape == (100, 50)
+    # Test the initial values to be set to our specified offset.
+    assert torch.allclose(0.1 * torch.ones((50)), input_sequence[0, :], rtol=0.0, atol=1e-5)
 
     num_clients = 3
     T = 10
