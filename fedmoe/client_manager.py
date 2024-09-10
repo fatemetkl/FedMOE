@@ -39,7 +39,7 @@ class ClientManager:
             self.common_target_sequence = self.set_target()
         else:
             self.common_target_sequence = target_sequence
-        assert len(data_sequence.shape) == 2
+
         self.y_dim = self.common_target_sequence.shape[1]
 
         self.sigma = sigma if isinstance(sigma, torch.Tensor) else torch.Tensor([sigma]).repeat(1, self.y_dim).T
