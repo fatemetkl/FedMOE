@@ -16,7 +16,6 @@ class TransformerClient(Client):
         self,
         id: int,
         sync_steps: int,
-        pre_training_dataloader: DataLoader,
         x_dim: int,
         y_dim: int,
         z_dim: int,
@@ -25,10 +24,15 @@ class TransformerClient(Client):
         sigma: Optional[torch.Tensor] = None,
         pre_training_epochs: int = 3,
         pre_training_learning_rate: float = 0.01,
+        pre_training_dataloader: Optional[DataLoader] = None,
     ) -> None:
         self.pre_training_epochs = pre_training_epochs
         self.pre_training_learning_rate = pre_training_learning_rate
         self.pre_training_dataloader = pre_training_dataloader
+
+        # If we want to do pre_training, then we need to have a data loader.
+        if self.pre_training_epochs > 0:
+            assert self.pre_training_dataloader is not None
         if sigma is None:
             sigma = torch.Tensor([])
         super().__init__(
@@ -47,37 +51,37 @@ class TransformerClient(Client):
         self.pre_training_criterion = nn.MSELoss()
         self.pre_training_metric = MSEMetric("MSE")
         optimizer = optim.Adam(model.parameters(), lr=self.pre_training_learning_rate)
-
-        model.train()
-        for epoch in range(0, self.pre_training_epochs):
-            self.pre_training_metric.clear()
-            for inputs, targets in self.pre_training_dataloader:
-                optimizer.zero_grad()
-                outputs = model(inputs.double(), pre_training=True)
-                loss = self.pre_training_criterion(outputs.double(), targets.double())
-                loss.backward()
-                optimizer.step()
-                # The outputs and targets here are batch-first, therefore each one is a 3D tensor.
-                # Metrics only accepts up to 2D, so we have to reshape these tensors
-                self.pre_training_metric.update(
-                    outputs.reshape((outputs.size(0), outputs.size(1) * outputs.size(2))),
-                    targets.reshape((targets.size(0), targets.size(1) * targets.size(2))),
+        if self.pre_training_epochs > 0:
+            assert self.pre_training_dataloader is not None
+            model.train()
+            for epoch in range(0, self.pre_training_epochs):
+                self.pre_training_metric.clear()
+                for inputs, targets in self.pre_training_dataloader:
+                    optimizer.zero_grad()
+                    outputs = model(inputs.double(), pre_training=True)
+                    loss = self.pre_training_criterion(outputs.double(), targets.double())
+                    loss.backward()
+                    optimizer.step()
+                    # The outputs and targets here are batch-first, therefore each one is a 3D tensor.
+                    # Metrics only accepts up to 2D, so we have to reshape these tensors
+                    self.pre_training_metric.update(
+                        outputs.reshape((outputs.size(0), outputs.size(1) * outputs.size(2))),
+                        targets.reshape((targets.size(0), targets.size(1) * targets.size(2))),
+                    )
+                print(
+                    f"Transformer pre-training phase: {self.pre_training_metric.name} client {self.id}\
+                        results at epoch {epoch}: {self.pre_training_metric.compute()}"
                 )
-            print(
-                f"Transformer pre-training phase: {self.pre_training_metric.name} client {self.id}\
-                    results at epoch {epoch}: {self.pre_training_metric.compute()}"
-            )
         return model
 
-    def init_model(self) -> nn.Module:
-        # 1) Do pre-training: each client trains its model separately
+    def setup_transformer_structure(self, x_dim: int, y_dim: int, z_dim: int) -> nn.Module:
         # Hyperparameters
-        input_dim = self.x_dim
-        hidden_dim = self.z_dim
+        input_dim = x_dim
+        hidden_dim = z_dim
         nhead = 4  # Number of heads in multihead attention
         num_encoder_layers = 3  # Number of encoder layers
         dim_feedforward = 128  # Dimension of the feedforward network model
-        output_dim = self.y_dim
+        output_dim = y_dim
         assert hidden_dim % nhead == 0, "Error: embed_dim must be divisible by num_heads"
         # Create the model
         model = TransformerTimeSeriesModel(
@@ -88,4 +92,9 @@ class TransformerClient(Client):
             dim_feedforward,
             output_dim,
         )
+        return model
+
+    def init_model(self) -> nn.Module:
+        model = self.setup_transformer_structure(self.x_dim, self.y_dim, self.z_dim)
+        # Do pre-training: each client trains its model separately
         return self.pre_train_model(model)

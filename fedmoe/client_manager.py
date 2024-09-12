@@ -134,7 +134,6 @@ class ClientManager:
 
 
 class PreTrainingClientManager(ClientManager):
-
     def __init__(
         self,
         num_clients: int,
@@ -143,7 +142,7 @@ class PreTrainingClientManager(ClientManager):
         z_dim: int,
         alpha: float,
         gamma: float,
-        pre_training_dataloader: DataLoader,
+        pre_training_dataloader: Optional[DataLoader] = None,
         pre_training_epochs: int = 3,
         pre_training_learning_rate: float = 0.01,
         target_sequence: Optional[torch.Tensor] = None,
@@ -151,6 +150,9 @@ class PreTrainingClientManager(ClientManager):
         self.pre_training_epochs = pre_training_epochs
         self.pre_training_learning_rate = pre_training_learning_rate
         self.pre_training_dataloader = pre_training_dataloader
+        # If we want to do pre_training, then we need to have a data loader.
+        if self.pre_training_epochs > 0:
+            assert self.pre_training_dataloader is not None
         super().__init__(
             client_type=ClientType.TRANSFORMER,
             num_clients=num_clients,
@@ -171,7 +173,6 @@ class PreTrainingClientManager(ClientManager):
             client = TransformerClient(
                 id=i,
                 sync_steps=self.sync_freq,
-                pre_training_dataloader=self.pre_training_dataloader,
                 x_dim=self.x_dim,
                 y_dim=self.y_dim,
                 z_dim=self.z_dim,
@@ -180,6 +181,7 @@ class PreTrainingClientManager(ClientManager):
                 sigma=None,  # The pre-trained transformer does not have a sigma parameter
                 pre_training_epochs=self.pre_training_epochs,
                 pre_training_learning_rate=self.pre_training_learning_rate,
+                pre_training_dataloader=self.pre_training_dataloader,
             )
             client.set_next_data_sequence(self.data, self.common_target_sequence)
             client.init_p_s(self.num_clients)

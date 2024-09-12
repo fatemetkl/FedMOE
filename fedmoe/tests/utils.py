@@ -2,12 +2,10 @@ from typing import Tuple
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 
 from experiments.utils import load_data
 from fedmoe.client_manager import ClientManager, ClientType, PreTrainingClientManager
 from fedmoe.clients.transformer_client import TransformerClient
-from fedmoe.datasets.periodic_dataset import load_periodic_dataloader
 
 
 def get_data_and_target_sequences() -> Tuple[torch.Tensor, torch.Tensor]:
@@ -30,7 +28,7 @@ def get_esn_client_manager(
     sigma: torch.Tensor,
     z_dim: int,
     num_clients: int = 2,
-    sync_freq=3,
+    sync_freq: int = 3,
 ) -> ClientManager:
 
     data_sequence, target_sequence = get_data_and_target_sequences()
@@ -135,39 +133,35 @@ class TransformerTestModel(nn.Module):
         super().__init__()
         self.y_dim = y_dim
         self.z_dim = z_dim
-        self.linear_1 = torch.nn.Linear(x_dim, 4, bias=False)
-        self.linear_2 = torch.nn.Linear(4, y_dim * z_dim, bias=False)
+        self.linear_1 = torch.nn.Linear(x_dim, 4, bias=False).double()
+        self.linear_2 = torch.nn.Linear(4, y_dim * z_dim, bias=False).double()
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
-        outputs = self.linear_1(input.T)
+        outputs = self.linear_1(input.double().T)
         return self.linear_2(outputs).reshape(self.y_dim, self.z_dim)
 
 
-# Helper function for transformer tests
-def get_pre_training_data() -> DataLoader:
-    train_dataloader, _, _ = load_periodic_dataloader(
-        train_data_size=200,
-        val_data_size=200,
-        batch_size=5,
-        data_length=10 + 1,
-    )
-    return train_dataloader
+def setup_transformer_structure_patch(self, x_dim: int, y_dim: int, z_dim: int) -> nn.Module:
+    return TransformerTestModel(x_dim, y_dim, z_dim)
 
 
-def init_model_patch(self) -> nn.Module:
-    # x_dim = 2, y_dim = 3, z_dim = 5
-    return TransformerTestModel(2, 3, 5)
-
-
-def get_transformer_client_manager(z_dim: int, sync_freq: int = 3) -> PreTrainingClientManager:
-
+def get_transformer_client_manager(
+    z_dim: int,
+    sync_freq: int = 3,
+    data_sequence: torch.Tensor | None = None,
+    target_sequence: torch.Tensor | None = None,
+) -> PreTrainingClientManager:
     # Monkey patch the init_model function to bypass pre-training and just return a simple network in the
     # TransformerClient to make life easier
-    TransformerClient.init_model = init_model_patch
+    if data_sequence is None or target_sequence is None:
+        # For the default example we have x_dim = 2, y_dim = 3, z_dim = 5.
+        TransformerClient.setup_transformer_structure = setup_transformer_structure_patch
+        data_sequence, target_sequence = get_data_and_target_sequences()
+    else:
+        TransformerClient.setup_transformer_structure = setup_transformer_structure_patch
 
-    data_sequence, target_sequence = get_data_and_target_sequences()
+    y_dim = target_sequence.shape[1]
 
-    data_loader = get_pre_training_data()
     client_manager = PreTrainingClientManager(
         num_clients=2,
         data_sequence=data_sequence,
@@ -175,17 +169,17 @@ def get_transformer_client_manager(z_dim: int, sync_freq: int = 3) -> PreTrainin
         z_dim=z_dim,
         alpha=1.5,
         gamma=2.0,
-        pre_training_dataloader=data_loader,
-        pre_training_epochs=1,
+        pre_training_dataloader=None,
+        pre_training_epochs=0,  # Setting pre_training_epochs to zero ensures we do not pre-train the transformer
         pre_training_learning_rate=0.1,
         target_sequence=target_sequence,
     )
 
     # Patching the initial conditions with random values to make calculations more complex
     for client in client_manager.clients:
-        init_hidden_state_neg1 = torch.rand((3, z_dim))
-        init_prediction_0 = torch.rand((3, 1))
-        init_prediction_neg1 = torch.rand((3, 1))
+        init_hidden_state_neg1 = torch.rand((y_dim, z_dim))
+        init_prediction_0 = torch.rand((y_dim, 1))
+        init_prediction_neg1 = torch.rand((y_dim, 1))
         client.state.Z_neg1 = init_hidden_state_neg1
         client.state.Y_0 = init_prediction_0
         client.state.Y_neg1 = init_prediction_neg1

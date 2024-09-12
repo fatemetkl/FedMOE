@@ -86,7 +86,7 @@ class Client(ABC):
             num_clients * self.y_dim,
             dtype=torch.float64,
         )
-        self.S = torch.zeros(self.sync_steps, num_clients, self.y_dim, dtype=torch.float64)
+        self.S = torch.zeros(self.sync_steps, num_clients * self.y_dim, 1, dtype=torch.float64)
 
     def get_x(self, t: int) -> torch.Tensor:
         return self._current_sequence[t].reshape(-1, 1)
