@@ -145,24 +145,34 @@ class Game(ABC):
         return At
 
     def calculate_b(self, t: int) -> torch.Tensor:
-        B = []
+        B_list = []
         for client in self.clients:
-            expected_e_ZT = self.get_expectation_e_zt(t, client)
-            B.append(torch.matmul(expected_e_ZT.transpose(0, 1).double(), client.P[t + 1].double()))
-        return torch.stack(B).reshape(self.num_clients * self.z_dim, self.num_clients)
+            expected_e_Z = self.get_expectation_e_zt(t, client)
+            # e is Ny_dim x y_dim and Z is y_dim x z_dim -> E[eZ]'s shape is Ny_dim x z_dim
+            # P is Ny_dim x Ny_dim
+            client_B = torch.matmul(expected_e_Z.T.double(), client.P[t + 1].double())
+            assert client_B.shape == (self.z_dim, self.num_clients * self.y_dim)
+            B_list.append(client_B)
+        B = torch.cat(B_list, dim=0)
+        assert B.shape == (self.num_clients * self.z_dim, self.num_clients * self.y_dim)
+        return B
 
     def calculate_c(self, t: int) -> torch.Tensor:
-        C = []
+        C_list = []
         for client in self.clients:
-            expected_e_ZT = self.get_expectation_e_zt(t, client)
-            C.append(torch.matmul(expected_e_ZT.transpose(0, 1).double(), client.S[t + 1].double()))
-        return torch.cat(C, dim=1)
+            expected_e_Z = self.get_expectation_e_zt(t, client)
+            # E[eZ]'s shape is Ny_dim x z_dim
+            # S_t's shape is Ny_dim x 1
+            C_list.append(torch.matmul(expected_e_Z.T.double(), client.S[t + 1].double()))
+        C = torch.cat(C_list, dim=0)
+        assert C.shape == (self.num_clients * self.z_dim, 1)
+        return C
 
     def calculate_d(self, t: int) -> torch.Tensor:
         D_list = []
         for client in self.clients:
-            expected_e_ZT = self.get_expectation_e_zt(t, client)
-            D_list.append(expected_e_ZT)
+            expected_e_Z = self.get_expectation_e_zt(t, client)
+            D_list.append(expected_e_Z)
         # D's shape is Nd_y x Nd_z
         D = torch.cat(D_list, dim=1)
         assert D.shape == (self.num_clients * self.y_dim, self.num_clients * self.z_dim)
@@ -238,7 +248,6 @@ class Game(ABC):
 
         # term_1 shape: N*N
         term_1 = torch.matmul(term_1_pre, p_next)
-        assert term_1.shape == (self.num_clients, self.num_clients)
         term_2 = (
             torch.matmul(torch.matmul(self.get_D_t(t), e_alpha_gamma_A_inv).double(), self.get_B_t(t).double())
             - I_matrix
