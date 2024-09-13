@@ -47,8 +47,7 @@ def test_input_output_shapes_rfn() -> None:
     # RFN game is not implemented for dy>1 yet.
     _ = server.fit(num_rounds=98, have_sync=False)
 
-    random_time = 10
-    assert client_manager.get_y(random_time).shape == (50, 1)
+    assert client_manager.get_y(t=10).shape == (50, 1)
 
     assert torch.cat(server.server_outputs, dim=1).shape == (50, 99)
 
@@ -88,10 +87,9 @@ def test_brownian_transformer() -> None:
 
     # This tests passes even with game (have_sync=True).
     # This is set to False now to speed up the runtime of tests.
-    _ = server.fit(num_rounds=98, have_sync=True)
+    _ = server.fit(num_rounds=98, have_sync=False)
 
-    random_time = 10
-    assert client_manager.get_y(random_time).shape == (25, 1)
+    assert client_manager.get_y(t=10).shape == (25, 1)
 
     assert torch.cat(server.server_outputs, dim=1).shape == (25, 99)
 
@@ -141,7 +139,6 @@ def test_brownian_esn() -> None:
     # This is set to False now to speed up the runtime of tests.
     _ = server.fit(num_rounds=98, have_sync=False)
 
-    random_time = 10
-    assert client_manager.get_y(random_time).shape == (25, 1)
+    assert client_manager.get_y(t=20).shape == (25, 1)
 
     assert torch.cat(server.server_outputs, dim=1).shape == (25, 99)

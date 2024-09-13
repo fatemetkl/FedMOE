@@ -151,8 +151,8 @@ def get_transformer_client_manager(
     data_sequence: torch.Tensor | None = None,
     target_sequence: torch.Tensor | None = None,
 ) -> PreTrainingClientManager:
-    # Monkey patch the init_model function to bypass pre-training and just return a simple network in the
-    # TransformerClient to make life easier
+    # Monkey patch the setup_transformer_structure function to bypass pre-training and just
+    # return a simple network in the TransformerClient to make life easier
     if data_sequence is None or target_sequence is None:
         # For the default example we have x_dim = 2, y_dim = 3, z_dim = 5.
         TransformerClient.setup_transformer_structure = setup_transformer_structure_patch
