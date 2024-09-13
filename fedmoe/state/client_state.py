@@ -28,6 +28,7 @@ class ClientState:
     def get_prediction_t(self, time: int) -> torch.Tensor:
         assert time <= self._current_time, "Error: this prediction value is not set yet"
         if time == -1:
+            assert self.Y_neg1.shape == (self.y_dim, 1)
             return self.Y_neg1
         return self._predictions[time]
 

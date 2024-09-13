@@ -145,24 +145,34 @@ class Game(ABC):
         return At
 
     def calculate_b(self, t: int) -> torch.Tensor:
-        B = []
+        B_list = []
         for client in self.clients:
-            expected_e_ZT = self.get_expectation_e_zt(t, client)
-            B.append(torch.matmul(expected_e_ZT.transpose(0, 1).double(), client.P[t + 1].double()))
-        return torch.stack(B).reshape(self.num_clients * self.z_dim, self.num_clients)
+            expected_e_Z = self.get_expectation_e_zt(t, client)
+            # e is Ny_dim x y_dim and Z is y_dim x z_dim -> E[eZ]'s shape is Ny_dim x z_dim
+            # P is Ny_dim x Ny_dim
+            client_B = torch.matmul(expected_e_Z.T.double(), client.P[t + 1].double())
+            assert client_B.shape == (self.z_dim, self.num_clients * self.y_dim)
+            B_list.append(client_B)
+        B = torch.cat(B_list, dim=0)
+        assert B.shape == (self.num_clients * self.z_dim, self.num_clients * self.y_dim)
+        return B
 
     def calculate_c(self, t: int) -> torch.Tensor:
-        C = []
+        C_list = []
         for client in self.clients:
-            expected_e_ZT = self.get_expectation_e_zt(t, client)
-            C.append(torch.matmul(expected_e_ZT.transpose(0, 1).double(), client.S[t + 1].double()))
-        return torch.cat(C, dim=1)
+            expected_e_Z = self.get_expectation_e_zt(t, client)
+            # E[eZ]'s shape is Ny_dim x z_dim
+            # S_t's shape is Ny_dim x 1
+            C_list.append(torch.matmul(expected_e_Z.T.double(), client.S[t + 1].double()))
+        C = torch.cat(C_list, dim=0)
+        assert C.shape == (self.num_clients * self.z_dim, 1)
+        return C
 
     def calculate_d(self, t: int) -> torch.Tensor:
         D_list = []
         for client in self.clients:
-            expected_e_ZT = self.get_expectation_e_zt(t, client)
-            D_list.append(expected_e_ZT)
+            expected_e_Z = self.get_expectation_e_zt(t, client)
+            D_list.append(expected_e_Z)
         # D's shape is Nd_y x Nd_z
         D = torch.cat(D_list, dim=1)
         assert D.shape == (self.num_clients * self.y_dim, self.num_clients * self.z_dim)
@@ -250,8 +260,11 @@ class Game(ABC):
         term_3 = torch.matmul(term_3_part1, term_3_part2)
         term_4 = e_client_alpha_t * initial_term
         P_t = torch.add(torch.add(term_1_2, term_3), term_4)
-        assert P_t.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
-        #  size should be (N*dz, N*dz)
+        assert P_t.shape == (
+            self.num_clients * self.y_dim,
+            self.num_clients * self.y_dim,
+        ), f"P(t)'s shape is {P_t.shape} but it should be (N*dy, N*dy)"
+        # Shape should be (N*dy, N*dy)
         return P_t
 
     def calculate_st_client(
@@ -333,18 +346,33 @@ class TransformerGame(Game):
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
         super().__init__(clients, sync_freq, z_dim)
 
+    def get_input(self, t: int, client: Client) -> torch.Tensor:
+        """
+        Maps the time t in the game (between 0 to sync_freq) to the time scale used in the server, current_time, and
+        returns the input (x_t) associated with server time.
+        """
+        server_time = self.map_game_time_to_server_time(t, client)
+        # Assuming that the input shape in transformer is (x_dim, 1)
+        return client.get_x(server_time)
+
     def get_expectation_e_zt(self, t: int, client: Client) -> torch.Tensor:
         Z = client.feed_encoder(self.get_input(t, client).double())
-        Z = Z.unsqueeze(1)
+        # Embedding shape is y_dim x z_dim
+        assert Z.shape == (self.y_dim, self.z_dim)
+        # e_i's shape is (num_clients * self.y_dim, self.y_dim)
         e_i = client.get_e(self.num_clients)
-        return torch.matmul(e_i.unsqueeze(1).double(), Z.transpose(0, 1).double())
+        # output shape is Ny_dim x z_dim
+        return torch.matmul(
+            e_i.double(),
+            Z.double(),
+        )
 
     def get_A_ij_t(self, t: int, i: int, j: int) -> torch.Tensor:
         client_i = self.clients[i]
         client_j = self.clients[j]
         client_i_E = self.get_expectation_e_zt(t, client_i)
         client_j_E = self.get_expectation_e_zt(t, client_j)
-        return torch.matmul(torch.matmul(client_i_E.transpose(0, 1), client_i.P[t + 1]), client_j_E)
+        return torch.matmul(torch.matmul(client_i_E.T, client_i.P[t + 1]), client_j_E)
 
 
 class EchoStateGame(Game):
