@@ -1,6 +1,6 @@
 import torch
 
-from fedmoe.datasets.synthetic_datasets.brownian_motion import BrownianMotionDataset
+from fedmoe.datasets.fedmoe_datasets.brownian_motion import BrownianMotionDataset
 
 
 def get_brownian_data_sequences(
