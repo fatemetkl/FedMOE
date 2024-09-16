@@ -1,53 +1,51 @@
-from abc import ABC, abstractmethod
-
 import torch
 
+from fedmoe.datasets.data_matrix_generator import (
+    InputGenerator,
+    MultiDimensionalTargetGenerator,
+    MultiDimensionalTimeFunctionInputGenerator,
+    TargetGenerator,
+)
 from fedmoe.datasets.fedmoe_datasets.brownian_motion import BrownianMotionDataset
 
 
-class TimeSeriesData(ABC):
-    def __init__(self, total_time_steps: int) -> None:
+class TimeSeriesData:
+    def __init__(self, total_time_steps: int, input_gen: InputGenerator, target_gen: TargetGenerator) -> None:
+        assert total_time_steps > 1, "Error, total_time_step should be positive and greater than one."
         self.total_time_steps = total_time_steps
-        self.time_axis = torch.range(0, self.total_time_steps - 1)
-        self.input_matrix = self.generate_input_tensor()
-        self.target_matrix = self.generate_target_tensor()
-
-    @abstractmethod
-    def generate_input_tensor(self) -> torch.Tensor:
-        pass
-
-    @abstractmethod
-    def generate_target_tensor(self) -> torch.Tensor:
-        """
-        Implementation of how to generate output at each time step which can depend on input as well.
-        Ideally, we want to have a relation between input and output sequences,
-        to make sure output is relevant to input, but this is not enforced.
-        """
-        pass
+        self.time_axis = torch.arange(0, self.total_time_steps)
+        self.input_matrix = input_gen.generate_input_tensor(self.time_axis)
+        self.target_matrix = target_gen.generate_target_tensor(self.time_axis, self.input_matrix)
 
 
-class TimeSeriesXYSequences(TimeSeriesData):
+class TimeSeries2DXY(TimeSeriesData):
     def __init__(
         self,
         total_time_steps: int,
     ) -> None:
-        super().__init__(total_time_steps)
+        self.input_gen: InputGenerator = self.initiate_input_generator()
+        self.target_gen: TargetGenerator = self.initiate_target_generator()
+        super().__init__(total_time_steps, self.input_gen, self.target_gen)
 
-    def generate_input_tensor(self) -> torch.Tensor:
+    def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
         # x1 = t, x2 = 2*t
-        self.x1 = self.time_axis
-        self.x2 = 2 * self.time_axis
-        input_matrix = torch.cat([self.x1, self.x2], dim=1)
-        assert input_matrix.shape == (self.total_time_steps, 2)
-        return input_matrix
+        def func_x1(t_axis: torch.Tensor) -> torch.Tensor:
+            return t_axis
 
-    def generate_target_tensor(self) -> torch.Tensor:
+        def func_x2(t_axis: torch.Tensor) -> torch.Tensor:
+            return t_axis * 2
+
+        return MultiDimensionalTimeFunctionInputGenerator([func_x1, func_x2], x_dim=2)
+
+    def initiate_target_generator(self) -> MultiDimensionalTargetGenerator:
         # y1  = x1 + 3x2^3 and y2= e^x1 + sin(x2)
-        self.y1 = self.x1 + 3 * torch.pow(self.x2, 3)
-        self.y2 = torch.exp(self.x1) + torch.sin(self.x2)
-        output_matrix = torch.cat([self.y1, self.y2], dim=1)
-        assert output_matrix.shape == (self.total_time_steps, 2)
-        return output_matrix
+        def func_y1(x1: torch.Tensor, x2: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
+            return x1 + 3 * torch.pow(x2, 3)
+
+        def func_y2(x1: torch.Tensor, x2: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
+            return torch.exp(x1) + torch.sin(x2)
+
+        return MultiDimensionalTargetGenerator([func_y1, func_y2], y_dim=2)
 
 
 class TimeSeriesBrownian(TimeSeriesData):
@@ -64,26 +62,39 @@ class TimeSeriesBrownian(TimeSeriesData):
 
         Args:
             total_time_steps (int):  length of trajectory sequences in terms of time steps.
-            n_brownian_trajectories (int): number of individual trajectories.
+            n_brownian_trajectories (int): number of individual trajectories which is going to be y_dim.
             mu (float): mean of the distribution to create Brownian trajectories.
             sigma (float): standard deviation of the distribution to create Brownian trajectories.
             offset (float): initial value of trajectories (X(0) = offset)
         """
-        super().__init__(total_time_steps)
+        self.total_time_steps = total_time_steps
         self.n_brownian_trajectories = n_brownian_trajectories
         self.mu = mu
         self.sigma = sigma
         self.offset = offset
+        input_gen: InputGenerator = self.initiate_input_generator()
+        target_gen: TargetGenerator = self.initiate_target_generator()
+        super().__init__(total_time_steps, input_gen, target_gen)
 
-    def generate_input_tensor(self) -> torch.Tensor:
-        # input is time step and output
-        input_matrix = self.time_axis
-        assert input_matrix.shape == (self.total_time_steps, 1)
-        return input_matrix
+    def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
+        # Input is time step.
+        def func_x1(t_axis: torch.Tensor) -> torch.Tensor:
+            return t_axis
 
-    def generate_target_tensor(self) -> torch.Tensor:
-        #  Output is a Brownian motion with
-        return self.get_brownian_sequences()
+        return MultiDimensionalTimeFunctionInputGenerator([func_x1], x_dim=1)
+
+    def initiate_target_generator(self) -> MultiDimensionalTargetGenerator:
+        #  Output is a Brownian motion with 'n_brownian_trajectories' trajectories.
+        brownian_matrix = self.get_brownian_sequences()
+        function_list = []
+        for trajectory_idx in range(self.n_brownian_trajectories):
+            # The function that creates each 'yn' is simply the brownian trajectory of that dimension (n)
+            # across all time steps.
+            def f(x_axis: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
+                return brownian_matrix[:, trajectory_idx]
+
+            function_list.append(f)
+        return MultiDimensionalTargetGenerator(function_list, y_dim=self.n_brownian_trajectories)
 
     def get_brownian_sequences(
         self,
