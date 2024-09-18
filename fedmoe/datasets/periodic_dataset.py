@@ -41,11 +41,11 @@ class TimeSeriesPeriodic(TimeSeriesData):
             sample_len=self.total_time_steps, n_samples=1, period=self.period_list
         )
         # We just take the first sequence because n_samples is one.
-        input_matrix = periodic_sequence.outputs[0]
-        assert input_matrix.shape == (self.total_time_steps, 1)
+        input_sequence = periodic_sequence.outputs[0].squeeze(1)
+        assert input_sequence.shape == (self.total_time_steps,)
 
-        def x_func(time_step: torch.Tensor) -> torch.Tensor:
-            return input_matrix[time_step]
+        def x_func(time_axis: torch.Tensor) -> torch.Tensor:
+            return input_sequence
 
         return MultiDimensionalTimeFunctionInputGenerator([x_func], x_dim=1)
 

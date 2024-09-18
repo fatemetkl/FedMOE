@@ -32,11 +32,12 @@ class TimeSeriesLogisticMap(TimeSeriesData):
         This function defines how input data should be generated using PeriodicSignalDataset.
         """
         periodic_sequence = LogisticMapDataset(sample_len=self.total_time_steps, n_samples=1)
-        input_matrix = periodic_sequence.outputs[0]
-        assert input_matrix.shape == (self.total_time_steps, 1)
+        input_sequence = periodic_sequence.outputs[0].squeeze(1)
+        # Each x dimension should be a sequence of size torch.Size([self.total_time_steps])
+        assert input_sequence.shape == (self.total_time_steps,)
 
-        def x_func(time_step: torch.Tensor) -> torch.Tensor:
-            return input_matrix[time_step]
+        def x_func(time_axis: torch.Tensor) -> torch.Tensor:
+            return input_sequence
 
         return MultiDimensionalTimeFunctionInputGenerator([x_func], x_dim=1)
 
