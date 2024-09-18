@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import List, Optional
 
+import matplotlib.pyplot as plt
 import torch
 
 from fedmoe.datasets.data_matrix_generator import (
@@ -21,6 +22,61 @@ class TimeSeriesData:
         self.input_matrix = input_gen.generate_input_tensor(self.time_axis)
         if target_gen is not None:
             self.target_matrix = target_gen.generate_target_tensor(self.time_axis, self.input_matrix)
+
+    def visualize(
+        self,
+        server_prediction: List[torch.Tensor],
+        plot_path: str,
+        target_matrix: Optional[torch.Tensor] = None,
+        T: int = 0,
+    ) -> None:
+        """
+        Saves plots of input_matrix, target_matrix, and prediction_matrix.
+        Each matrix has shape (total_time_steps, num_dimensions).
+        Plots each dimension (row) as a line.
+
+            Args:
+                server_prediction (List[torch.Tensor]): List of predictions made by server
+                plot_path (str): the plot path (including name and location) to save the plot
+                target_matrix (Optional[torch.Tensor], optional): target matrix if generated outside dataset class.
+        """
+
+        # If the target_matrix is not generated in this class, we would still need it for visualization
+        if self.target_matrix is None:
+            self.target_matrix = target_matrix
+
+        server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
+        # Server prediction matrix should have the same shape and target matrix.
+        assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1])
+
+        plt.figure(figsize=(10, 6))
+
+        for i in range(self.input_matrix.shape[1]):
+            plt.plot(self.time_axis, self.input_matrix[:, i], label=f"Input: x{i+1}", linestyle="--")
+
+        for i in range(self.target_matrix.shape[1]):
+            plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: Y{i+1}", linestyle=":")
+
+        for i in range(server_matrix.shape[1]):
+            plt.plot(self.time_axis, server_matrix[:, i], label=f"Server prediction y{i+1}", linestyle="-")
+            if T > 0:
+                T_indices = [i * T for i in range(1, int(self.total_time_steps / T) + 1)]
+                T_values = [server_matrix[j, i] for j in T_indices]
+                plt.scatter(T_indices, T_values, marker="o", label=f"T y{i+1}")
+
+        if T > 0:
+            game_status = "with"
+        else:
+            game_status = "without"
+
+        plt.xlabel("Time Steps")
+        plt.ylabel("Value")
+        plt.title(f"Input, Target, and Predicted time-series, {game_status} game ")
+
+        plt.legend()
+        plt.savefig(plot_path)
+
+        plt.close()
 
 
 class TimeSeries2DXY(TimeSeriesData):
