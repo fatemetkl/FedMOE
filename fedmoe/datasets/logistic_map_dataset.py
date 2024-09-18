@@ -4,8 +4,11 @@ import torch
 from fl4health.utils.dataset import BaseDataset
 from torch.utils.data import DataLoader
 
+from fedmoe.datasets.data_matrix_generator import InputGenerator, MultiDimensionalTimeFunctionInputGenerator
+
 # Note: the original module throws error, so I had to override this method
 from fedmoe.datasets.echotorch_datasets.logistic_map import LogisticMapDataset  # type: ignore
+from fedmoe.datasets.time_series_data import TimeSeriesData
 
 
 class LogisticMapData(BaseDataset):
@@ -18,25 +21,38 @@ class LogisticMapData(BaseDataset):
         self.target_transform = None
 
 
-def load_logistic_map_dataloader(
-    train_data_size: int,
-    val_data_size: int,
-    batch_size: int,
-    data_length: int,
-) -> Tuple[DataLoader, DataLoader, Dict[str, int]]:
-    """Load Periodic Signal Dataset (training and validation set). This is used to pre-train the transformer models"""
-    train_ds: BaseDataset = LogisticMapData(data_length, train_data_size)
-    val_ds: BaseDataset = LogisticMapData(data_length, val_data_size)
+class TimeSeriesLogisticMap(TimeSeriesData):
+    def __init__(self, total_time_steps: int) -> None:
+        self.total_time_steps = total_time_steps
+        input_gen: InputGenerator = self.initiate_input_generator()
+        super().__init__(total_time_steps, input_gen)
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
-    validation_loader = DataLoader(val_ds, batch_size=batch_size)
+    def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
+        """
+        This function defines how input data should be generated using PeriodicSignalDataset.
+        """
+        periodic_sequence = LogisticMapDataset(sample_len=self.total_time_steps, n_samples=1)
+        input_matrix = periodic_sequence.outputs[0]
+        assert input_matrix.shape == (self.total_time_steps, 1)
 
-    num_examples = {"train_set": len(train_ds), "validation_set": len(val_ds)}
-    return train_loader, validation_loader, num_examples
+        def x_func(time_step: torch.Tensor) -> torch.Tensor:
+            return input_matrix[time_step]
 
+        return MultiDimensionalTimeFunctionInputGenerator([x_func], x_dim=1)
 
-def get_logistic_map_sequence(n_samples: int, data_length: int) -> torch.Tensor:
-    """The concatenated data sequences are used for the main algorithm (online prediction)"""
-    #  For now we assume there is only one data sequence
-    periodic_ds = LogisticMapDataset(sample_len=data_length, n_samples=n_samples)
-    return torch.cat([periodic_ds[i] for i in range(0, len(periodic_ds))]).reshape(-1)
+    def load_logistic_map_dataloader(
+        self,
+        train_data_size: int,
+        val_data_size: int,
+        batch_size: int,
+    ) -> Tuple[DataLoader, DataLoader, Dict[str, int]]:
+        """Load Periodic Signal Dataset (training and validation set).
+        This is used to pre-train the transformer models"""
+        train_ds: BaseDataset = LogisticMapData(self.total_time_steps, train_data_size)
+        val_ds: BaseDataset = LogisticMapData(self.total_time_steps, val_data_size)
+
+        train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
+        validation_loader = DataLoader(val_ds, batch_size=batch_size)
+
+        num_examples = {"train_set": len(train_ds), "validation_set": len(val_ds)}
+        return train_loader, validation_loader, num_examples

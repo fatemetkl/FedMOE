@@ -1,6 +1,9 @@
 import torch
 
-from fedmoe.datasets.time_series_data import TimeSeries2DXY, TimeSeriesBrownian
+from fedmoe.datasets.brownian_motion_dataset import BrownianSequenceAddition, TimeSeriesBrownianTarget
+from fedmoe.datasets.logistic_map_dataset import TimeSeriesLogisticMap
+from fedmoe.datasets.periodic_dataset import TimeSeriesPeriodic
+from fedmoe.datasets.time_series_data import TimeSeries2DXY
 
 
 def test_time_series_2d_xy() -> None:
@@ -33,12 +36,62 @@ def test_time_series_2d_xy() -> None:
     assert torch.allclose(two_d_data_obj.target_matrix, manual_output_matrix, rtol=0.0, atol=1e-3)
 
 
-def test_brownian_time_series_shape() -> None:
+def test_input_brownian_time_series_shape() -> None:
     # variables
     time_steps = 5
-    brownian_data_obj = TimeSeriesBrownian(
+    brownian_data_obj = TimeSeriesBrownianTarget(
         total_time_steps=time_steps, n_brownian_trajectories=3, mu=0.0, sigma=1.0, offset=0.0
     )
     # n_brownian_trajectories = y_dim
     assert brownian_data_obj.input_matrix.shape == (time_steps, 1)
     assert brownian_data_obj.target_matrix.shape == (time_steps, 3)
+
+
+def test_brownian_time_series_data2_shape() -> None:
+    # variables
+    time_steps = 5
+    brownian_data_obj = BrownianSequenceAddition(
+        total_time_steps=time_steps, n_brownian_trajectories=3, mu=0.0, sigma=1.0, offset=0.0
+    )
+    # n_brownian_trajectories = y_dim
+    assert brownian_data_obj.input_matrix.shape == (time_steps, 4)
+    assert brownian_data_obj.target_matrix.shape == (time_steps, 3)
+
+    # Check the output follows the logic that we expect
+    brownian_input1 = brownian_data_obj.input_matrix[:, 1]
+    brownian_input2 = brownian_data_obj.input_matrix[:, 2]
+    brownian_input3 = brownian_data_obj.input_matrix[:, 3]
+    x1 = torch.Tensor([0.0, 0.1, 0.2, 0.3, 0.4])
+    y1 = brownian_input1 + x1
+    y2 = brownian_input2 + x1
+    y3 = brownian_input3 + x1
+    manual_brownian_output = torch.stack([y1, y2, y3], dim=1).double()
+    assert torch.allclose(brownian_data_obj.target_matrix, manual_brownian_output, rtol=0.0, atol=1e-4)
+
+
+def test_1d_periodic_time_series() -> None:
+    # variables
+    time_steps = 5
+    periodic_data_obj = TimeSeriesPeriodic(total_time_steps=time_steps)
+    assert periodic_data_obj.input_matrix.shape == (time_steps, 1)
+
+    # Test data loader
+    train_loader, validation_loader, num_examples = periodic_data_obj.load_periodic_dataloader(
+        train_data_size=100, val_data_size=10, batch_size=5
+    )
+    assert len(train_loader) == 20
+    assert len(validation_loader) == 2
+
+
+def test_1d_logistic_map_time_series() -> None:
+    # variables
+    time_steps = 10
+    periodic_data_obj = TimeSeriesLogisticMap(total_time_steps=time_steps)
+    assert periodic_data_obj.input_matrix.shape == (time_steps, 1)
+
+    # Test data loader
+    train_loader, validation_loader, num_examples = periodic_data_obj.load_logistic_map_dataloader(
+        train_data_size=200, val_data_size=20, batch_size=4
+    )
+    assert len(train_loader) == 50
+    assert len(validation_loader) == 5

@@ -5,8 +5,8 @@ import torch
 import yaml
 
 from experiments.experimental_data import create_linear_line, quadratic_data, sine_signal
-from fedmoe.datasets.logistic_map_dataset import get_logistic_map_sequence
-from fedmoe.datasets.periodic_dataset import get_periodic_signal_sequence
+from fedmoe.datasets.logistic_map_dataset import TimeSeriesLogisticMap
+from fedmoe.datasets.periodic_dataset import TimeSeriesPeriodic
 
 
 def load_config(config_path: str) -> Dict[str, Any]:
@@ -18,9 +18,11 @@ def load_config(config_path: str) -> Dict[str, Any]:
 def load_data(dataset_name: str, total_rounds: int) -> torch.Tensor:
     # Load data
     if dataset_name == "periodic_signal":
-        data_sequence = get_periodic_signal_sequence(n_samples=1, data_length=total_rounds + 1)
+        periodic_data_object = TimeSeriesPeriodic(total_time_steps=total_rounds + 1)
+        data_sequence = periodic_data_object.input_matrix
     elif dataset_name == "logistic_map":
-        data_sequence = get_logistic_map_sequence(n_samples=1, data_length=total_rounds + 1)
+        logistic_data_object = TimeSeriesLogisticMap(total_time_steps=total_rounds + 1)
+        data_sequence = logistic_data_object.input_matrix
     elif dataset_name == "horizontal_line":
         data_sequence = create_linear_line(num_points=total_rounds + 1, a=0.0, b=0.5)
     elif dataset_name == "linear_line":

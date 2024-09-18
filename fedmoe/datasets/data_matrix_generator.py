@@ -31,9 +31,19 @@ class MultiDimensionalTimeFunctionInputGenerator(InputGenerator):
         input_dimension_list = []
         for func_x in self.function_list:
             input_dimension_list.append(func_x(time_axis))
-        input_matrix = torch.stack(input_dimension_list, dim=1).double()
+
+        # Different functions can create slightly different output shapes
+        # TODO: fix this issue
+        if input_dimension_list[0].dim() < 2:
+            input_matrix = torch.stack(input_dimension_list, dim=1).double()
+        else:
+            input_matrix = torch.cat(input_dimension_list, dim=1).double()
+
         # Input matrix's shape should be (time_steps, x_dim)
-        assert input_matrix.shape == (time_axis.shape[0], self.x_dim)
+        assert input_matrix.shape == (
+            time_axis.shape[0],
+            self.x_dim,
+        ), f"Error: input matrix's shape is {input_matrix.shape}"
         return input_matrix
 
 
@@ -51,13 +61,9 @@ class MultiDimensionalTargetGenerator(TargetGenerator):
         input matrix (D is the input dimension).
         """
         y_list = []
-        # input_matrix is a time_step by x_dim matrix.
-        columns_list = torch.split(input_matrix, 1, dim=1)
-        # Each element in the list is an input sequence (we should have x_dim elements).
-        assert len(columns_list) == input_matrix.shape[1]
         for y_idx in range(0, self.y_dim):
             # last input to the function is always time
-            y_list.append(self.function_list[y_idx](*columns_list, time_axis))
+            y_list.append(self.function_list[y_idx](input_matrix, time_axis))
 
         # Different functions can create slightly different output shapes
         if y_list[0].dim() < 2:
