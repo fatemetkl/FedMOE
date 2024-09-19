@@ -27,46 +27,32 @@ K_VALUES=( 3.0 )
 ETA_VALUES=( 2 )
 
 
-RUN_NAMES=( "Run1" "Run2" "Run3" )
+for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
+  for ALPHA_VALUE in "${ALPHA_VALUES[@]}"; do
+    for GAMMA_VALUE in "${GAMMA_VALUES[@]}"; do
+      for SIGMA_VALUE in "${SIGMA_VALUES[@]}"; do
+        for K_VALUE in "${K_VALUES[@]}"; do
+          for ETA_VALUE in "${ETA_VALUES[@]}"; do
+            for T_Value in "${T_VALUES[@]}"; do
 
-for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}";
-do
-  for ALPHA_VALUE in "${ALPHA_VALUES[@]}";
-  do
-    for GAMMA_VALUE in "${GAMMA_VALUES[@]}";
-    do
-      for SIGMA_VALUE in "${SIGMA_VALUES[@]}";
-      do
-        for K_VALUE in "${K_VALUES[@]}";
-        do
-          for ETA_VALUE in "${ETA_VALUES[@]}";
-          do
-            for T_Value in "${T_VALUES[@]}";
-            do
-              EXPERIMENT_SETUP="T${T_Value}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_sigma${SIGMA_VALUE}_DZ${HIDDEN_DIM}_K${K_VALUE}_ETA${ETA_VALUE}"
-              EXPERIMENT_DIRECTORY="${RESULTS_DIR}/${EXPERIMENT_SETUP}/"
-              mkdir -p $EXPERIMENT_DIRECTORY
-              echo "Beginning Experiment ${EXPERIMENT_NAME} with hyper-parameters ${EXPERIMENT_SETUP}"
-              for RUN_NAME in "${RUN_NAMES[@]}";
-                do
-                  RUN_OUTPUT_DIR="${EXPERIMENT_DIRECTORY}${RUN_NAME}/"
-                  RUN_OUTPUT_FILE="${RUN_OUTPUT_DIR}log.out"
-                  mkdir "${RUN_OUTPUT_DIR}"
-                  python -m experiments.rfn_experiments.run_rfn_experiment \
-                  --config_path ${CONFIG_PATH} \
-                  --result_dir ${RUN_OUTPUT_DIR} \
-                  --hidden_dim ${HIDDEN_DIM} \
-                  --alpha ${ALPHA_VALUE} \
-                  --gamma ${GAMMA_VALUE} \
-                  --sigma ${SIGMA_VALUE} \
-                  --K ${K_VALUE} \
-                  --eta ${ETA_VALUE} \
-                  --T ${T_Value} \
-                  --experiment_setup ${EXPERIMENT_SETUP} \
-                  > ${RUN_OUTPUT_FILE} 2>&1 &
-              # wait 2 seconds before running the next command
-              sleep 2
-              done
+                EXPERIMENT_SETUP="T${T_Value}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_sigma${SIGMA_VALUE}_DZ${HIDDEN_DIM}_K${K_VALUE}_ETA${ETA_VALUE}"
+                EXPERIMENT_DIRECTORY="${RESULTS_DIR}/${EXPERIMENT_SETUP}/"
+                mkdir -p $EXPERIMENT_DIRECTORY
+                echo "Beginning Experiment ${EXPERIMENT_NAME} with hyper-parameters ${EXPERIMENT_SETUP}"
+
+                SBATCH_COMMAND="experiments/rfn_experiments/run_fold_experiment.slrm \
+                    ${CONFIG_PATH} \
+                    ${EXPERIMENT_DIRECTORY} \
+                    ${HIDDEN_DIM} \
+                    ${ALPHA_VALUE} \
+                    ${GAMMA_VALUE} \
+                    ${SIGMA_VALUE} \
+                    ${K_VALUE} \
+                    ${ETA_VALUE} \
+                    ${T_Value} \
+                    ${EXPERIMENT_SETUP}"
+                echo "Running sbatch command ${SBATCH_COMMAND}"
+                sbatch ${SBATCH_COMMAND}
             done
           done
         done
