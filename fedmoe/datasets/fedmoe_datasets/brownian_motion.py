@@ -41,7 +41,7 @@ class BrownianMotionDataset(Dataset):
 
         # We assume dt (length of each time step) is 1.
         self.dt = 1
-        self.time_axis = torch.range(0, self.time_steps - 1)
+        self.time_axis = torch.arange(0, self.time_steps)
 
         self.w_matrix = torch.zeros((self.time_steps, self.n_trajectories))
         if offset is not None:
