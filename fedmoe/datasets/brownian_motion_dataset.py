@@ -1,10 +1,11 @@
+from functools import partial
+from typing import Callable, List
+
 import torch
 
 from fedmoe.datasets.data_matrix_generator import (
-    InputGenerator,
     MultiDimensionalTargetGenerator,
     MultiDimensionalTimeFunctionInputGenerator,
-    TargetGenerator,
 )
 from fedmoe.datasets.fedmoe_datasets.brownian_motion import BrownianMotionDataset
 from fedmoe.datasets.time_series_data import TimeSeriesData
@@ -60,7 +61,12 @@ class TimeSeriesBrownianTarget(TimeSeriesData):
     ) -> None:
         """
         In this dataset, input matrix is the time axis, and output is a matrix of Brownian motion trajectories.
-        x = t, y = [y1 = BM(1), y2=BM(2), ...,ynBM(n)]
+        In a time-series dataset, we always have time steps that start from 0 to total_time_steps. These time-steps
+        are referred to as t=0 to t=total_time_steps-1. Inputs or outputs could also be multi-dimensional,
+        where we index them x1 to xn, denoting dimension 1 to dimension n in input, and y1 to yn in output.
+        In this dataset we have a 1D input, and nD output, where n is the number of Brownian motion trajectories.
+        BM(n) refers to the nth Brownian motion trajectory.
+        x = t, y = [y1 = BM(1), y2=BM(2), ...,yn = BM(n)]
         dim_x = 1, dim_y = n_brownian_trajectories
 
         Args:
@@ -68,19 +74,19 @@ class TimeSeriesBrownianTarget(TimeSeriesData):
             n_brownian_trajectories (int): number of individual trajectories which is going to be y_dim.
             mu (float): mean of the distribution to create Brownian trajectories.
             sigma (float): standard deviation of the distribution to create Brownian trajectories.
-            offset (float): initial value of trajectories (X(0) = offset)
+            offset (float): the initial value of Brownian trajectories at time t=0,
+                            this is where the trajectories start from.
         """
         self.total_time_steps = total_time_steps
         self.n_brownian_trajectories = n_brownian_trajectories
         self.mu = mu
         self.sigma = sigma
         self.offset = offset
-        input_gen: InputGenerator = self.initiate_input_generator()
-        target_gen: TargetGenerator = self.initiate_target_generator()
-        super().__init__(total_time_steps, input_gen, target_gen)
+        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
         # Input is time step.
+
         def func_x1(t_axis: torch.Tensor) -> torch.Tensor:
             return t_axis
 
@@ -91,14 +97,16 @@ class TimeSeriesBrownianTarget(TimeSeriesData):
         brownian_matrix = get_brownian_sequences_fixed_mu_sigma(
             self.total_time_steps, self.n_brownian_trajectories, self.mu, self.sigma, self.offset
         )
-        function_list = []
+        function_list: List[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = []
         for trajectory_idx in range(self.n_brownian_trajectories):
             # The function that creates each 'yn' is simply the brownian trajectory of that dimension (n)
             # across all time steps.
-            def f(x_axis: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
-                return brownian_matrix[:, trajectory_idx]
+            trajectory = brownian_matrix[:, trajectory_idx]
 
-            function_list.append(f)
+            def f(additional_target_tensor: torch.Tensor, input_x: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
+                return additional_target_tensor
+
+            function_list.append(partial(f, trajectory))
         return MultiDimensionalTargetGenerator(function_list, y_dim=self.n_brownian_trajectories)
 
 
@@ -113,10 +121,14 @@ class BrownianSequenceAddition(TimeSeriesData):
         offset: float,
     ) -> None:
         """
-        Input matrix is x1 appended to a Brownian motion matrix
-        (x2,..xn rows are Brownian motion trajectories, and xn = BM(n)).
-        x1 can be defined like a separate deterministic trajectory, in this example it is x1: [0.0, 0.1, 0.2, ....].
-        Output matrix is defined such that for each output dimension yn we have: yn = BM(n) + x1,
+        In a time-series dataset, we always have time steps that start from 0 to total_time_steps. These time-steps
+        are referred to as t=0 to t=total_time_steps-1. Inputs or outputs could also be multi-dimensional,
+        where we index them x1 to xn, denoting dimension 1 to dimension n in input, and y1 to yn in output.
+        In this class, input matrix is x1 appended to a Brownian motion matrix (x2,..xn rows are Brownian motion
+        trajectories, and xn = BM(n)). x1 can be defined like a separate deterministic trajectory,
+        in this example it is x1: [0.0, 0.1, 0.2, ....].
+        Output matrix is defined such that for each output dimension yn we have: yn = BM(n) + x1, and B(n) is the nth
+        trajectory in the Brownian motion.
         x = [x1, BM(1), BM(2), ... BM(n_brownian_trajectories)],
         y = [x1 + BM(1), x1 + BM(2), ..., x1+ BM(n_brownian_trajectories)]
 
@@ -125,19 +137,18 @@ class BrownianSequenceAddition(TimeSeriesData):
             n_brownian_trajectories (int): number of individual trajectories which is going to be y_dim.
             mu (float): mean of the distribution to create Brownian trajectories.
             sigma (float): standard deviation of the distribution to create Brownian trajectories.
-            offset (float): initial value of trajectories (X(0) = offset)
+            offset (float): the initial value of Brownian trajectories at time t=0,
+                            this is where the trajectories start from.
         """
         self.total_time_steps = total_time_steps
         self.n_brownian_trajectories = n_brownian_trajectories
         self.mu = mu
         self.sigma = sigma
         self.offset = offset
-        input_gen: InputGenerator = self.initiate_input_generator()
-        target_gen: TargetGenerator = self.initiate_target_generator()
-        super().__init__(total_time_steps, input_gen, target_gen)
+        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
-        function_list = []
+        function_list: List[Callable[[torch.Tensor], torch.Tensor]] = []
         brownian_matrix = get_brownian_sequences_fixed_mu_sigma(
             self.total_time_steps, self.n_brownian_trajectories, self.mu, self.sigma, self.offset
         )
@@ -149,23 +160,23 @@ class BrownianSequenceAddition(TimeSeriesData):
         function_list.append(x1_func)
 
         for trajectory_idx in range(self.n_brownian_trajectories):
+            trajectory = brownian_matrix[:, trajectory_idx]
 
-            def f(t_axis: torch.Tensor) -> torch.Tensor:
-                return brownian_matrix[:, trajectory_idx]
+            def f(additional_input: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
+                return additional_input
 
-            function_list.append(f)
+            function_list.append(partial(f, trajectory))
         return MultiDimensionalTimeFunctionInputGenerator(function_list, x_dim=self.n_brownian_trajectories + 1)
 
     def initiate_target_generator(self) -> MultiDimensionalTargetGenerator:
-        function_list = []
-
+        function_list: List[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = []
         for trajectory_idx in range(1, self.n_brownian_trajectories + 1):
             # The function that creates each 'yn' is simply the brownian trajectory of that dimension (n)
             # across all time steps added to x1 (x1: [0.0, 0.1, 0.2, ....]).
-            def yn_func(input_matrix: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
+            def yn_func(idx: int, input_matrix: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
                 # Add the first dimension (x1) to the other ones (x2, x3, ...x{num_trajectories})
                 x1 = input_matrix[:, 0]
-                return input_matrix[:, trajectory_idx] + x1
+                return input_matrix[:, idx] + x1
 
-            function_list.append(yn_func)
+            function_list.append(partial(yn_func, trajectory_idx))
         return MultiDimensionalTargetGenerator(function_list, y_dim=self.n_brownian_trajectories)

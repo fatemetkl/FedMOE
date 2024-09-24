@@ -1,10 +1,14 @@
+from functools import partial
 from typing import Dict, List, Tuple
 
 import torch
 from fl4health.utils.dataset import BaseDataset
 from torch.utils.data import DataLoader
 
-from fedmoe.datasets.data_matrix_generator import InputGenerator, MultiDimensionalTimeFunctionInputGenerator
+from fedmoe.datasets.data_matrix_generator import (
+    MultiDimensionalTargetGenerator,
+    MultiDimensionalTimeFunctionInputGenerator,
+)
 
 # Note: the original module throws error, so I had to override this method
 # from echotorch.data.datasets import PeriodicSignalDataset
@@ -28,10 +32,7 @@ class TimeSeriesPeriodic(TimeSeriesData):
     def __init__(self, total_time_steps: int, period_list: List[int] = [5, 6, 12, 20]) -> None:
         self.period_list = period_list
         self.total_time_steps = total_time_steps
-        # This class only generates the input matrix. The target matrix will be
-        # defined by default in the client manager class, but we could also define it here.
-        input_gen: InputGenerator = self.initiate_input_generator()
-        super().__init__(total_time_steps, input_gen)
+        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
         """
@@ -44,10 +45,26 @@ class TimeSeriesPeriodic(TimeSeriesData):
         input_sequence = periodic_sequence.outputs[0].squeeze(1)
         assert input_sequence.shape == (self.total_time_steps,)
 
-        def x_func(time_axis: torch.Tensor) -> torch.Tensor:
-            return input_sequence
+        def x_func(additional_input: torch.Tensor, time_axis: torch.Tensor) -> torch.Tensor:
+            return additional_input
 
-        return MultiDimensionalTimeFunctionInputGenerator([x_func], x_dim=1)
+        return MultiDimensionalTimeFunctionInputGenerator([partial(x_func, input_sequence)], x_dim=1)
+
+    def initiate_target_generator(self) -> MultiDimensionalTargetGenerator:
+        # Target is the shifted input to the left
+        #  y_0 = x_1 (predict next input)
+        def y_func(
+            input_matrix: torch.Tensor,
+            time_axis: torch.Tensor,
+        ) -> torch.Tensor:
+            # The last element in tes target sequence will be the to the previous target value.
+            # This is done by repeating the last element.
+            last_value = input_matrix[-1]
+            # Add the last_value to the end of the input_matrix
+            input_matrix = torch.cat((input_matrix.squeeze(1), last_value), dim=0)
+            return input_matrix[1:]
+
+        return MultiDimensionalTargetGenerator([y_func], y_dim=1)
 
     def load_periodic_dataloader(
         self,

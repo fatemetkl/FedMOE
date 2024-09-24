@@ -22,7 +22,8 @@ class TargetGenerator(ABC):
 
 
 class MultiDimensionalTimeFunctionInputGenerator(InputGenerator):
-    def __init__(self, function_list: List[Callable], x_dim: int):
+
+    def __init__(self, function_list: List[Callable[[torch.Tensor], torch.Tensor]], x_dim: int):
         self.function_list = function_list
         self.x_dim = x_dim
         assert len(self.function_list) == x_dim
@@ -42,7 +43,12 @@ class MultiDimensionalTimeFunctionInputGenerator(InputGenerator):
 
 
 class MultiDimensionalTargetGenerator(TargetGenerator):
-    def __init__(self, function_list: List[Callable], y_dim: int):
+
+    def __init__(
+        self,
+        function_list: List[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]],
+        y_dim: int,
+    ):
         self.function_list = function_list
         # We need to have a function for each target dimension.
         assert len(self.function_list) == y_dim

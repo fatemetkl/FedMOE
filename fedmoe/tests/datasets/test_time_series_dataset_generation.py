@@ -24,15 +24,7 @@ def test_time_series_2d_xy() -> None:
     assert torch.allclose(y1, y1_manual, rtol=0.0, atol=1e-5)
 
     y2 = torch.exp(x1) + torch.sin(x2)
-    manual_output_matrix = torch.Tensor(
-        [
-            [y1_manual[0], y2[0]],
-            [y1_manual[1], y2[1]],
-            [y1_manual[2], y2[2]],
-            [y1_manual[3], y2[3]],
-            [y1_manual[4], y2[4]],
-        ]
-    ).double()
+    manual_output_matrix = torch.stack((y1_manual.T, y2.T), dim=1).double()
     assert torch.allclose(two_d_data_obj.target_matrix, manual_output_matrix, rtol=0.0, atol=1e-3)
 
 

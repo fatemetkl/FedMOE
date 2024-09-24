@@ -13,22 +13,19 @@ from fedmoe.datasets.data_matrix_generator import (
 
 class TimeSeriesData:
 
-    def __init__(
-        self, total_time_steps: int, input_gen: InputGenerator, target_gen: Optional[TargetGenerator] = None
-    ) -> None:
+    def __init__(self, total_time_steps: int, input_gen: InputGenerator, target_gen: TargetGenerator) -> None:
         assert total_time_steps > 1, "Error, total_time_step should be positive and greater than one."
         self.total_time_steps = total_time_steps
         self.time_axis = torch.arange(0, self.total_time_steps)
         self.input_matrix = input_gen.generate_input_tensor(self.time_axis)
-        if target_gen is not None:
-            self.target_matrix = target_gen.generate_target_tensor(self.time_axis, self.input_matrix)
+        self.target_matrix = target_gen.generate_target_tensor(self.time_axis, self.input_matrix)
 
     def visualize(
         self,
         server_prediction: List[torch.Tensor],
         plot_path: str,
-        target_matrix: Optional[torch.Tensor] = None,
         T: int = 0,
+        show_points: Optional[bool] = False,
     ) -> None:
         """
         Saves plots of input_matrix, target_matrix, and prediction_matrix.
@@ -38,12 +35,12 @@ class TimeSeriesData:
             Args:
                 server_prediction (List[torch.Tensor]): List of predictions made by server
                 plot_path (str): the plot path (including name and location) to save the plot
-                target_matrix (Optional[torch.Tensor], optional): target matrix if generated outside dataset class.
+                T (int): the value of synchronization frequency. If T > 0, the plot will highlight the
+                   synchronization points. Otherwise, we will not highlight the synchronization points,
+                   indicating game is not played.
+                show_points (Optional[bool]): If True, the plot will show the synchronization points as points.
+                   Otherwise, it will show as vertical lines.
         """
-
-        # If the target_matrix is not generated in this class, we would still need it for visualization
-        if self.target_matrix is None:
-            self.target_matrix = target_matrix
 
         server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
         # Server prediction matrix should have the same shape and target matrix.
@@ -55,14 +52,19 @@ class TimeSeriesData:
             plt.plot(self.time_axis, self.input_matrix[:, i], label=f"Input: x{i+1}", linestyle="--")
 
         for i in range(self.target_matrix.shape[1]):
-            plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: Y{i+1}", linestyle=":")
+            plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i+1}", linestyle=":")
 
         for i in range(server_matrix.shape[1]):
-            plt.plot(self.time_axis, server_matrix[:, i], label=f"Server prediction y{i+1}", linestyle="-")
-            if T > 0:
+            plt.plot(self.time_axis, server_matrix[:, i], label=f"Server prediction Y{i+1}", linestyle="-")
+            if T > 0 and show_points:
                 T_indices = [i * T for i in range(1, int(self.total_time_steps / T) + 1)]
                 T_values = [server_matrix[j, i] for j in T_indices]
-                plt.scatter(T_indices, T_values, marker="o", label=f"T y{i+1}")
+                plt.scatter(T_indices, T_values, marker="o", label=f"T step for prediction Y{i+1}")
+
+        if T > 0 and not show_points:
+            for j in range(1, int(self.total_time_steps / T) + 1):
+                label = "T time steps" if j == 1 else None
+                plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
 
         if T > 0:
             game_status = "with"
@@ -80,13 +82,20 @@ class TimeSeriesData:
 
 
 class TimeSeries2DXY(TimeSeriesData):
+    """
+    A time series dataset with 2-dimensional input and output.
+    An example of TimeSeriesData class.
+
+    Args:
+        total_time_steps (int): The total number of time steps in the dataset.
+
+    """
+
     def __init__(
         self,
         total_time_steps: int,
     ) -> None:
-        self.input_gen: InputGenerator = self.initiate_input_generator()
-        self.target_gen: TargetGenerator = self.initiate_target_generator()
-        super().__init__(total_time_steps, self.input_gen, self.target_gen)
+        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
         # x1 = t, x2 = 2*t
