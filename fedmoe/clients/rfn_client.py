@@ -5,7 +5,7 @@ import torch.nn as nn
 
 from fedmoe.clients.client import Client
 from fedmoe.models.random_feature_net import Rfn
-from fedmoe.utils import TensorGenerationType
+from fedmoe.utils.utils import TensorGenerationType
 
 
 class RandomFeatureNetworkClient(Client):

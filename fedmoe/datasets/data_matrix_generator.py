@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import Callable, List
+from typing import List
 
 import torch
+
+from fedmoe.utils.typing import InputGenerationFunction, TargetGenerationFunction
 
 
 class InputGenerator(ABC):
@@ -23,7 +25,7 @@ class TargetGenerator(ABC):
 
 class MultiDimensionalTimeFunctionInputGenerator(InputGenerator):
 
-    def __init__(self, function_list: List[Callable[[torch.Tensor], torch.Tensor]], x_dim: int):
+    def __init__(self, function_list: List[InputGenerationFunction], x_dim: int):
         self.function_list = function_list
         self.x_dim = x_dim
         assert len(self.function_list) == x_dim
@@ -46,7 +48,7 @@ class MultiDimensionalTargetGenerator(TargetGenerator):
 
     def __init__(
         self,
-        function_list: List[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]],
+        function_list: List[TargetGenerationFunction],
         y_dim: int,
     ):
         self.function_list = function_list

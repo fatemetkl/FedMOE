@@ -5,7 +5,7 @@ import torch.nn as nn
 
 from fedmoe.clients.client import Client
 from fedmoe.models.echo_state_net import Esn
-from fedmoe.utils import TensorGenerationType
+from fedmoe.utils.utils import TensorGenerationType
 
 
 class EchoStateNetworkClient(Client):

@@ -51,10 +51,10 @@ class TimeSeriesLogisticMap(TimeSeriesData):
             input_matrix: torch.Tensor,
             time_axis: torch.Tensor,
         ) -> torch.Tensor:
-            # The last element in tes target sequence will be the to the previous target value.
-            # This is done by repeating the last element.
             last_value = input_matrix[-1]
-            # Add the last_value to the end of the input_matrix
+            # Append the last_value to the end of the target sequence.
+            # This is to make sure that the length of target sequence is equal to the
+            # length of the input sequence (in terms of time steps).
             input_matrix = torch.cat((input_matrix.squeeze(1), last_value), dim=0)
             return input_matrix[1:]
 
