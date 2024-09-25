@@ -89,6 +89,7 @@ def main(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="experiment")
+    print("hi")
     parser.add_argument(
         "--config_path",
         action="store",

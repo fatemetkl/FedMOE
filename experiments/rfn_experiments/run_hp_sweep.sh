@@ -1,6 +1,7 @@
 #!/bin/bash
 
 CONFIG_PATH=$1
+VENV_PATH=$2
 
 # Load the experiment name from the config file
 EXPERIMENT_NAME=$(grep 'experiment_name' $CONFIG_PATH | awk '{print $2}' | tr -d '"')
@@ -50,7 +51,8 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                     ${K_VALUE} \
                     ${ETA_VALUE} \
                     ${T_Value} \
-                    ${EXPERIMENT_SETUP}"
+                    ${EXPERIMENT_SETUP} \
+                    ${VENV_PATH}"
                 echo "Running sbatch command ${SBATCH_COMMAND}"
                 sbatch ${SBATCH_COMMAND}
             done

@@ -25,6 +25,7 @@ K_VALUE=$7
 ETA_VALUE=$8
 T_Value=$9
 EXPERIMENT_SETUP=$9
+VENV_PATH=$10
 
 RUN_NAMES=( "Run1" "Run2" "Run3")
 SEEDS=(2024 2025 2026)
@@ -85,10 +86,8 @@ do
         --eta ${ETA_VALUE} \
         --T ${T_Value} \
         --experiment_setup ${EXPERIMENT_SETUP} \
-        --seed ${SEED} \
         > ${RUN_OUTPUT_FILE} 2>&1 &
 
         # Create a file that verifies that the Run concluded properly
         touch "${RUN_OUTPUT_DIR}done.out"
-        echo "Finished FL Processes"
 done
