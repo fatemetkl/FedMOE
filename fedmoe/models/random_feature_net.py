@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from fedmoe.utils import TensorGenerationType, generate_random_tensor
+from fedmoe.utils.utils import TensorGenerationType, generate_random_tensor
 
 
 class Rfn(nn.Module):

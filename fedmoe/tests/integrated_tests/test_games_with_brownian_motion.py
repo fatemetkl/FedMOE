@@ -2,19 +2,21 @@ import torch
 
 from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
-from fedmoe.datasets.brownian_motion_dataset import get_brownian_data_sequences
+from fedmoe.datasets.brownian_motion_dataset import TimeSeriesBrownianTarget
 from fedmoe.game import EchoStateGame, RfnGame, TransformerGame
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_transformer_client_manager
 
 
 def test_input_output_shapes_rfn() -> None:
-    input_sequence = get_brownian_data_sequences(
-        n_brownian_trajectories=50, time_steps=100, mu=1.0, sigma=2.0, offset=0.1
+    brownian_data_obj = TimeSeriesBrownianTarget(
+        total_time_steps=100, n_brownian_trajectories=50, mu=1.0, sigma=2.0, offset=0.1
     )
+    # In this example, the input_sequence is our target Brownian matrix
+    input_sequence = brownian_data_obj.target_matrix
     assert input_sequence.shape == (100, 50)
     # Test the initial values to be set to our specified offset.
-    assert torch.allclose(0.1 * torch.ones((50)), input_sequence[0, :], rtol=0.0, atol=1e-5)
+    assert torch.allclose(0.1 * torch.ones((50)).double(), input_sequence[0, :], rtol=0.0, atol=1e-5)
 
     num_clients = 3
     T = 10
@@ -53,11 +55,13 @@ def test_input_output_shapes_rfn() -> None:
 
 
 def test_brownian_transformer() -> None:
-    input_sequence = get_brownian_data_sequences(
-        n_brownian_trajectories=50, time_steps=100, mu=1.0, sigma=2.0, offset=0.1
+    brownian_data_obj = TimeSeriesBrownianTarget(
+        total_time_steps=100, n_brownian_trajectories=50, mu=1.0, sigma=2.0, offset=0.1
     )
+    # In this example, the input_sequence is our target Brownian matrix
+    input_sequence = brownian_data_obj.target_matrix
     assert input_sequence.shape == (100, 50)
-    # target_sequence is the first 25 dimension in input added to the last 25 dimensions for each time step.
+    # target_sequence is the first 25 dimension in Brownian matrix added to the last 25 dimensions for each time step.
     # Example: y(t) = x(t, 0:25) + x(t, 25:50)
     target_sequence = input_sequence[:, 0:25] + input_sequence[:, 25:50]
 
@@ -95,9 +99,11 @@ def test_brownian_transformer() -> None:
 
 
 def test_brownian_esn() -> None:
-    input_sequence = get_brownian_data_sequences(
-        n_brownian_trajectories=50, time_steps=100, mu=1.0, sigma=2.0, offset=0.1
+    brownian_data_obj = TimeSeriesBrownianTarget(
+        total_time_steps=100, n_brownian_trajectories=50, mu=1.0, sigma=2.0, offset=0.1
     )
+    # In this example, the input_sequence is our target Brownian matrix
+    input_sequence = brownian_data_obj.target_matrix
     assert input_sequence.shape == (100, 50)
     # target_sequence is the first 25 dimension in input added to the last 25 dimensions for each time step.
     # Example: y(t) = x(t, 0:25) + x(t, 25:50)

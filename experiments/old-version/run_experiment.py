@@ -13,8 +13,8 @@ from torch.utils.data import DataLoader
 
 from fedmoe.client_manager import ClientManager, PreTrainingClientManager
 from fedmoe.clients.client import ClientType
-from fedmoe.datasets.logistic_map_dataset import get_logistic_map_sequence, load_logistic_map_dataloader
-from fedmoe.datasets.periodic_dataset import get_periodic_signal_sequence, load_periodic_dataloader
+from fedmoe.datasets.logistic_map_dataset import TimeSeriesLogisticMap
+from fedmoe.datasets.periodic_dataset import TimeSeriesPeriodic
 from fedmoe.game import EchoStateGame, Game, RfnGame, TransformerGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
@@ -90,18 +90,18 @@ def load_config(config_path: str) -> Dict[str, Any]:
 
 def get_pre_training_data(config: Dict[str, Any]) -> DataLoader:
     if config["data"] == "periodic_signal":
-        train_dataloader, val_dataloader, num_examples = load_periodic_dataloader(
+        periodic_data_object = TimeSeriesPeriodic(total_time_steps=config["total_rounds"] + 1)
+        train_dataloader, val_dataloader, num_examples = periodic_data_object.load_periodic_dataloader(
             train_data_size=config["data_size"],
             val_data_size=0,
             batch_size=config["batch_size"],
-            data_length=config["total_rounds"] + 1,
         )
     elif config["data"] == "logistic_map":
-        train_dataloader, val_dataloader, num_examples = load_logistic_map_dataloader(
+        logistic_data_object = TimeSeriesLogisticMap(total_time_steps=config["total_rounds"] + 1)
+        train_dataloader, val_dataloader, num_examples = logistic_data_object.load_logistic_map_dataloader(
             train_data_size=config["data_size"],
             val_data_size=0,
             batch_size=config["batch_size"],
-            data_length=config["total_rounds"] + 1,
         )
     return train_dataloader
 
@@ -116,11 +116,13 @@ def main(config: Dict[str, Any], results_dir: str) -> None:
 
     # Load data
     if config["data"] == "periodic_signal":
-        data_sequence = get_periodic_signal_sequence(config["n_samples"], config["total_rounds"] + 1)
+        periodic_data_object = TimeSeriesPeriodic(total_time_steps=config["total_rounds"] + 1)
+        data_sequence = periodic_data_object.input_matrix
         #  visualize data
         logger.info("Dataset loaded")
     elif config["data"] == "logistic_map":
-        data_sequence = get_logistic_map_sequence(config["n_samples"], config["total_rounds"] + 1)
+        logistic_data_object = TimeSeriesLogisticMap(config["total_rounds"] + 1)
+        data_sequence = logistic_data_object.input_matrix
         logger.info("Dataset loaded")
     elif config["data"] == "linear_line":
         data_sequence = torch.Tensor([0.5 for i in range(config["total_rounds"] + 1)])
