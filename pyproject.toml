@@ -7,7 +7,7 @@ authors = ["Vector AI Engineering <fl4health@vectorinstitute.ai>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.10.14"
+python = ">=3.10.0,<3.11"
 fl4health = "^0.1.15"
 torch = "^2.3.0"
 EchoTorch = "^0.1.1"
