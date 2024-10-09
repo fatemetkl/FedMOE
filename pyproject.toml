@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.10.0,<3.11"
-fl4health = "^0.1.15"
+fl4health = "^0.1.17"
 torch = "^2.3.0"
 EchoTorch = "^0.1.1"
 numpy = "^1.26.4"

@@ -10,7 +10,6 @@ from fedmoe.clients.transformer_client import TransformerClient
 
 
 class ClientManager:
-
     def __init__(
         self,
         client_type: ClientType,

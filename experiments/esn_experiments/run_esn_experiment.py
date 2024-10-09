@@ -10,7 +10,7 @@ from experiments.utils import load_config, load_data
 
 from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
-from fedmoe.game import RfnGame
+from fedmoe.game import EchoStateGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
 
@@ -38,7 +38,7 @@ def main(
     data_object = load_data(config["data"], config["total_rounds"] + 1)
 
     client_manager = ClientManager(
-        ClientType.RFN,
+        ClientType.ESN,
         config["num_clients"],
         data_object.input_matrix,
         T,
@@ -49,12 +49,12 @@ def main(
         data_object.target_matrix,
     )
 
-    game = RfnGame(
+    game = EchoStateGame(
         client_manager.clients,
         sync_freq=T,
         z_dim=hidden_dim,
     )
-    logger.info("RFN clients initiated")
+    logger.info("ESN clients initiated")
 
     # Run the server
     server = Server(
@@ -91,14 +91,14 @@ if __name__ == "__main__":
         action="store",
         type=str,
         help="Path to configuration file.",
-        default="experiments/rfn_experiments/config.yaml",
+        default="experiments/esn_experiments/config.yaml",
     )
     parser.add_argument(
         "--result_dir",
         action="store",
         type=str,
         help="Path to results directory.",
-        default="results/experiment",
+        default="results/esn_experiment",
     )
     parser.add_argument(
         "--hidden_dim",
@@ -168,6 +168,7 @@ if __name__ == "__main__":
     config = load_config(args.config_path)
     random.seed(args.random_seed)
     torch.manual_seed(args.random_seed)
+
     main(
         config,
         args.result_dir,

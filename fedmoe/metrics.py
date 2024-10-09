@@ -9,8 +9,11 @@ class RMSEMetric(SimpleMetric):
         super().__init__(name)
 
     def __call__(self, logits: torch.Tensor, target: torch.Tensor) -> Scalar:
+        # assuming batch first
         assert logits.shape[0] == target.shape[0]
-        return sklearn_metrics.root_mean_squared_error(target.cpu().detach(), logits.cpu().detach())
+        target = target.cpu().detach()
+        logits = logits.cpu().detach()
+        return sklearn_metrics.root_mean_squared_error(target, logits)
 
 
 class MSEMetric(SimpleMetric):

@@ -16,12 +16,12 @@ echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
 
 
-ALPHA_VALUES=( 0.1 1.0 10 20 )
+ALPHA_VALUES=( 0.1 1.0 10 20)
 GAMMA_VALUES=( 0.01 0.1 1.0 10 )
 SIGMA_VALUES=( 0.01 1.0 )
-HIDDENDIM_VALUES=( 2 5 10 20 )
+HIDDENDIM_VALUES=( 2 5 10 20 30 40)
 T_VALUES=( 1 )
-K_VALUES=( 1.0 2.0)
+K_VALUES=( 1.0 2.0 )
 # eta values shuold be int
 ETA_VALUES=( 1 2 )
 
@@ -47,7 +47,7 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                 mkdir -p $EXPERIMENT_DIRECTORY
                 echo "Beginning Experiment ${EXPERIMENT_NAME} with hyper-parameters ${EXPERIMENT_SETUP}"
 
-                SBATCH_COMMAND="experiments/rfn_experiments/run_fold_experiment.slrm \
+                SBATCH_COMMAND="experiments/esn_experiments/run_fold_experiment.slrm \
                     ${CONFIG_PATH} \
                     ${EXPERIMENT_DIRECTORY} \
                     ${HIDDEN_DIM} \

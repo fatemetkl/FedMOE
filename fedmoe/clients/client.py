@@ -16,7 +16,6 @@ class ClientType(Enum):
 
 
 class Client(ABC):
-
     def __init__(
         self,
         id: int,

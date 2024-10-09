@@ -8,10 +8,10 @@
 #SBATCH --mem=6G
 #SBATCH --partition=cpu
 #SBATCH --qos=m
-#SBATCH --job-name=fedmoe_fold_experiment
+#SBATCH --job-name=fedmoe_esn_fold_exp
 #SBATCH --output=%j_%x.out
 #SBATCH --error=%j_%x.err
-#SBATCH --time=00:10:00
+#SBATCH --time=00:20:00
 
 
 
@@ -74,7 +74,7 @@ do
 
     RUN_OUTPUT_FILE="${RUN_OUTPUT_DIR}log.out"
 
-    python -m experiments.rfn_experiments.run_rfn_experiment \
+    python -m experiments.esn_experiments.run_esn_experiment \
         --config_path ${CONFIG_PATH} \
         --result_dir ${RUN_OUTPUT_DIR} \
         --hidden_dim ${HIDDEN_DIM} \

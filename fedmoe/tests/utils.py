@@ -101,18 +101,18 @@ def get_rfn_client_manager_dy_dx_1(
     # Set seed for reproducibility
     torch.manual_seed(42)
 
-    data_sequence = load_data("periodic_signal", data_length)
+    data_object = load_data("periodic_signal", data_length)
 
     client_manager = ClientManager(
         ClientType.RFN,
         num_clients,
-        data_sequence,
+        data_object.input_matrix,
         sync_freq=sync_freq,
         z_dim=z_dim,
         alpha=alpha,
         gamma=gamma,
         sigma=1.0,
-        target_sequence=None,
+        target_sequence=data_object.target_matrix,
     )
 
     # Patching the initial conditions with random values to make calculations more complex

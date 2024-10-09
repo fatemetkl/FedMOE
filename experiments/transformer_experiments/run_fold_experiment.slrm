@@ -8,10 +8,10 @@
 #SBATCH --mem=6G
 #SBATCH --partition=cpu
 #SBATCH --qos=m
-#SBATCH --job-name=fedmoe_fold_experiment
+#SBATCH --job-name=fedmoe_transformer_experiment
 #SBATCH --output=%j_%x.out
 #SBATCH --error=%j_%x.err
-#SBATCH --time=00:10:00
+#SBATCH --time=00:20:00
 
 
 
@@ -24,8 +24,12 @@ SIGMA_VALUE=$6
 K_VALUE=$7
 ETA_VALUE=$8
 T_Value=$9
-VENV_PATH=${10}
-EXPERIMENT_SETUP=${11}
+DATA_LOADER_NUM_SAMPLES=${10}
+DATA_LOADER_BATCH_SIZE=${11} 
+PRE_TRAINING_EPOCHS=${12}
+PRE_TRAINING_LEARNING_RATE=${13}
+VENV_PATH=${14}
+EXPERIMENT_SETUP=${15}
 
 RUN_NAMES=( "Run1" )
 SEEDS=(2024 2025 2026)
@@ -74,7 +78,8 @@ do
 
     RUN_OUTPUT_FILE="${RUN_OUTPUT_DIR}log.out"
 
-    python -m experiments.rfn_experiments.run_rfn_experiment \
+
+    python -m experiments.transformer_experiments.run_transformer_experiment \
         --config_path ${CONFIG_PATH} \
         --result_dir ${RUN_OUTPUT_DIR} \
         --hidden_dim ${HIDDEN_DIM} \
@@ -84,6 +89,10 @@ do
         --K ${K_VALUE} \
         --eta ${ETA_VALUE} \
         --T ${T_Value} \
+        --data_loader_num_samples ${DATA_LOADER_NUM_SAMPLES} \
+        --data_loader_batch_size ${DATA_LOADER_BATCH_SIZE} \
+        --pre_training_epochs ${PRE_TRAINING_EPOCHS} \
+        --pre_training_learning_rate ${PRE_TRAINING_LEARNING_RATE} \
         --experiment_setup ${EXPERIMENT_SETUP} \
         --random_seed ${SEED} \
         > ${RUN_OUTPUT_FILE} 2>&1 &

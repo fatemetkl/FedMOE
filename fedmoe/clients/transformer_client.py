@@ -11,7 +11,6 @@ from fedmoe.models.transformer import TransformerTimeSeriesModel
 
 
 class TransformerClient(Client):
-
     def __init__(
         self,
         id: int,
@@ -62,7 +61,7 @@ class TransformerClient(Client):
                     loss = self.pre_training_criterion(outputs.double(), targets.double())
                     loss.backward()
                     optimizer.step()
-                    # The outputs and targets here are batch-first, therefore each one is a 3D tensor.
+                    # The outputs and targets here are batch-first, therefore eachone is a 3D tensor.
                     # Metrics only accepts up to 2D, so we have to reshape these tensors
                     self.pre_training_metric.update(
                         outputs.reshape((outputs.size(0), outputs.size(1) * outputs.size(2))),

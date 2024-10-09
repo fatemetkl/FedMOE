@@ -34,7 +34,7 @@ class Server:
         self.clients_predictions: List[torch.Tensor] = []
         self.z_dim = self.client_manager.z_dim
         self.metrics = metrics
-        self.metric_manager = MetricManager(metrics=self.metrics, metric_manager_name="average")
+        self.metric_manager = MetricManager(metrics=self.metrics, metric_manager_name="server")
         self.kappa: float = kappa
         self.eta: int = eta
 
