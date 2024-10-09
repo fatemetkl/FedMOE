@@ -1,8 +1,9 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Tuple
 
 import matplotlib.pyplot as plt
 import torch
-
+from torch.utils.data import DataLoader
+from fl4health.utils.dataset import BaseDataset
 from fedmoe.datasets.data_matrix_generator import (
     InputGenerator,
     MultiDimensionalTargetGenerator,
@@ -11,14 +12,65 @@ from fedmoe.datasets.data_matrix_generator import (
 )
 
 
+class TimeSeriesTorchDataset(BaseDataset):
+    def __init__(
+        self,
+        data: List[torch.Tensor],
+        targets: List[torch.Tensor],
+    ) -> None:
+        super().__init__()
+        self.data = data
+        self.targets = targets
+        self.transform = None
+        self.target_transform = None
+
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+        assert self.targets is not None
+
+        data, target = self.data[index], self.targets[index]
+
+        if self.transform is not None:
+            data = self.transform(data)
+
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return data, target
+
+    def __len__(self) -> int:
+        return len(self.data)
+
+
 class TimeSeriesData:
 
     def __init__(self, total_time_steps: int, input_gen: InputGenerator, target_gen: TargetGenerator) -> None:
         assert total_time_steps > 1, "Error, total_time_step should be positive and greater than one."
         self.total_time_steps = total_time_steps
         self.time_axis = torch.arange(0, self.total_time_steps)
+        self.input_gen = input_gen
+        self.target_gen = target_gen
         self.input_matrix = input_gen.generate_input_tensor(self.time_axis)
         self.target_matrix = target_gen.generate_target_tensor(self.time_axis, self.input_matrix)
+
+    def get_dataloader(self, num_samples: int, batch_size: int, shuffle: bool = False) -> DataLoader:
+        """
+        This function can be used to generate data loaders for train or validation, which are mainly
+        used to pre-train the transformer model.
+        Set the shuffle variable to True for validation data loader.
+        """
+        # Generate new data samples
+        data: List[torch.Tensor] = []
+        targets: List[torch.Tensor] = []
+        for sample in range(num_samples):
+            sample_input = self.input_gen.generate_input_tensor(self.time_axis)
+            data.append(sample_input)
+            targets.append(self.target_gen.generate_target_tensor(self.time_axis, sample_input))
+
+        dataset: BaseDataset = TimeSeriesTorchDataset(data, targets)
+
+        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+        # Each item (input or output) in the data_loader will have a shape of (batch_size, time_steps, dim)
+        return data_loader
 
     def visualize(
         self,
@@ -26,6 +78,7 @@ class TimeSeriesData:
         plot_path: str,
         T: int = 0,
         show_points: Optional[bool] = False,
+        plot_info: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Saves plots of input_matrix, target_matrix, and prediction_matrix.
@@ -38,13 +91,18 @@ class TimeSeriesData:
                 T (int): the value of synchronization frequency. If T > 0, the plot will highlight the
                    synchronization points. Otherwise, we will not highlight the synchronization points,
                    indicating game is not played.
-                show_points (Optional[bool]): If True, the plot will show the synchronization points as points.
+                show_points (Optional[bool]): if True, the plot will show the synchronization points as points.
                    Otherwise, it will show as vertical lines.
+                plot_info: Optional [Dict[str, Any]]: additional information of the experiment setting to be
+                    added to the plot.
         """
 
         server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
         # Server prediction matrix should have the same shape and target matrix.
-        assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1])
+        assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1]), {
+            f"Error:server output matrix has a shape {server_matrix.shape},\
+                but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
+        }
 
         plt.figure(figsize=(10, 6))
 
@@ -55,7 +113,9 @@ class TimeSeriesData:
             plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i+1}", linestyle=":")
 
         for i in range(server_matrix.shape[1]):
-            plt.plot(self.time_axis, server_matrix[:, i], label=f"Server prediction Y{i+1}", linestyle="-")
+            plt.plot(
+                self.time_axis, server_matrix[:, i].detach().numpy(), label=f"Server prediction Y{i+1}", linestyle="-"
+            )
             if T > 0 and show_points:
                 T_indices = [i * T for i in range(1, int(self.total_time_steps / T) + 1)]
                 T_values = [server_matrix[j, i] for j in T_indices]
@@ -70,6 +130,18 @@ class TimeSeriesData:
             game_status = "with"
         else:
             game_status = "without"
+
+        if plot_info is not None:
+            text_content = "\n".join([f"{key}: {value}" for key, value in plot_info.items()])
+            plt.text(
+                0.05,
+                0.95,
+                text_content,
+                transform=plt.gca().transAxes,
+                fontsize=10,
+                verticalalignment="top",
+                bbox=dict(facecolor="white", alpha=0.5),
+            )
 
         plt.xlabel("Time Steps")
         plt.ylabel("Value")
