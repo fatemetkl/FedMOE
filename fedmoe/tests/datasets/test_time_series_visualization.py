@@ -57,7 +57,7 @@ def test_visualize_mixture_weights(tmp_path: Path) -> None:
     save_dir = tmp_path.joinpath("artifacts")
     save_dir.mkdir()
     # set this value to true if you want to see the generated plots
-    save_plots = True
+    save_plots = False
     if save_plots:
         save_dir = Path("fedmoe/tests/datasets/artifacts")
     # variables
