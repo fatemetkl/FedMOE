@@ -22,3 +22,58 @@ def test_time_series_2d_xy(tmp_path: Path) -> None:
         manual_server_prediction.append(torch.Tensor([10 * t, 30 * t]))
     two_d_data_obj.visualize(manual_server_prediction, f"{save_dir}/test_plot.png", T=2)
     two_d_data_obj.visualize(manual_server_prediction, f"{save_dir}/test_plot_2.png", T=2, show_points=True)
+
+
+def test_visualize_clients_predictions(tmp_path: Path) -> None:
+    save_dir = tmp_path.joinpath("artifacts")
+    save_dir.mkdir()
+    # set this value to true if you want to see the generated plots
+    save_plots = False
+    if save_plots:
+        save_dir = Path("fedmoe/tests/datasets/artifacts")
+    # variables
+    time_steps = 5
+    num_clients = 2
+    two_d_data_obj = TimeSeries2DXY(total_time_steps=time_steps)
+    manual_server_prediction = []
+    for t in range(time_steps):
+        manual_server_prediction.append(torch.Tensor([10 * t, 100 * t]))
+
+    manual_clients_predictions = []
+    for t in range(time_steps):
+        client_predictions = []
+        for client in range(num_clients):
+            client_predictions.append(torch.Tensor([[50 * t], [100 * t * (client + 1)]]))
+        manual_clients_predictions.append(torch.cat(client_predictions, dim=1))
+    plot_info = {
+        "num_clients": num_clients,
+    }
+    two_d_data_obj.visualize_clients_predictions(
+        manual_server_prediction, manual_clients_predictions, f"{save_dir}/client_pred_plot.png", plot_info, T=0
+    )
+
+
+def test_visualize_mixture_weights(tmp_path: Path) -> None:
+    save_dir = tmp_path.joinpath("artifacts")
+    save_dir.mkdir()
+    # set this value to true if you want to see the generated plots
+    save_plots = True
+    if save_plots:
+        save_dir = Path("fedmoe/tests/datasets/artifacts")
+    # variables
+    time_steps = 5
+    num_clients = 2
+    two_d_data_obj = TimeSeries2DXY(total_time_steps=time_steps)
+
+    manual_mixture_weights = []
+    for t in range(time_steps):
+        mixture_weights = []
+        for client in range(num_clients):
+            mixture_weights.append(torch.Tensor([[(client + 1) * 0.5 * t]]))
+        manual_mixture_weights.append(torch.cat(mixture_weights, dim=0))
+    plot_info = {
+        "num_clients": num_clients,
+    }
+    two_d_data_obj.visualize_mixture_weights(
+        manual_mixture_weights, f"{save_dir}/mixture_weights_plot.png", plot_info, T=0
+    )

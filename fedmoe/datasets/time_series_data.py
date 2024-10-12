@@ -1,9 +1,10 @@
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import torch
-from torch.utils.data import DataLoader
 from fl4health.utils.dataset import BaseDataset
+from torch.utils.data import DataLoader
+
 from fedmoe.datasets.data_matrix_generator import (
     InputGenerator,
     MultiDimensionalTargetGenerator,
@@ -104,8 +105,6 @@ class TimeSeriesData:
                 but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
         }
 
-        plt.figure(figsize=(10, 6))
-
         for i in range(self.input_matrix.shape[1]):
             plt.plot(self.time_axis, self.input_matrix[:, i], label=f"Input: x{i+1}", linestyle="--")
 
@@ -146,6 +145,176 @@ class TimeSeriesData:
         plt.xlabel("Time Steps")
         plt.ylabel("Value")
         plt.title(f"Input, Target, and Predicted time-series, {game_status} game ")
+
+        plt.legend()
+        plt.savefig(plot_path)
+
+        plt.close()
+
+    def visualize_clients_predictions(
+        self,
+        server_prediction: List[torch.Tensor],
+        client_predictions: List[torch.Tensor],
+        plot_path: str,
+        plot_info: Dict[str, Any],
+        T: int = 0,
+        show_points: Optional[bool] = False,
+    ) -> None:
+        """
+        Saves plots of input_matrix, target_matrix, and prediction_matrix.
+        Each matrix has shape (total_time_steps, num_dimensions).
+        Plots each dimension (row) as a line.
+
+            Args:
+                server_prediction (List[torch.Tensor]): List of predictions made by server.
+                client_predictions (List[torch.Tensor]): List of predictions made by clients.
+                plot_path (str): the plot path (including name and location) to save the plot
+                plot_info: [Dict[str, Any]]: additional information of the experiment setting to be
+                    added to the plot.
+                T (int): the value of synchronization frequency. If T > 0, the plot will highlight the
+                   synchronization points. Otherwise, we will not highlight the synchronization points,
+                   indicating game is not played.
+                show_points (Optional[bool]): if True, the plot will show the synchronization points as points.
+                   Otherwise, it will show as vertical lines.
+        """
+
+        server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
+        # Server prediction matrix should have the same shape as target matrix.
+        assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1]), {
+            f"Error:server output matrix has a shape {server_matrix.shape},\
+                but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
+        }
+
+        # Shape of client prediction tensor should be time x y_dim x num_clients
+        clients_pred_matrix = torch.stack(client_predictions, dim=0)
+        assert clients_pred_matrix.shape == (
+            self.total_time_steps,
+            self.target_matrix.shape[1],
+            plot_info["num_clients"],
+        )
+        for i in range(self.target_matrix.shape[1]):
+            plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i+1}", linestyle=":")
+
+        for client in range(int(plot_info["num_clients"])):
+            for i in range(clients_pred_matrix.shape[1]):
+                plt.plot(
+                    self.time_axis,
+                    clients_pred_matrix[:, i, client],
+                    label=f"Target: client{client}_Y{i+1}",
+                    linestyle="dashdot",
+                )
+
+        for i in range(server_matrix.shape[1]):
+            plt.plot(
+                self.time_axis, server_matrix[:, i].detach().numpy(), label=f"Server prediction Y{i+1}", linestyle="-"
+            )
+            if T > 0 and show_points:
+                T_indices = [i * T for i in range(1, int(self.total_time_steps / T) + 1)]
+                T_values = [server_matrix[j, i] for j in T_indices]
+                plt.scatter(T_indices, T_values, marker="o", label=f"T step for prediction Y{i+1}")
+
+        if T > 0 and not show_points:
+            for j in range(1, int(self.total_time_steps / T) + 1):
+                label = "T time steps" if j == 1 else None
+                plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
+
+        if T > 0:
+            game_status = "with"
+        else:
+            game_status = "without"
+
+        if plot_info is not None:
+            text_content = "\n".join([f"{key}: {value}" for key, value in plot_info.items()])
+            plt.text(
+                0.05,
+                0.95,
+                text_content,
+                transform=plt.gca().transAxes,
+                fontsize=10,
+                verticalalignment="top",
+                bbox=dict(facecolor="white", alpha=0.5),
+            )
+
+        plt.xlabel("Time Steps")
+        plt.ylabel("Prediction value")
+        plt.title(f"Client predictions and server mixture, {game_status} game ")
+
+        plt.legend()
+        plt.savefig(plot_path)
+
+        plt.close()
+
+    def visualize_mixture_weights(
+        self,
+        clients_mixture_weights: List[torch.Tensor],
+        plot_path: str,
+        plot_info: Dict[str, Any],
+        T: int = 0,
+        show_points: Optional[bool] = False,
+    ) -> None:
+        """
+        Saves plots of input_matrix, target_matrix, and prediction_matrix.
+        Each matrix has shape (total_time_steps, num_dimensions).
+        Plots each dimension (row) as a line.
+
+            Args:
+                clients_mixture_weights (List[torch.Tensor]): List of mixture weights as they evolve in the algorithm.
+                plot_path (str): the plot path (including name and location) to save the plot
+                plot_info: [Dict[str, Any]]: additional information of the experiment setting to be
+                    added to the plot.
+                T (int): the value of synchronization frequency. If T > 0, the plot will highlight the
+                   synchronization points. Otherwise, we will not highlight the synchronization points,
+                   indicating game is not played.
+                show_points (Optional[bool]): if True, the plot will show the synchronization points as points.
+                   Otherwise, it will show as vertical lines.
+        """
+
+        # Shape of client prediction tensor should be time x num_clients x 1
+        mixture_weights = torch.stack(clients_mixture_weights, dim=0)
+        assert mixture_weights.shape == (
+            self.total_time_steps,
+            plot_info["num_clients"],
+            1,
+        )
+
+        for client in range(int(plot_info["num_clients"])):
+            plt.plot(
+                self.time_axis,
+                mixture_weights[:, client, 0],
+                label=f"Weight: client{client}",
+                linestyle="dashdot",
+            )
+
+            if T > 0 and show_points:
+                T_indices = [i * T for i in range(1, int(self.total_time_steps / T) + 1)]
+                T_values = [mixture_weights[j, client] for j in T_indices]
+                plt.scatter(T_indices, T_values, marker="o", label="T step")
+
+        if T > 0 and not show_points:
+            for j in range(1, int(self.total_time_steps / T) + 1):
+                label = "T time steps" if j == 1 else None
+                plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
+
+        if T > 0:
+            game_status = "with"
+        else:
+            game_status = "without"
+
+        if plot_info is not None:
+            text_content = "\n".join([f"{key}: {value}" for key, value in plot_info.items()])
+            plt.text(
+                0.05,
+                0.95,
+                text_content,
+                transform=plt.gca().transAxes,
+                fontsize=10,
+                verticalalignment="top",
+                bbox=dict(facecolor="white", alpha=0.5),
+            )
+
+        plt.xlabel("Time Steps")
+        plt.ylabel("Prediction value")
+        plt.title(f"Client mixture weights, {game_status} game ")
 
         plt.legend()
         plt.savefig(plot_path)
