@@ -1,7 +1,7 @@
 # Experiment variables
-experiment_name: "esn-brown-add-4c"
-client_type : 4 # 2: EchoState networks (fixed for this experiment)
-data: "brownian_addition"  # periodic_signal, logistic_map, sine_signal, quadratic_data, linear_line, or horizontal_line, 2dxy, simple_brownian, brownian_addition
+experiment_name: "esn-periodic-experiment"
+client_type : 2 # 2: EchoState networks (fixed for this experiment)
+data: "periodic_signal"  # Dataset options are saved in utils.DataOptions
 
 num_clients : 4 # The number of experts or clients
 total_rounds : 200 # The number of total rounds (data sequence will be created to be one time-step longer)

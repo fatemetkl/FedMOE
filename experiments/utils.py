@@ -5,11 +5,23 @@ import torch
 import yaml
 from fedmoe.datasets.time_series_data import TimeSeriesData, TimeSeries2DXY
 
-# from experiments.experimental_data import create_linear_line, quadratic_data, sine_signal
 from fedmoe.datasets.simple_datasets import TimeSeriesLinearLine, TimeSeriesQuadratic, TimeSeriesSineSignal
 from fedmoe.datasets.logistic_map_dataset import TimeSeriesLogisticMap
 from fedmoe.datasets.periodic_dataset import TimeSeriesPeriodic
 from fedmoe.datasets.brownian_motion_dataset import TimeSeriesBrownianTarget, BrownianSequenceAddition
+from enum import Enum
+
+
+class DataOptions(Enum):
+    PERIODIC_SIGNAL: str = "periodic_signal"
+    LOGISTIC_MAP = "logistic_map"
+    SINE_SIGNAL = "sine_signal"
+    QUADRATIC_DATA = "quadratic_data"
+    LINEAR_LINE = "linear_line"
+    HORIZONTAL_LINE = "horizontal_line"
+    SIMPLE_BROWNIAN = "simple_brownian"
+    BROWNIAN_ADDITION = "brownian_addition"
+    XY_2D = "2dxy"
 
 
 def load_config(config_path: str) -> Dict[str, Any]:
@@ -20,31 +32,37 @@ def load_config(config_path: str) -> Dict[str, Any]:
 
 def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
     # Load data
-    if dataset_name == "periodic_signal":
+    try:
+        dataset_option = DataOptions(dataset_name)
+        print(f"Data option is set to: {dataset_option}")
+    except ValueError:
+        raise ValueError(f"Invalid data name in config: {dataset_name}")
+
+    if dataset_option == DataOptions.PERIODIC_SIGNAL:
         return TimeSeriesPeriodic(total_time_steps=total_rounds)
-    elif dataset_name == "logistic_map":
+    elif dataset_option == DataOptions.LOGISTIC_MAP:
         return TimeSeriesLogisticMap(total_time_steps=total_rounds)
-    elif dataset_name == "horizontal_line":
+    elif dataset_option == DataOptions.HORIZONTAL_LINE:
         # In this dataset, input is the time_step, and output is always b (a is zero).
         return TimeSeriesLinearLine(total_time_steps=total_rounds, a=0.0, b=0.5)
-    elif dataset_name == "linear_line":
+    elif dataset_option == DataOptions.LINEAR_LINE:
         return TimeSeriesLinearLine(total_time_steps=total_rounds, a=3.0, b=2.0)
-    elif dataset_name == "quadratic_data":
+    elif dataset_option == DataOptions.QUADRATIC_DATA:
         return TimeSeriesQuadratic(total_time_steps=total_rounds, a=2.0, b=-1.0, c=1.0)
-    elif dataset_name == "sine_signal":
+    elif dataset_option == DataOptions.SINE_SIGNAL:
         return TimeSeriesSineSignal(total_time_steps=total_rounds)
-    elif dataset_name == "2dxy":
+    elif dataset_option == DataOptions.XY_2D:
         return TimeSeries2DXY(total_time_steps=total_rounds)
-    elif dataset_name == "simple_brownian":
+    elif dataset_option == DataOptions.SIMPLE_BROWNIAN:
         return TimeSeriesBrownianTarget(
             total_time_steps=total_rounds, n_brownian_trajectories=5, mu=1.0, sigma=1.0, offset=0.5
         )
-    elif dataset_name == "brownian_addition":
+    elif dataset_option == DataOptions.BROWNIAN_ADDITION:
         return BrownianSequenceAddition(
             total_time_steps=total_rounds, n_brownian_trajectories=3, mu=1.0, sigma=1.0, offset=0.0
         )
     else:
-        raise ValueError("dataset name is not valid.")
+        raise ValueError(f"dataset name {dataset_name} is not valid. See DataOptions.")
 
 
 def plot_sequence(

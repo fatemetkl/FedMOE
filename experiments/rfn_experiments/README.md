@@ -4,7 +4,7 @@
 To run the random feature network experiment on cluster, first specify the experiment setup in the `config.yaml` file, then, set the hyper-parameter search space in the `run_hp_sweep.sh` script file. Then, run it with the following command:
 
 ```
-bash experiments/transformer_experiments/run_hp_sweep.sh \
+bash experiments/rfn_experiments/run_hp_sweep.sh \
 path_to_config.yaml \
 path_to_folder_for_artifacts/ \
 path_to_desired_venv/ 

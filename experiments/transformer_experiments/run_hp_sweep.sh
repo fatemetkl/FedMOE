@@ -16,34 +16,32 @@ echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
 
 
-# ALPHA_VALUES=( 0.1 1.0 10 20 )
-# GAMMA_VALUES=( 0.01 0.1 1.0 10 )
-# SIGMA_VALUES=( 0.01 1.0 )
-# # Hidden dimension should be divisible by nheads (4 by default)
-# HIDDENDIM_VALUES=( 4 8 12 20 24 )
-# T_VALUES=( 1 )
-# K_VALUES=( 1.0 2.0 )
-# # eta values shuold be int
-# ETA_VALUES=( 1 2 )
-# DATA_LOADER_NUM_SAMPLES=( 100 200 )
-# DATA_LOADER_BATCH_SIZE=( 10 )
-# PRE_TRAINING_EPOCHS=( 10 )
-# PRE_TRAINING_LEARNING_RATE=( 0.001 0.01 )
-
-
-
-ALPHA_VALUES=( 0.1 )
-GAMMA_VALUES=( 0.01 )
-SIGMA_VALUES=( 0.01 )
-HIDDENDIM_VALUES=( 8 )
+ALPHA_VALUES=( 0.1 1.0 10 20 )
+GAMMA_VALUES=( 0.01 0.1 1.0 10 )
+SIGMA_VALUES=( 0.01 1.0 )
+# Hidden dimension should be divisible by nheads (4 by default)
+HIDDENDIM_VALUES=( 4 8 12 20 24 )
 T_VALUES=( 1 )
-K_VALUES=( 1.0 )
-# eta values shuold be int
-ETA_VALUES=( 1 )
-DATA_LOADER_NUM_SAMPLES=( 100 )
+K_VALUES=( 1.0 2.0 )
+ETA_VALUES=( 1.0 2.0 )
+DATA_LOADER_NUM_SAMPLES=( 100 200 )
 DATA_LOADER_BATCH_SIZE=( 10 )
-PRE_TRAINING_EPOCHS=( 2 )
-PRE_TRAINING_LEARNING_RATE=( 0.01 )
+PRE_TRAINING_EPOCHS=( 10 )
+PRE_TRAINING_LEARNING_RATE=( 0.001 0.01 )
+
+
+
+# ALPHA_VALUES=( 0.1 )
+# GAMMA_VALUES=( 0.01 )
+# SIGMA_VALUES=( 0.01 )
+# HIDDENDIM_VALUES=( 8 )
+# T_VALUES=( 1 )
+# K_VALUES=( 1.0 )
+# ETA_VALUES=( 1.0 )
+# DATA_LOADER_NUM_SAMPLES=( 100 )
+# DATA_LOADER_BATCH_SIZE=( 10 )
+# PRE_TRAINING_EPOCHS=( 2 )
+# PRE_TRAINING_LEARNING_RATE=( 0.01 )
 
 for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
   for ALPHA_VALUE in "${ALPHA_VALUES[@]}"; do
@@ -76,8 +74,7 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                             ${BATCH_SIZE} \
                             ${EPOCHS} \
                             ${LEARNING_RATE} \
-                            ${VENV_PATH} \
-                            ${EXPERIMENT_SETUP}"
+                            ${VENV_PATH}"
                         echo "Running sbatch command ${SBATCH_COMMAND}"
                         sbatch ${SBATCH_COMMAND}
                   
