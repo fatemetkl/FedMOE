@@ -131,7 +131,13 @@ class TimeSeriesData:
             game_status = "without"
 
         if plot_info is not None:
-            text_content = " ".join([f"{key}: {value}," for key, value in plot_info.items()])
+            text_content = ""
+            num_items = 0
+            for key, value in plot_info.items():
+                text_content += f"{key}: {value},"
+                num_items += 1
+                if num_items % 6 == 0:
+                    text_content += "\n"
             plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
             plt.subplots_adjust(bottom=0.2)
 
@@ -220,9 +226,15 @@ class TimeSeriesData:
             game_status = "without"
 
         if plot_info is not None:
-            text_content = " ".join([f"{key}: {value}," for key, value in plot_info.items()])
+            text_content = ""
+            num_items = 0
+            for key, value in plot_info.items():
+                text_content += f"{key}: {value},"
+                num_items += 1
+                if num_items % 6 == 0:
+                    text_content += "\n"
             plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
-            plt.subplots_adjust(bottom=0.20)
+            plt.subplots_adjust(bottom=0.2)
 
         plt.xlabel("Time Steps")
         plt.ylabel("Prediction value")
@@ -290,7 +302,13 @@ class TimeSeriesData:
             game_status = "without"
 
         if plot_info is not None:
-            text_content = " ".join([f"{key}: {value}," for key, value in plot_info.items()])
+            text_content = ""
+            num_items = 0
+            for key, value in plot_info.items():
+                text_content += f"{key}: {value},"
+                num_items += 1
+                if num_items % 6 == 0:
+                    text_content += "\n"
             plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
             plt.subplots_adjust(bottom=0.2)
 

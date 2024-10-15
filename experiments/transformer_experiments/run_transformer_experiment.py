@@ -82,10 +82,10 @@ def main(
         "alpha": alpha,
         "gamma": gamma,
         "sigma": sigma,
-        "pre_training_num_samples": data_loader_num_samples,
-        "pre_training_batch_size": data_loader_batch_size,
-        "pre_training_epochs": pre_training_epochs,
-        "pre_training_learning_rate": pre_training_learning_rate,
+        "PT_num_samples": data_loader_num_samples,
+        "PT_batch_size": data_loader_batch_size,
+        "PT_epochs": pre_training_epochs,
+        "PT_learning_rate": pre_training_learning_rate,
     }
 
     if config["save_plot"]:
