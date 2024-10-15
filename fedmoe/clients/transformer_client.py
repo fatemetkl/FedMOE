@@ -11,7 +11,6 @@ from fedmoe.models.transformer import TransformerTimeSeriesModel
 
 
 class TransformerClient(Client):
-
     def __init__(
         self,
         id: int,

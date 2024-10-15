@@ -24,7 +24,6 @@ class TargetGenerator(ABC):
 
 
 class MultiDimensionalTimeFunctionInputGenerator(InputGenerator):
-
     def __init__(self, function_list: List[InputGenerationFunction], x_dim: int):
         self.function_list = function_list
         self.x_dim = x_dim
@@ -45,7 +44,6 @@ class MultiDimensionalTimeFunctionInputGenerator(InputGenerator):
 
 
 class MultiDimensionalTargetGenerator(TargetGenerator):
-
     def __init__(
         self,
         function_list: List[TargetGenerationFunction],
@@ -70,5 +68,8 @@ class MultiDimensionalTargetGenerator(TargetGenerator):
         target_matrix = torch.stack(y_list, dim=1).double()
 
         # Target matrix's shape should be (time_steps, y_dim)
-        assert target_matrix.shape == (time_axis.shape[0], self.y_dim)
+        assert target_matrix.shape == (
+            time_axis.shape[0],
+            self.y_dim,
+        ), f"Error: input matrix's shape is {target_matrix.shape}"
         return target_matrix

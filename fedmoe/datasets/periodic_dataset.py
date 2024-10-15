@@ -1,9 +1,7 @@
 from functools import partial
-from typing import Dict, List, Tuple
+from typing import List
 
 import torch
-from fl4health.utils.dataset import BaseDataset
-from torch.utils.data import DataLoader
 
 from fedmoe.datasets.data_matrix_generator import (
     MultiDimensionalTargetGenerator,
@@ -14,18 +12,6 @@ from fedmoe.datasets.data_matrix_generator import (
 # from echotorch.data.datasets import PeriodicSignalDataset
 from fedmoe.datasets.echotorch_datasets.periodic_signal import PeriodicSignalDataset  # type: ignore
 from fedmoe.datasets.time_series_data import TimeSeriesData
-
-
-class TimeSeriesPeriodicDataset(BaseDataset):
-    def __init__(self, data_length: int, data_size: int, period_list: List[int] = [5, 6, 12, 20]) -> None:
-        data = PeriodicSignalDataset(sample_len=data_length, n_samples=data_size, period=period_list)
-        self.data = data.outputs
-        # Using teacher forcing method in training
-        # Shift input elements to the left to create target
-        self.targets = self.data[1:]  # type: ignore
-        # Transformations are already applied
-        self.transform = None
-        self.target_transform = None
 
 
 class TimeSeriesPeriodic(TimeSeriesData):
@@ -65,20 +51,3 @@ class TimeSeriesPeriodic(TimeSeriesData):
             return input_matrix[1:]
 
         return MultiDimensionalTargetGenerator([y_func], y_dim=1)
-
-    def load_periodic_dataloader(
-        self,
-        train_data_size: int,
-        val_data_size: int,
-        batch_size: int,
-    ) -> Tuple[DataLoader, DataLoader, Dict[str, int]]:
-        """Load Periodic Signal Dataset (training and validation set).
-        This is used to pre-train the transformer models"""
-        train_ds: BaseDataset = TimeSeriesPeriodicDataset(self.total_time_steps, train_data_size)
-        val_ds: BaseDataset = TimeSeriesPeriodicDataset(self.total_time_steps, val_data_size)
-
-        train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=False)
-        validation_loader = DataLoader(val_ds, batch_size=batch_size)
-
-        num_examples = {"train_set": len(train_ds), "validation_set": len(val_ds)}
-        return train_loader, validation_loader, num_examples

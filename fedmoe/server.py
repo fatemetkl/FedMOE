@@ -16,7 +16,7 @@ class Server:
         game: Game,
         metrics: Sequence[Metric],
         kappa: float,
-        eta: int,
+        eta: float,
     ) -> None:
         assert (
             sync_freq == client_manager.sync_freq
@@ -34,9 +34,9 @@ class Server:
         self.clients_predictions: List[torch.Tensor] = []
         self.z_dim = self.client_manager.z_dim
         self.metrics = metrics
-        self.metric_manager = MetricManager(metrics=self.metrics, metric_manager_name="average")
+        self.metric_manager = MetricManager(metrics=self.metrics, metric_manager_name="server")
         self.kappa: float = kappa
-        self.eta: int = eta
+        self.eta: float = eta
 
     def compute_mixture_weights(self, predictions: torch.Tensor, y_t: torch.Tensor) -> torch.Tensor:
         # Size of predictions is d_y x N (corresponds to \mathbf{\hat{Y}}_t) and y_t is d_y x 1.

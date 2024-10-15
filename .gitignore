@@ -139,5 +139,8 @@ dmypy.json
 launch.json
 settings.json
 
-# results
-experiments/results/
+# experiment outputs
+experiments/**/*_results/
+*.png
+*.err
+*.out

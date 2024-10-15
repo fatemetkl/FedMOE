@@ -5,7 +5,6 @@ from fedmoe.utils.utils import TensorGenerationType, generate_random_tensor
 
 
 class Rfn(nn.Module):
-
     def __init__(
         self,
         x_dim: int,

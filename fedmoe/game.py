@@ -342,7 +342,6 @@ class Game(ABC):
 
 
 class TransformerGame(Game):
-
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
         super().__init__(clients, sync_freq, z_dim)
 
@@ -376,7 +375,6 @@ class TransformerGame(Game):
 
 
 class EchoStateGame(Game):
-
     def __init__(
         self,
         clients: List[Client],
@@ -463,7 +461,6 @@ class EchoStateGame(Game):
 
 
 class RfnGame(Game):
-
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
         super().__init__(clients, sync_freq, z_dim)
 

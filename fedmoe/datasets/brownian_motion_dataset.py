@@ -50,7 +50,6 @@ def get_brownian_sequences_fixed_mu_sigma(
 
 
 class TimeSeriesBrownianTarget(TimeSeriesData):
-
     def __init__(
         self,
         total_time_steps: int,
@@ -111,7 +110,6 @@ class TimeSeriesBrownianTarget(TimeSeriesData):
 
 
 class BrownianSequenceAddition(TimeSeriesData):
-
     def __init__(
         self,
         total_time_steps: int,

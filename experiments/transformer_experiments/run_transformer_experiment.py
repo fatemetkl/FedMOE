@@ -7,9 +7,8 @@ from typing import Any, Dict
 import torch
 
 from experiments.utils import load_config, load_data
-from fedmoe.client_manager import ClientManager
-from fedmoe.clients.client import ClientType
-from fedmoe.game import RfnGame
+from fedmoe.client_manager import PreTrainingClientManager
+from fedmoe.game import TransformerGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
 
@@ -24,6 +23,10 @@ def main(
     sigma: float,
     K: float,
     eta: float,
+    data_loader_num_samples: int,
+    data_loader_batch_size: int,
+    pre_training_epochs: int,
+    pre_training_learning_rate: float,
 ) -> None:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
@@ -34,25 +37,29 @@ def main(
 
     # Load data
     data_object = load_data(config["data"], config["total_rounds"] + 1)
+    train_data_loader = data_object.get_dataloader(
+        num_samples=data_loader_num_samples, batch_size=data_loader_batch_size, shuffle=True
+    )
 
-    client_manager = ClientManager(
-        ClientType.RFN,
+    client_manager = PreTrainingClientManager(
         config["num_clients"],
         data_object.input_matrix,
         T,
         hidden_dim,
         alpha,
         gamma,
-        sigma,
-        data_object.target_matrix,
+        pre_training_dataloader=train_data_loader,
+        pre_training_epochs=pre_training_epochs,
+        pre_training_learning_rate=pre_training_learning_rate,
+        target_sequence=data_object.target_matrix,
     )
 
-    game = RfnGame(
+    game = TransformerGame(
         client_manager.clients,
         sync_freq=T,
         z_dim=hidden_dim,
     )
-    logger.info("RFN clients initiated")
+    logger.info("Transformer clients initiated")
 
     # Run the server
     server = Server(
@@ -75,6 +82,10 @@ def main(
         "alpha": alpha,
         "gamma": gamma,
         "sigma": sigma,
+        "pre_training_num_samples": data_loader_num_samples,
+        "pre_training_batch_size": data_loader_batch_size,
+        "pre_training_epochs": pre_training_epochs,
+        "pre_training_learning_rate": pre_training_learning_rate,
     }
 
     if config["save_plot"]:
@@ -88,7 +99,7 @@ if __name__ == "__main__":
         action="store",
         type=str,
         help="Path to configuration file.",
-        default="experiments/rfn_experiments/config.yaml",
+        default="experiments/transformer_experiments/config.yaml",
     )
     parser.add_argument(
         "--result_dir",
@@ -147,11 +158,39 @@ if __name__ == "__main__":
         default=5,
     )
     parser.add_argument(
+        "--data_loader_num_samples",
+        action="store",
+        type=int,
+        help="The size of the dataset used for transformer pre-training.",
+        default=100,
+    )
+    parser.add_argument(
+        "--data_loader_batch_size",
+        action="store",
+        type=int,
+        help="Batch size used to create the data loader for transformer pre-training.",
+        default=5,
+    )
+    parser.add_argument(
+        "--pre_training_epochs",
+        action="store",
+        type=int,
+        help="The number of epochs used for transformer pre-training.",
+        default=2,
+    )
+    parser.add_argument(
+        "--pre_training_learning_rate",
+        action="store",
+        type=float,
+        help="The learning rate used in transformer pre-training.",
+        default=0.01,
+    )
+    parser.add_argument(
         "--random_seed",
         action="store",
         type=int,
         help="Random seed value.",
-        default=5,
+        default=2024,
     )
 
     args = parser.parse_args()
@@ -168,4 +207,8 @@ if __name__ == "__main__":
         args.sigma,
         args.K,
         args.eta,
+        args.data_loader_num_samples,
+        args.data_loader_batch_size,
+        args.pre_training_epochs,
+        args.pre_training_learning_rate,
     )
