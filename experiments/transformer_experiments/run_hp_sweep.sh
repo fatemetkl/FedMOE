@@ -77,7 +77,7 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                             ${VENV_PATH}"
                         echo "Running sbatch command ${SBATCH_COMMAND}"
                         sbatch ${SBATCH_COMMAND}
-                  
+
                     done
                   done
                 done

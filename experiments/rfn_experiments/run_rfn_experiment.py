@@ -1,13 +1,12 @@
 import argparse
 import logging
 import os
-import torch
-
 import random
 from typing import Any, Dict
 
-from experiments.utils import load_config, load_data
+import torch
 
+from experiments.utils import load_config, load_data
 from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
 from fedmoe.game import RfnGame

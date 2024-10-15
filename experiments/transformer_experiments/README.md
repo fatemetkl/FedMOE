@@ -8,7 +8,7 @@ Run the experiment with the following command:
 bash experiments/transformer_experiments/run_hp_sweep.sh \
 path_to_config.yaml \
 path_to_folder_for_artifacts/ \
-path_to_desired_venv/ 
+path_to_desired_venv/
 ```
 
 For example:
@@ -42,4 +42,4 @@ Don't forget to complete the path to the experiment directory.
 ```
 python -m experiments.find_best_hp --hp_sweep_dir experiments/transformer_experiments/transformer_results/
 ```
-Make sure your environment is activated. 
+Make sure your environment is activated.

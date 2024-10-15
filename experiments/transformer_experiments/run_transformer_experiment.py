@@ -1,13 +1,12 @@
 import argparse
 import logging
 import os
-import torch
-
 import random
 from typing import Any, Dict
 
-from experiments.utils import load_config, load_data
+import torch
 
+from experiments.utils import load_config, load_data
 from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.game import TransformerGame
 from fedmoe.metrics import RMSEMetric

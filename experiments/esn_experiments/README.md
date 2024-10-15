@@ -7,7 +7,7 @@ To run the random Echo State experiment on cluster, first specify the experiment
 bash experiments/esn_experiments/run_hp_sweep.sh \
 path_to_config.yaml \
 path_to_folder_for_artifacts/ \
-path_to_desired_venv/ 
+path_to_desired_venv/
 ```
 For example:
 
