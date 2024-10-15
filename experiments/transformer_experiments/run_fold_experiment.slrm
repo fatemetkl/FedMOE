@@ -29,7 +29,6 @@ DATA_LOADER_BATCH_SIZE=${11}
 PRE_TRAINING_EPOCHS=${12}
 PRE_TRAINING_LEARNING_RATE=${13}
 VENV_PATH=${14}
-EXPERIMENT_SETUP=${15}
 
 RUN_NAMES=( "Run1" )
 SEEDS=(2024 2025 2026)
@@ -93,7 +92,6 @@ do
         --data_loader_batch_size ${DATA_LOADER_BATCH_SIZE} \
         --pre_training_epochs ${PRE_TRAINING_EPOCHS} \
         --pre_training_learning_rate ${PRE_TRAINING_LEARNING_RATE} \
-        --experiment_setup ${EXPERIMENT_SETUP} \
         --random_seed ${SEED} \
         > ${RUN_OUTPUT_FILE} 2>&1 &
         

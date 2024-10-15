@@ -25,7 +25,6 @@ K_VALUE=$7
 ETA_VALUE=$8
 T_Value=$9
 VENV_PATH=${10}
-EXPERIMENT_SETUP=${11}
 
 RUN_NAMES=( "Run1" )
 SEEDS=(2024 2025 2026)
@@ -84,7 +83,6 @@ do
         --K ${K_VALUE} \
         --eta ${ETA_VALUE} \
         --T ${T_Value} \
-        --experiment_setup ${EXPERIMENT_SETUP} \
         --random_seed ${SEED} \
         > ${RUN_OUTPUT_FILE} 2>&1 &
         
