@@ -1,9 +1,10 @@
-from typing import List, Optional, Dict, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import torch
-from torch.utils.data import DataLoader
 from fl4health.utils.dataset import BaseDataset
+from torch.utils.data import DataLoader
+
 from fedmoe.datasets.data_matrix_generator import (
     InputGenerator,
     MultiDimensionalTargetGenerator,

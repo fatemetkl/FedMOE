@@ -1,10 +1,12 @@
 from functools import partial
+
 import torch
-from fedmoe.datasets.time_series_data import TimeSeriesData
+
 from fedmoe.datasets.data_matrix_generator import (
     MultiDimensionalTargetGenerator,
     MultiDimensionalTimeFunctionInputGenerator,
 )
+from fedmoe.datasets.time_series_data import TimeSeriesData
 
 
 class TimeSeriesLinearLine(TimeSeriesData):

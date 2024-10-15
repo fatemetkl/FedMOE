@@ -1,15 +1,15 @@
+from enum import Enum
 from typing import Any, Dict
 
 import matplotlib.pyplot as plt
 import torch
 import yaml
-from fedmoe.datasets.time_series_data import TimeSeriesData, TimeSeries2DXY
 
-from fedmoe.datasets.simple_datasets import TimeSeriesLinearLine, TimeSeriesQuadratic, TimeSeriesSineSignal
+from fedmoe.datasets.brownian_motion_dataset import BrownianSequenceAddition, TimeSeriesBrownianTarget
 from fedmoe.datasets.logistic_map_dataset import TimeSeriesLogisticMap
 from fedmoe.datasets.periodic_dataset import TimeSeriesPeriodic
-from fedmoe.datasets.brownian_motion_dataset import TimeSeriesBrownianTarget, BrownianSequenceAddition
-from enum import Enum
+from fedmoe.datasets.simple_datasets import TimeSeriesLinearLine, TimeSeriesQuadratic, TimeSeriesSineSignal
+from fedmoe.datasets.time_series_data import TimeSeries2DXY, TimeSeriesData
 
 
 class DataOptions(Enum):
