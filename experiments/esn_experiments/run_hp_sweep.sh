@@ -16,14 +16,13 @@ echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
 
 
-ALPHA_VALUES=( 0.1 1.0 10 20)
+ALPHA_VALUES=( 0.1 1.0 10 20 )
 GAMMA_VALUES=( 0.01 0.1 1.0 10 )
 SIGMA_VALUES=( 0.01 1.0 )
-HIDDENDIM_VALUES=( 2 5 10 20 30 40)
+HIDDENDIM_VALUES=( 2 5 10 20 30 40 )
 T_VALUES=( 1 )
 K_VALUES=( 1.0 2.0 )
-# eta values shuold be int
-ETA_VALUES=( 1 2 )
+ETA_VALUES=( 1.0 2.0 )
 
 # ALPHA_VALUES=( 0.1 )
 # GAMMA_VALUES=( 0.01 )
@@ -31,8 +30,7 @@ ETA_VALUES=( 1 2 )
 # HIDDENDIM_VALUES=( 10 )
 # T_VALUES=( 1 )
 # K_VALUES=( 1.0 )
-# # eta values shuold be int
-# ETA_VALUES=( 1 )
+# ETA_VALUES=( 1.0 )
 
 for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
   for ALPHA_VALUE in "${ALPHA_VALUES[@]}"; do
@@ -57,8 +55,7 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                     ${K_VALUE} \
                     ${ETA_VALUE} \
                     ${T_Value} \
-                    ${VENV_PATH} \
-                    ${EXPERIMENT_SETUP}"
+                    ${VENV_PATH}"
                 echo "Running sbatch command ${SBATCH_COMMAND}"
                 sbatch ${SBATCH_COMMAND}
             done

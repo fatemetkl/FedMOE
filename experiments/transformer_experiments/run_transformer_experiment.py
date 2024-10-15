@@ -23,12 +23,11 @@ def main(
     gamma: float,
     sigma: float,
     K: float,
-    eta: int,
+    eta: float,
     data_loader_num_samples: int,
     data_loader_batch_size: int,
     pre_training_epochs: int,
     pre_training_learning_rate: float,
-    experiment_setup: str,
 ) -> None:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
@@ -91,7 +90,6 @@ def main(
     }
 
     if config["save_plot"]:
-        # server_preds = torch.Tensor([item.squeeze().detach() for item in server.server_outputs])
         data_object.visualize(server.server_outputs, f"{results_dir}/plot.png", plot_info=plot_info)
 
 
@@ -149,9 +147,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--eta",
         action="store",
-        type=int,
+        type=float,
         help="Eta value for server mixture.",
-        default=3,
+        default=1.0,
     )
     parser.add_argument(
         "--T",
@@ -189,13 +187,6 @@ if __name__ == "__main__":
         default=0.01,
     )
     parser.add_argument(
-        "--experiment_setup",
-        action="store",
-        type=str,
-        help="A string representing the value of hyper-parameters.",
-        default="T5_alpha0.01_gamma0.01_sigma0.01_DZ5_K1_ETA3",
-    )
-    parser.add_argument(
         "--random_seed",
         action="store",
         type=int,
@@ -221,5 +212,4 @@ if __name__ == "__main__":
         args.data_loader_batch_size,
         args.pre_training_epochs,
         args.pre_training_learning_rate,
-        args.experiment_setup,
     )

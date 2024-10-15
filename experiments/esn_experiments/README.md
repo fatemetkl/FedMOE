@@ -1,6 +1,6 @@
 
 `run_hp_sweep.sh` schedules each experiment through slurm with specific CPU allocation.
-Firstly, make sure to have your poetry enviromnet activated (this is done by default when you activate your virtualenv). These scripts will use your poetry enviromnet to run python codes.
+Firstly, make sure to have your poetry environment activated (this is done by default when you activate your virtualenv). These scripts will use your poetry environment to run python codes.
 To run the random Echo State experiment on cluster, first specify the experiment setup in the `config.yaml` file, then, set the hyper-parameter search space in the `run_hp_sweep.sh` script file. Then, run it with the following command:
 
 ```

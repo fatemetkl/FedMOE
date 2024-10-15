@@ -55,10 +55,8 @@ def test_rmse_metric() -> None:
             torch.Tensor([0.95892427]),
         ]
     )
-    dominator = torch.Tensor([6.0])
-    manual_pow_2 = torch.sum(torch.pow(manual_absolute_values, 2) / dominator)
+    denominator = torch.Tensor([6.0])
+    manual_pow_2 = torch.sum(torch.pow(manual_absolute_values, 2) / denominator)
     manual_error = torch.sqrt(manual_pow_2)
-    print(manual_error)
-    print(metric_value)
 
     assert torch.allclose(metric_value, manual_error, rtol=0.0, atol=1e-4)
