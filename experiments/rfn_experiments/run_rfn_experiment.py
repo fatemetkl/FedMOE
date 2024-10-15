@@ -81,6 +81,14 @@ def main(
     if config["save_plot"]:
         data_object.visualize(server.server_outputs, f"{results_dir}/plot.png", plot_info=plot_info)
 
+    if config["save_clients_predictions"]:
+        data_object.visualize_clients_predictions(
+            server.server_outputs, server.clients_predictions, f"{results_dir}/client_predictions.png", plot_info
+        )
+
+    if config["save_mixture_weights"]:
+        data_object.visualize_mixture_weights(server.mixture_weights, f"{results_dir}/mixture_weights.png", plot_info)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="experiment")

@@ -1,5 +1,5 @@
 # Experiment variables
-experiment_name: "rfn-sin-2c-test"
+experiment_name: "rfn-sin-2c"
 client_type : 0 # 0: Random feature networks (fixed for this experiment)
 data: "sine_signal"  # Dataset options are saved in utils.DataOptions. Examples: periodic_signal, logistic_map, sine_signal, quadratic_data, linear_line, or horizontal_line, 2dxy, simple_brownian, brownian_addition
 
@@ -8,3 +8,5 @@ total_rounds : 100 # The number of total rounds (data sequence will be created t
 have_sync: False # Do we want to have Nash game and synchronization steps or not
 update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t
 save_plot: True
+save_clients_predictions: True # Set to True if you want to save the plot that shows individual clients predictions.
+save_mixture_weights: True # Set to True if you want to save the plot that shows the mixture weights.

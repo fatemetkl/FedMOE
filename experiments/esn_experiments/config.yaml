@@ -1,5 +1,5 @@
 # Experiment variables
-experiment_name: "esn-periodic-experiment"
+experiment_name: "esn-periodic"
 client_type : 2 # 2: EchoState networks (fixed for this experiment)
 data: "periodic_signal"  # Dataset options are saved in utils.DataOptions
 
@@ -8,3 +8,5 @@ total_rounds : 200 # The number of total rounds (data sequence will be created t
 have_sync: False # Do we want to have Nash game and synchronization steps or not
 update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t
 save_plot: True
+save_clients_predictions: True # Set to True if you want to save the plot that shows individual clients predictions.
+save_mixture_weights: True # Set to True if you want to save the plot that shows the mixture weights.
