@@ -20,8 +20,18 @@ def test_time_series_2d_xy(tmp_path: Path) -> None:
     manual_server_prediction = []
     for t in range(time_steps):
         manual_server_prediction.append(torch.Tensor([10 * t, 30 * t]))
-    two_d_data_obj.visualize(manual_server_prediction, f"{save_dir}/test_plot.png", T=2)
-    two_d_data_obj.visualize(manual_server_prediction, f"{save_dir}/test_plot_2.png", T=2, show_points=True)
+    plot_info = {
+        "num_clients": 2,
+        "T": 1,
+        "d_z": 2,
+        "alpha": 1,
+        "gamma": 1,
+        "sigma": 1,
+    }
+    two_d_data_obj.visualize(manual_server_prediction, f"{save_dir}/test_plot.png", T=2, plot_info=plot_info)
+    two_d_data_obj.visualize(
+        manual_server_prediction, f"{save_dir}/test_plot_2.png", T=2, show_points=True, plot_info=plot_info
+    )
 
 
 def test_visualize_clients_predictions(tmp_path: Path) -> None:

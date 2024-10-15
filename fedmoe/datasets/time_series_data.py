@@ -131,16 +131,9 @@ class TimeSeriesData:
             game_status = "without"
 
         if plot_info is not None:
-            text_content = "\n".join([f"{key}: {value}" for key, value in plot_info.items()])
-            plt.text(
-                0.05,
-                0.95,
-                text_content,
-                transform=plt.gca().transAxes,
-                fontsize=10,
-                verticalalignment="top",
-                bbox=dict(facecolor="white", alpha=0.5),
-            )
+            text_content = " ".join([f"{key}: {value}," for key, value in plot_info.items()])
+            plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
+            plt.subplots_adjust(bottom=0.2)
 
         plt.xlabel("Time Steps")
         plt.ylabel("Value")
@@ -159,6 +152,7 @@ class TimeSeriesData:
         plot_info: Dict[str, Any],
         T: int = 0,
         show_points: Optional[bool] = False,
+        show_target: Optional[bool] = False,
     ) -> None:
         """
         Saves plots of input_matrix, target_matrix, and prediction_matrix.
@@ -176,6 +170,7 @@ class TimeSeriesData:
                    indicating game is not played.
                 show_points (Optional[bool]): if True, the plot will show the synchronization points as points.
                    Otherwise, it will show as vertical lines.
+                show_target (Optional[bool]): if True, the plot will show the target values as well.
         """
 
         server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
@@ -192,15 +187,16 @@ class TimeSeriesData:
             self.target_matrix.shape[1],
             plot_info["num_clients"],
         )
-        for i in range(self.target_matrix.shape[1]):
-            plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i+1}", linestyle=":")
+        if show_target:
+            for i in range(self.target_matrix.shape[1]):
+                plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i+1}", linestyle=":")
 
         for client in range(int(plot_info["num_clients"])):
             for i in range(clients_pred_matrix.shape[1]):
                 plt.plot(
                     self.time_axis,
                     clients_pred_matrix[:, i, client],
-                    label=f"Target: client{client}_Y{i+1}",
+                    label=f"Prediction: client {client}_Y{i+1}",
                     linestyle="dashdot",
                 )
 
@@ -224,16 +220,9 @@ class TimeSeriesData:
             game_status = "without"
 
         if plot_info is not None:
-            text_content = "\n".join([f"{key}: {value}" for key, value in plot_info.items()])
-            plt.text(
-                0.05,
-                0.95,
-                text_content,
-                transform=plt.gca().transAxes,
-                fontsize=10,
-                verticalalignment="top",
-                bbox=dict(facecolor="white", alpha=0.5),
-            )
+            text_content = " ".join([f"{key}: {value}," for key, value in plot_info.items()])
+            plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
+            plt.subplots_adjust(bottom=0.20)
 
         plt.xlabel("Time Steps")
         plt.ylabel("Prediction value")
@@ -301,16 +290,9 @@ class TimeSeriesData:
             game_status = "without"
 
         if plot_info is not None:
-            text_content = "\n".join([f"{key}: {value}" for key, value in plot_info.items()])
-            plt.text(
-                0.05,
-                0.95,
-                text_content,
-                transform=plt.gca().transAxes,
-                fontsize=10,
-                verticalalignment="top",
-                bbox=dict(facecolor="white", alpha=0.5),
-            )
+            text_content = " ".join([f"{key}: {value}," for key, value in plot_info.items()])
+            plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
+            plt.subplots_adjust(bottom=0.2)
 
         plt.xlabel("Time Steps")
         plt.ylabel("Prediction value")
