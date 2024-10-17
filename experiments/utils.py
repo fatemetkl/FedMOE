@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Any, Dict
-
+from typing import Any, Dict, List
+import json
 import matplotlib.pyplot as plt
 import torch
 import yaml
@@ -63,6 +63,16 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         )
     else:
         raise ValueError(f"dataset name {dataset_name} is not valid. See DataOptions.")
+
+
+def save_to_json(tensors_to_save: Dict[str, List[torch.Tensor]], path: str) -> None:
+    # Creating a new dict to avoid mypy error.
+    lists_to_save = {}
+    for data_name, data_list in tensors_to_save.items():
+        lists_to_save[data_name] = [torch_tensor.tolist() for torch_tensor in data_list]
+
+    with open(f"{path}/data.json", "w") as f:
+        json.dump(lists_to_save, f)
 
 
 def plot_sequence(

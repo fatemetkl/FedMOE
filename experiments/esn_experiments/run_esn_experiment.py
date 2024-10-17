@@ -2,11 +2,11 @@ import argparse
 import logging
 import os
 import random
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import torch
 
-from experiments.utils import load_config, load_data
+from experiments.utils import load_config, load_data, save_to_json
 from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
 from fedmoe.game import EchoStateGame
@@ -77,23 +77,34 @@ def main(
         "sigma": sigma,
     }
 
+    tensors_to_save: Dict[str, List[torch.Tensor]] = {}
+
     if config["save_server_prediction"]:
         data_object.visualize_server_prediction(
             server.server_outputs, f"{results_dir}/server_pred_plot.png", plot_info=plot_info
         )
+        tensors_to_save["server_prediction"] = server.server_outputs
 
     if config["save_input"]:
         data_object.visualize_input(f"{results_dir}/input_plot.png", plot_info=plot_info)
+        # Converting a matrix to a list of tensors to avoid mypy errors.
+        tensors_to_save["input"] = [row for row in data_object.input_matrix]
 
     if config["save_clients_predictions"]:
         data_object.visualize_clients_predictions(
             server.clients_predictions, plot_path=f"{results_dir}/client_predictions.png", plot_info=plot_info
         )
+        tensors_to_save["clients_predictions"] = server.clients_predictions
 
     if config["save_mixture_weights"]:
         data_object.visualize_mixture_weights(
             server.mixture_weights, plot_path=f"{results_dir}/mixture_weights.png", plot_info=plot_info
         )
+        tensors_to_save["mixture_weights"] = server.mixture_weights
+
+    if config["dump_json"]:
+        # Dump results and data in JSON
+        save_to_json(tensors_to_save, path=f"{results_dir}")
 
 
 if __name__ == "__main__":
