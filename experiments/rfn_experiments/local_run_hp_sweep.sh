@@ -9,22 +9,22 @@ RESULTS_DIR="experiments/results/$EXPERIMENT_NAME"
 mkdir -p $RESULTS_DIR
 
 # Hyper-parameters
-# ALPHA_VALUES=( 0.001 0.01 1.0 10)
-# GAMMA_VALUES=( 0.01 1 )
-# SIGMA_VALUES=( 0.01 )
-# HIDDENDIM_VALUES=( 5 10 )
-# T_VALUES=( 5 10 )
-# K_VALUES=( 3 )
-# ETA_VALUES=( 1 )
-
-ALPHA_VALUES=( 1.0 )
-GAMMA_VALUES=( 1.0 )
+ALPHA_VALUES=( 0.001 0.01 1.0 10)
+GAMMA_VALUES=( 0.01 1 )
 SIGMA_VALUES=( 0.01 )
-HIDDENDIM_VALUES=( 10 )
-T_VALUES=( 8 )
-K_VALUES=( 3.0 )
-# eta values shuold be int
-ETA_VALUES=( 2 )
+HIDDENDIM_VALUES=( 5 10 )
+T_VALUES=( 5 10 )
+K_VALUES=( 3 )
+ETA_VALUES=( 1 )
+
+# ALPHA_VALUES=( 1.0 )
+# GAMMA_VALUES=( 1.0 )
+# SIGMA_VALUES=( 0.01 )
+# HIDDENDIM_VALUES=( 10 )
+# T_VALUES=( 8 )
+# K_VALUES=( 3.0 )
+# # eta values shuold be int
+# ETA_VALUES=( 2 )
 
 
 RUN_NAMES=( "Run1" "Run2" "Run3" )
