@@ -80,12 +80,18 @@ class Client(ABC):
 
     def init_p_s(self, num_clients: int) -> None:
         self.P = torch.zeros(
-            self.sync_steps,
+            self.sync_steps + 1,  # Game records P values for 0 to T inclusive.
             num_clients * self.y_dim,
             num_clients * self.y_dim,
             dtype=torch.float64,
         )
-        self.S = torch.zeros(self.sync_steps, num_clients * self.y_dim, 1, dtype=torch.float64)
+        self.S = torch.zeros(self.sync_steps + 1, num_clients * self.y_dim, 1, dtype=torch.float64)
+        self.D = torch.zeros(
+            self.sync_steps,  # D_i is only calculated from T-1 to 0
+            num_clients * self.z_dim,
+            num_clients * self.z_dim,
+            dtype=torch.float64,
+        )
 
     def get_x(self, t: int) -> torch.Tensor:
         return self._current_sequence[t].reshape(-1, 1)
@@ -110,6 +116,14 @@ class Client(ABC):
         bold_e_i = torch.kron(e, torch.eye(self.y_dim)).T
         assert bold_e_i.shape == (num_clients * self.y_dim, self.y_dim)
         return bold_e_i
+
+    def get_hat_e(self, num_clients: int) -> torch.Tensor:
+        e = torch.nn.functional.one_hot(torch.tensor(self.id), num_clients).double()
+        # Creates a BLOCK column vector where each block is a z_dim x z_dim matrix. The self.id^th row is the identity
+        # matrix of dim z_dim x z_dim
+        bold_hat_e_i = torch.kron(e, torch.eye(self.z_dim)).T
+        assert bold_hat_e_i.shape == (num_clients * self.z_dim, self.z_dim)
+        return bold_hat_e_i
 
     def compute_X_t(self, t: int) -> torch.Tensor:
         X = []
@@ -143,8 +157,8 @@ class Client(ABC):
 
     def optimize_beta(self, t: int) -> torch.Tensor:
         # Update X_t
-        X_t = self.compute_X_t(t - 1)
-        y_t = self.compute_y_t(t - 1)
+        X_t = self.compute_X_t(t)
+        y_t = self.compute_y_t(t)
 
         X_t_T = torch.transpose(X_t, 0, 1)
         identity_matrix = torch.eye(self.z_dim, dtype=torch.float64)
@@ -159,25 +173,25 @@ class Client(ABC):
 
         # Generate Random State and update Hidden State
         # Sequence has shape time x x_dim, but encoders expect input for a given step of x_dim x 1 (occurs in get_x)
-        updated_z = self.feed_encoder(self.get_x(t - 1))
+        updated_z = self.feed_encoder(self.get_x(t))
 
         # Update prediction based on Z_t and beta_t
-        t_prediction = self.state.get_prediction_t(t - 1) + torch.matmul(updated_z.double(), beta_t.double())
-        return beta_t, updated_z, t_prediction
+        next_prediction = self.state.get_prediction_t(t) + torch.matmul(updated_z.double(), beta_t.double())
+        return beta_t, updated_z, next_prediction
 
     def update_expert(self, t: int) -> torch.Tensor:
         self.state.next_time_step(next_time=t)
         assert self.state.get_current_time() == t, "Error: time step mismatch"
 
         # Make prediction for time t
-        beta_t, updated_z, t_prediction = self.predict(t)
+        beta_t, updated_z, next_prediction = self.predict(t)
 
         # Update State
         # Place beta_t at the t-1's position in beta list
-        self.state.set_beta(beta_t, t - 1)
+        self.state.set_beta(beta_t, t)
         # Place updated_z at the t-1's position in beta list
-        self.state.set_hidden_state(updated_z, time=(t - 1))
+        self.state.set_hidden_state(updated_z, time=t)
         # next_prediction shape: y_dim x 1
-        self.state.set_prediction(t_prediction, t)
+        self.state.set_prediction(next_prediction, (t + 1))
 
-        return t_prediction
+        return next_prediction

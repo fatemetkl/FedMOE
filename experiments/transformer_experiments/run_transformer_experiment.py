@@ -92,7 +92,12 @@ def main(
 
     if config["save_server_prediction"]:
         data_object.visualize_server_prediction(
-            server.server_outputs, f"{results_dir}/server_pred_plot.png", plot_info=plot_info
+            server.server_outputs,
+            f"{results_dir}/server_pred_plot.png",
+            plot_info=plot_info,
+            game_played=config["have_sync"],
+            T=T,
+            show_points=True,
         )
         tensors_to_save["server_prediction"] = server.server_outputs
 

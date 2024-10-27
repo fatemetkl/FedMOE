@@ -45,9 +45,9 @@ class EchoStateNetworkClient(Client):
         assert input_matrix.shape == (self.x_dim, self.z_dim)
         return self.encoder(
             input_matrix,
-            # Need to subtract two from the current time, since we're predicting for t,
-            # using \hat{Y}_{t-1}^i + \beta_{t-1} Z_{t-1}, and Z_{t-1} comes from using Z_{t-1}
+            # Need to subtract one from the current time, since we're predicting for t+1,
+            # using \hat{Y}_{t}^i + \beta_{t} Z_{t}, and Z_{t} comes from using Z_{t-1}
             # Concretely, for t=1, \hat{Y}_{1}^i = \hat{Y}_{0}^i + \beta_{0} Z_{0}, and Z_{0} comes from using Z_{-1}
-            self.state.get_hidden_state_t(self.state.get_current_time() - 2),
+            self.state.get_hidden_state_t(self.state.get_current_time() - 1),
             self.sigma,
         )

@@ -9,7 +9,7 @@ class ClientState:
     _hidden_states: List[torch.Tensor] = field(default_factory=list)
     _predictions: List[torch.Tensor] = field(default_factory=list)
     _betas: List[torch.Tensor] = field(default_factory=list)
-    _current_time: int = 0
+    _current_time: int = -1
     # These represent the a priori values that are required to start the time series modeling. In the notation of the
     # paper, these are Z_^i{-1}, \hat{Y}^i_{0}, \hat{Y}^i_{-1}
     Z_neg1: torch.Tensor = torch.Tensor([0.0])
@@ -26,7 +26,8 @@ class ClientState:
         return self._hidden_states[time]
 
     def get_prediction_t(self, time: int) -> torch.Tensor:
-        assert time <= self._current_time, "Error: this prediction value is not set yet"
+        # Because at time t (self._current_time) we set the prediction of next step (t+1).
+        assert time <= self._current_time + 1, "Error: this prediction value is not set yet"
         if time == -1:
             assert self.Y_neg1.shape == (self.y_dim, 1)
             return self.Y_neg1
@@ -51,17 +52,17 @@ class ClientState:
 
     def set_beta(self, beta: torch.Tensor, time: int) -> None:
         # Add new beta
-        assert self._current_time == time + 1, "Error: time is not the same as current time, check time steps"
+        assert self._current_time == time, "Error: time is not the same as current time, check time steps"
         assert beta.shape == (self.z_dim, 1)
         self._betas.append(beta)
-        assert len(self._betas) == self._current_time
+        assert len(self._betas) == self._current_time + 1
 
     def next_time_step(self, next_time: int) -> None:
         assert next_time == (self._current_time + 1)
         self._current_time += 1
 
     def set_hidden_state(self, z: torch.Tensor, time: int) -> None:
-        assert time == self._current_time - 1  # Just allows for setting (t-1)'s hidden state.
+        assert time == self._current_time
         assert z.shape == (self.y_dim, self.z_dim)
         self._hidden_states.append(z)
 
@@ -83,7 +84,7 @@ class ClientState:
         self._hidden_states.clear()
         self._predictions.clear()
         self._betas.clear()
-        self._current_time = 0
+        self._current_time = -1
 
     def __repr__(self) -> str:
         dz_rep = "____hidden_states____\n"

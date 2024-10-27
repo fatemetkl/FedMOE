@@ -43,3 +43,29 @@ Don't forget to complete the path to the experiment directory.
 python -m experiments.find_best_hp --hp_sweep_dir experiments/transformer_experiments/transformer_results/
 ```
 Make sure your environment is activated.
+
+
+
+## Run hp sweep on you local machine
+
+Activate the environment and then run:
+
+```
+bash experiments/transformer_experiments/local_run_hp_sweep.sh \
+path_to_config.yaml \
+path_to_folder_for_artifacts/ \
+```
+
+For example:
+
+```
+bash experiments/transformer_experiments/local_run_hp_sweep.sh \
+experiments/transformer_experiments/config.yaml \
+experiments/transformer_experiments/transformer_results/
+```
+
+Find the best hyper-parameter:
+```
+python -m experiments.find_best_hp --hp_sweep_dir experiments/transformer_experiments/transformer_results/transformer-sine-50
+```
+Make sure your environment is activated.

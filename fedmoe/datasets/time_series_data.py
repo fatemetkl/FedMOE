@@ -153,13 +153,13 @@ class TimeSeriesData:
             )
             # Display synchronization steps as points
             if game_played and show_points:
-                T_indices = [i * T for i in range(1, int(self.total_time_steps / T) + 1)]
-                T_values = [server_matrix[j, i] for j in T_indices]
+                T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
+                T_values = [server_matrix[j, i].detach().numpy() for j in T_indices]
                 plt.scatter(T_indices, T_values, marker="o", label=f"T step for prediction Y{i+1}")
 
         # Display synchronization steps as vertical lines
         if game_played and not show_points:
-            for j in range(1, int(self.total_time_steps / T) + 1):
+            for j in range(1, int(self.total_time_steps / T)):
                 label = "T time steps" if j == 1 else None
                 plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
 
@@ -301,26 +301,26 @@ class TimeSeriesData:
         # Shape of client prediction tensor should be time x num_clients x 1
         mixture_weights = torch.stack(clients_mixture_weights, dim=0)
         assert mixture_weights.shape == (
-            self.total_time_steps,
+            self.total_time_steps - 1,
             plot_info["num_clients"],
             1,
-        )
+        ), f"Error: mixture_weights.shape is {mixture_weights.shape}, but should be (time_steps - 1 , num_clients, 1)"
 
         for client in range(int(plot_info["num_clients"])):
             plt.plot(
-                self.time_axis,
+                self.time_axis[:-1],
                 mixture_weights[:, client, 0],
                 label=f"Weight: client{client}",
                 linestyle="dashdot",
             )
 
             if T > 0 and show_points:
-                T_indices = [i * T for i in range(1, int(self.total_time_steps / T) + 1)]
+                T_indices = [i * T for i in range(1, int((self.total_time_steps - 1) / T) + 1)]
                 T_values = [mixture_weights[j, client] for j in T_indices]
                 plt.scatter(T_indices, T_values, marker="o", label="T step")
 
         if T > 0 and not show_points:
-            for j in range(1, int(self.total_time_steps / T) + 1):
+            for j in range(1, int((self.total_time_steps - 1) / T) + 1):
                 label = "T time steps" if j == 1 else None
                 plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
 
