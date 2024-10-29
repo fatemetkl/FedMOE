@@ -144,3 +144,4 @@ experiments/**/*_results/
 *.png
 *.err
 *.out
+*.json
