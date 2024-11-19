@@ -1,11 +1,11 @@
 # Experiment variables
-experiment_name: "transformer-sine-50"
+experiment_name: "transformer_brownian_Nogame_test"
 client_type : 1 # 1: Pre-trained transformer model (fixed for this experiment)
-data: "sine_signal"  # Dataset options are saved in utils.DataOptions. Examples: periodic_signal, logistic_map, sine_signal, quadratic_data, linear_line, or horizontal_line, 2dxy, simple_brownian, brownian_addition
+data: "brownian_addition"  # Dataset options are saved in utils.DataOptions. Examples: periodic_signal, time_input_periodic, logistic_map, sine_signal, quadratic_data, linear_line, or horizontal_line, 2dxy, simple_brownian, brownian_addition
 
 num_clients : 2 # The number of experts or clients
-total_rounds : 50 # The number of total rounds (data sequence will be created to be one time-step longer)
-have_sync: True # Do we want to have Nash game and synchronization steps or not
+total_rounds : 40 # The number of total rounds (data sequence will be created to be one time-step longer)
+have_sync: False # Do we want to have Nash game and synchronization steps or not
 update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t
 
 # Options for saving the plots, and dumping tensors in JSON

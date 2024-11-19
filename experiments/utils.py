@@ -1,19 +1,21 @@
+import json
 from enum import Enum
 from typing import Any, Dict, List
-import json
+
 import matplotlib.pyplot as plt
 import torch
 import yaml
 
 from fedmoe.datasets.brownian_motion_dataset import BrownianSequenceAddition, TimeSeriesBrownianTarget
 from fedmoe.datasets.logistic_map_dataset import TimeSeriesLogisticMap
-from fedmoe.datasets.periodic_dataset import TimeSeriesPeriodic
+from fedmoe.datasets.periodic_dataset import TimeInputPeriodic, TimeSeriesPeriodic
 from fedmoe.datasets.simple_datasets import TimeSeriesLinearLine, TimeSeriesQuadratic, TimeSeriesSineSignal
 from fedmoe.datasets.time_series_data import TimeSeries2DXY, TimeSeriesData
 
 
 class DataOptions(Enum):
     PERIODIC_SIGNAL: str = "periodic_signal"
+    TIME_INPUT_PERIODIC = "time_input_periodic"
     LOGISTIC_MAP = "logistic_map"
     SINE_SIGNAL = "sine_signal"
     QUADRATIC_DATA = "quadratic_data"
@@ -61,6 +63,8 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         return BrownianSequenceAddition(
             total_time_steps=total_rounds, n_brownian_trajectories=3, mu=1.0, sigma=1.0, offset=0.0
         )
+    elif dataset_option == DataOptions.TIME_INPUT_PERIODIC:
+        return TimeInputPeriodic(total_time_steps=total_rounds)
     else:
         raise ValueError(f"dataset name {dataset_name} is not valid. See DataOptions.")
 

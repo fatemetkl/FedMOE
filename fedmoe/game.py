@@ -8,6 +8,8 @@ from fedmoe.clients.client import Client
 from fedmoe.clients.esn_client import EchoStateNetworkClient
 from fedmoe.state.game_state import GameState
 
+torch.set_default_dtype(torch.float64)
+
 
 class Game(ABC):
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
@@ -77,20 +79,22 @@ class Game(ABC):
         Calculates e^{- bold_alpha * (T- 1 - t)}
         """
         Iz = torch.eye(self.z_dim).double()
-        bold_alpha = torch.block_diag(*[client.alpha * Iz for client in self.clients])
-        e_alpha = torch.linalg.matrix_exp(-1 * bold_alpha * (self.sync_freq - 1 - t))
-        assert e_alpha.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
-        return e_alpha
+        alpha_tensor = torch.exp(
+            torch.Tensor([-1 * client.alpha * (self.sync_freq - 1 - t) for client in self.clients])
+        )
+        bold_alpha = torch.block_diag(*[alpha * Iz for alpha in alpha_tensor])
+        assert bold_alpha.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
+        return bold_alpha
 
     def get_e_alpha_gamma(self, t: int) -> torch.Tensor:
         """
         Calculates e^{- bold_alpha * (T- 1 - t)} * bold_gamma
         """
+        e_alpha = self.get_e_alpha(t)
         Iz = torch.eye(self.z_dim).double()
-        bold_alpha = torch.block_diag(*[client.alpha * Iz for client in self.clients])
         bold_gamma = torch.block_diag(*[client.gamma * Iz for client in self.clients])
-        e_alpha = torch.linalg.matrix_exp(-1 * bold_alpha * (self.sync_freq - 1 - t))
         # Output shape: Nd_z x Nd_z
+        assert bold_gamma.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
         out = torch.matmul(e_alpha, bold_gamma)
         assert out.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
         return out
@@ -194,23 +198,36 @@ class Game(ABC):
         second_term = torch.matmul(
             torch.matmul(e_neg_alpha_t, self.game_state.get_D_t(t).T), w_tw_tT
         ) + self.game_state.get_B_t(t)
-        g_t = torch.matmul(-1 * torch.inverse(first_term), second_term)
+
+        g_t = torch.matmul(-1 * torch.linalg.inv(first_term), second_term)
         assert g_t.shape == (self.num_clients * self.z_dim, self.num_clients * self.y_dim)
         return g_t
 
     def calculate_h(self, t: int, bold_w_t: torch.Tensor, next_y: torch.Tensor) -> torch.Tensor:
+
         e_neg_alpha_t = self.get_e_alpha(t)
-        e_neg_alpha_t_gamma = self.get_e_alpha_gamma(t)
-        first_term = (
-            e_neg_alpha_t_gamma
-            + self.game_state.get_A_t(t)
-            + torch.matmul(e_neg_alpha_t, self.game_state.get_A_hat_t(t))
+        e_neg_alpha_t_gamma = self.get_e_alpha_gamma(t).double()
+        first_term = torch.add(
+            torch.add(e_neg_alpha_t_gamma.double(), self.game_state.get_A_t(t).double()),
+            torch.matmul(e_neg_alpha_t.double(), self.game_state.get_A_hat_t(t).double()),
         )
-        bold_w_t_next_y = torch.matmul(bold_w_t, next_y)
-        second_term = torch.matmul(
-            torch.matmul(e_neg_alpha_t, self.game_state.get_D_t(t).T), bold_w_t_next_y
-        ) - self.game_state.get_C_t(t)
-        h_t = torch.matmul(torch.inverse(first_term), second_term)
+
+        assert first_term.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
+
+        bold_w_t_next_y = torch.matmul(bold_w_t.double(), next_y.double())
+        assert next_y.shape == (self.y_dim, 1), f"Error in shape of next_y: {next_y.shape}"
+
+        second_term = (
+            torch.matmul(torch.matmul(e_neg_alpha_t, self.game_state.get_D_t(t).T.double()), bold_w_t_next_y.double())
+            - self.game_state.get_C_t(t).double()
+        )
+        assert second_term.shape == (self.num_clients * self.z_dim, 1), f"shape is {second_term.shape}"
+        # TODO: check that it would be okay.
+        # first_term matrix is close to being singular or ill-conditioned, therefore we won't have consistency
+        # cond_number = torch.linalg.cond(matrix) is infinite. Therefore, I use a pseudo-inverse.
+        inv_matrix = torch.linalg.inv(first_term)
+        h_t = torch.matmul(inv_matrix, second_term.to(torch.float64))
+
         assert h_t.shape == (self.num_clients * self.z_dim, 1)
         return h_t
 
@@ -220,7 +237,7 @@ class Game(ABC):
         # output shape: N*d_z*N*d_z
         e_alpha_gamma_A = torch.add(e_alpha_gamma_t, A_t)
         assert e_alpha_gamma_A.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
-        return torch.inverse(e_alpha_gamma_A).double()
+        return torch.linalg.inv(e_alpha_gamma_A).double()
 
     def get_D_client_ij_t(self, game_time: int, i: int, j: int, P_t_plus_1_client: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
@@ -254,9 +271,10 @@ class Game(ABC):
         line_1 = torch.matmul(
             torch.matmul(
                 self.game_state.get_G_t(t).T,
-                self.game_state.get_A_hat_t(t)
-                + self.get_client_Dt(t, client_id)
-                + e_client_alpha_t_gamma * torch.matmul(bold_hat_e_i, bold_hat_e_i.T),
+                torch.add(
+                    torch.add(self.game_state.get_A_hat_t(t), self.get_client_Dt(t, client_id)),
+                    e_client_alpha_t_gamma * torch.matmul(bold_hat_e_i, bold_hat_e_i.T),
+                ),
             ),
             self.game_state.get_G_t(t),
         )
@@ -372,6 +390,10 @@ class Game(ABC):
         z_beta_clients = []
         bold_beta = bold_beta.reshape(self.num_clients, self.z_dim, 1)
         for client_id in range(self.num_clients):
+            # if t==3 and self.current_time==8:
+            #     print("inside game client_id", client_id)
+            #     print("inside game bold_beta", bold_beta[client_id])
+            #     print("inside game z", self.get_z(t, self.clients[client_id]))
             z_beta_client = torch.matmul(self.get_z(t, self.clients[client_id]), bold_beta[client_id])
             z_beta_clients.append(z_beta_client)
         n_z_betas = torch.cat(z_beta_clients, dim=0)
@@ -383,20 +405,30 @@ class TransformerGame(Game):
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
         super().__init__(clients, sync_freq, z_dim)
 
-    def get_input(self, game_t: int, client: Client) -> torch.Tensor:
+    # def get_input(self, game_t: int, client: Client) -> torch.Tensor:
+    #     """
+    #     Maps the time game_t in the game (between 0 to sync_freq) to the time scale used in the server,
+    #     current_time, and returns the input (x_t) associated with server time.
+    #     """
+    #     server_time = self.map_game_time_to_server_time(game_t, client)
+    #     # Assuming that the input shape in transformer is (x_dim, 1)
+    #     return client.get_x(server_time), server_time
+
+    def get_hidden_state(self, game_t: int, client: Client) -> torch.Tensor:
         """
         Maps the time game_t in the game (between 0 to sync_freq) to the time scale used in the server,
-        current_time, and returns the input (x_t) associated with server time.
+        current_time, and returns the hidden state (z_t) associated with server time.
         """
         server_time = self.map_game_time_to_server_time(game_t, client)
-        # Assuming that the input shape in transformer is (x_dim, 1)
-        return client.get_x(server_time)
+        # Assuming that the hidden state shape in transformer is (z_dim, 1)
+        return client.state.get_hidden_state_t(server_time)
 
     def get_expectation_e_zt(self, game_t: int, client: Client) -> torch.Tensor:
         """
         Computes "$e_i phi^{(i)}(x_t)$" for each client i
         """
-        Z = client.feed_encoder(self.get_input(game_t, client).double())
+        # We don't need to feed the transformer again.
+        Z = self.get_hidden_state(game_t, client).double()
         # Embedding shape is y_dim x z_dim
         assert Z.shape == (self.y_dim, self.z_dim)
         # e_i's shape is (num_clients * self.y_dim, self.y_dim)

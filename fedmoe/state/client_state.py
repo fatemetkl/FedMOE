@@ -63,15 +63,21 @@ class ClientState:
 
     def set_hidden_state(self, z: torch.Tensor, time: int) -> None:
         assert time == self._current_time
-        assert z.shape == (self.y_dim, self.z_dim)
+        assert z.shape == (
+            self.y_dim,
+            self.z_dim,
+        ), f"Error: z's shape is {z.shape}, expected {(self.y_dim, self.z_dim)}, time is {time}"
         self._hidden_states.append(z)
 
     def set_prediction(self, Y: torch.Tensor, time: int) -> None:
+        # check it is not previously set
+        assert len(self._predictions) == time, "Error: this prediction value is already set"
         assert Y.shape == (self.y_dim, 1)
         self._predictions.append(Y)
 
     def replace_prediction_t(self, new_pred: torch.Tensor, time: int) -> None:
-        assert 0 <= time <= self._current_time, "Error: this prediction value is not set yet"
+        # At each time t, the Y_{t+1} value could be set and replaced.
+        assert 0 <= time <= (self._current_time + 1), "Error: this prediction value is not set yet"
         assert new_pred.shape == (self.y_dim, 1)
         self._predictions[time] = new_pred
 

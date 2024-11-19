@@ -138,3 +138,6 @@ class GameState:
     def get_H_t(self, t: int) -> torch.Tensor:
         assert t in self._H_times_set
         return self.H[t]
+
+    def print_state(self, t: int) -> str:
+        return f"time t (A={self.A[t]}, A_hat={self.A_hat[t]}, B={self.B[t]}, C={self.C[t]}"

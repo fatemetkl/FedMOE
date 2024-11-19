@@ -8,6 +8,8 @@ from fedmoe.clients.esn_client import EchoStateNetworkClient
 from fedmoe.clients.rfn_client import RandomFeatureNetworkClient
 from fedmoe.clients.transformer_client import TransformerClient
 
+torch.set_default_dtype(torch.float64)
+
 
 class ClientManager:
     def __init__(
@@ -93,9 +95,20 @@ class ClientManager:
             t_prediction = client.update_expert(round)
             # Each t_prediction is a column tensor d_y x 1
             round_predictions.append(t_prediction)
+        # Shape of returned tensor is  N (number of clients) x d_y
+        predictions_tensor = torch.stack(round_predictions, dim=0).squeeze(-1)
+        assert predictions_tensor.shape == (self.num_clients, self.y_dim)
+        return predictions_tensor
 
-        # Shape of returned tensor is y_dim x N (number of clients)
-        return torch.cat(round_predictions, dim=1)
+    def improve_previous_predictions_from_game(
+        self, round: int, game_predictions: torch.Tensor, beta_t: torch.Tensor
+    ) -> None:
+        # game_predictions tensor shape is NDy x 1 --->should be reshaped to N x Dy x 1
+        game_predictions = game_predictions.reshape(self.num_clients, self.y_dim, 1)
+        beta_t = beta_t.reshape(self.num_clients, self.z_dim, 1)
+        for client in self.clients:
+            client.state.replace_prediction_t(game_predictions[client.id].reshape(-1, 1), round)
+            client.state.replace_beta_t(beta_t[client.id], round)
 
     def get_predictions_with_beta(self, round: int, betas: torch.Tensor) -> torch.Tensor:
         # beta shape is Nd_z x 1 ---> to N x d_z x 1
@@ -106,7 +119,9 @@ class ClientManager:
             new_pred = client.update_prediction_with_beta(round, betas[i])
             i += 1
             new_round_predictions.append(new_pred)
-        return torch.stack(new_round_predictions).reshape(self.y_dim, self.num_clients)
+        predictions_tensor = torch.stack(new_round_predictions, dim=0).squeeze(-1)
+        assert predictions_tensor.shape == (self.num_clients, self.y_dim)
+        return predictions_tensor
 
     def update_past_predictions(self, current_round: int, betas: List[torch.Tensor]) -> None:
         # Update client predictions for past T time steps (not including the current time step)
@@ -127,9 +142,14 @@ class ClientManager:
     def get_Y_0(self) -> torch.Tensor:
         init_Y_0 = []
         for client in self.clients:
-            init_Y_0_client = client.state.Y_0
+            init_Y_0_client = client.state.get_prediction_t(0)
             init_Y_0.append(init_Y_0_client)
-        return torch.cat(init_Y_0, dim=1)
+        init_Y_tensor = torch.stack(init_Y_0, dim=0).squeeze(-1)
+        assert init_Y_tensor.shape == (
+            self.num_clients,
+            self.y_dim,
+        ), f"Error: Y_0 matrix shape is {init_Y_tensor.shape}"
+        return init_Y_tensor
 
 
 class PreTrainingClientManager(ClientManager):

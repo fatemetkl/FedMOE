@@ -47,6 +47,7 @@ class Client(ABC):
     def init_model(self) -> nn.Module:
         raise NotImplementedError
 
+    @abstractmethod
     def feed_encoder(self, input: torch.Tensor) -> torch.Tensor:
         return self.encoder(input)
 
@@ -68,7 +69,8 @@ class Client(ABC):
             init_hidden_state_neg1 = torch.zeros((self.y_dim, self.z_dim)).double()
         if init_prediction_0 is None:
             # Initializing with zero rather than a random value
-            init_prediction_0 = torch.zeros((self.y_dim, 1)).double()
+            # init_prediction_0 = torch.zeros((self.y_dim, 1)).double()
+            init_prediction_0 = self.get_y(0).double()
         if init_prediction_neg1 is None:
             # Initializing with zero rather than a random value
             init_prediction_neg1 = torch.zeros((self.y_dim, 1)).double()
@@ -128,31 +130,41 @@ class Client(ABC):
     def compute_X_t(self, t: int) -> torch.Tensor:
         X = []
         # t-T is the distance from t to the previous sync point (previous T).
-        start_point = max(t - self.sync_steps + 1, 0)
-        for s in range(start_point, t + 1):
-            X.append(torch.mul(pow(math.e, -1 * self.alpha * ((t - s) / 2)), self.state.get_hidden_state_t(s - 1)))
-        return torch.cat(X)
+        start_point = max(t - self.sync_steps, -1)
+        # From t-T (or -1) to t-1
+        for s in range(start_point, t):
+            X.append(torch.mul(pow(math.e, -1 * self.alpha * ((t - 1 - s) / 2)), self.state.get_hidden_state_t(s).T))
+        output_X = torch.cat(X, dim=1).T
+        return output_X
 
     def compute_y_t(self, t: int) -> torch.Tensor:
         y = []
-        start_point = max(t - self.sync_steps + 1, 0)
-        for s in range(start_point, t + 1):
+        start_point = max(t - self.sync_steps, -1)
+        for s in range(start_point, t):
             # target has shape time x y_dim so need to transform to column vector after indexing (occurs in get_y)
-            residual = self.get_y(s) - self.state.get_prediction_t(s - 1)
+            residual = self.get_y(s + 1) - self.state.get_prediction_t(s)
             assert residual.shape == (self.y_dim, 1)
-            y.append(pow(math.e, -1 * self.alpha * ((t - s) / 2)) * residual)
-        return torch.cat(y)
+            y.append(pow(math.e, -1 * self.alpha * ((t - 1 - s) / 2)) * residual.T)
+        output_y = torch.cat(y, dim=1).T
+        return output_y
 
     def update_prediction_with_beta(self, t: int, nash_beta: torch.Tensor) -> torch.Tensor:
         # Replace previous beta
-        self.state.replace_beta_t(nash_beta, t - 1)
+        self.state.replace_beta_t(nash_beta, t)
         # Use the previous Z
         # Update prediction based on Z_t and beta_t
-        next_prediction = self.state.get_prediction_t((t - 1)).double() + torch.matmul(
-            self.state.get_hidden_state_t(t - 1).double(), nash_beta.double()
+        if t == 7:
+            print("in client client_id", self.id)
+            print("previous prediction is ", self.state.get_prediction_t((t)))
+            print("previous hidden state is ", self.state.get_hidden_state_t(t))
+            print("nash beta is ", nash_beta)
+        next_prediction = self.state.get_prediction_t((t)).double() + torch.matmul(
+            self.state.get_hidden_state_t(t).double(), nash_beta.double()
         )
         # next_prediction shape: y_dim*1
         assert next_prediction.shape == (self.y_dim, 1)
+        # self.state.replace_prediction_t(next_prediction, (t+1))
+        # next_prediction is \hat{Y}_t+1
         return next_prediction
 
     def optimize_beta(self, t: int) -> torch.Tensor:
@@ -160,7 +172,7 @@ class Client(ABC):
         X_t = self.compute_X_t(t)
         y_t = self.compute_y_t(t)
 
-        X_t_T = torch.transpose(X_t, 0, 1)
+        X_t_T = X_t.T
         identity_matrix = torch.eye(self.z_dim, dtype=torch.float64)
         first_term = torch.matmul(X_t_T, X_t) + self.gamma * identity_matrix
         second_term = torch.matmul(torch.inverse(first_term).double(), X_t_T.double())
@@ -176,7 +188,10 @@ class Client(ABC):
         updated_z = self.feed_encoder(self.get_x(t))
 
         # Update prediction based on Z_t and beta_t
+        # Having \hat{Y}_t we want to predict \hat{Y}_t+1
+        # next_prediction = self.state.get_prediction_t(t) + torch.matmul(updated_z.double(), beta_t.double())
         next_prediction = self.state.get_prediction_t(t) + torch.matmul(updated_z.double(), beta_t.double())
+
         return beta_t, updated_z, next_prediction
 
     def update_expert(self, t: int) -> torch.Tensor:

@@ -9,7 +9,7 @@ import torch
 from experiments.utils import load_config, load_data, save_to_json
 from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.game import TransformerGame
-from fedmoe.metrics import RMSEMetric
+from fedmoe.metrics import MSEMetric
 from fedmoe.server import Server
 
 
@@ -18,6 +18,7 @@ def main(
     results_dir: str,
     hidden_dim: int,
     T: int,
+    game_sync_freq: int,
     alpha: float,
     gamma: float,
     sigma: float,
@@ -56,24 +57,24 @@ def main(
 
     game = TransformerGame(
         client_manager.clients,
-        sync_freq=T,
+        sync_freq=game_sync_freq,
         z_dim=hidden_dim,
     )
     logger.info("Transformer clients initiated")
 
     # Run the server
     server = Server(
-        sync_freq=T,
+        sync_freq=game_sync_freq,
         client_manager=client_manager,
         game=game,
-        metrics=[RMSEMetric("RMSE")],
+        metrics=[MSEMetric("MSE")],
         kappa=K,
         eta=eta,
     )
     logger.info("Server initiated")
 
     final_metric_value = server.fit(config["total_rounds"], config["have_sync"], config["update_last_Y_sync"])
-    print("Final metric value:", "\n", final_metric_value["server - server_predictions - RMSE"])
+    print("Final metric value:", "\n", final_metric_value["server - server_predictions - MSE"])
     # Plot or save server predictions and the input data sequence
     plot_info = {
         "num_clients": config["num_clients"],
@@ -96,7 +97,7 @@ def main(
             f"{results_dir}/server_pred_plot.png",
             plot_info=plot_info,
             game_played=config["have_sync"],
-            T=T,
+            T=game_sync_freq,
             show_points=True,
         )
         tensors_to_save["server_prediction"] = server.server_outputs
@@ -113,6 +114,7 @@ def main(
             client_predictions=detached_clients_predictions,
             plot_path=f"{results_dir}/client_predictions.png",
             plot_info=plot_info,
+            show_input=True,
         )
         tensors_to_save["clients_predictions"] = detached_clients_predictions
 
@@ -125,6 +127,7 @@ def main(
 
     if config["dump_json"]:
         # Dump results and data in JSON
+        tensors_to_save["target"] = [row for row in data_object.target_matrix]
         save_to_json(tensors_to_save, path=f"{results_dir}")
 
 
@@ -187,7 +190,14 @@ if __name__ == "__main__":
         default=1.0,
     )
     parser.add_argument(
-        "--T",
+        "--client_T",
+        action="store",
+        type=int,
+        help="T value used in clients and server.",
+        default=5,
+    )
+    parser.add_argument(
+        "--game_sync_freq",
         action="store",
         type=int,
         help="Sync step value.",
@@ -237,7 +247,8 @@ if __name__ == "__main__":
         config,
         args.result_dir,
         args.hidden_dim,
-        args.T,
+        args.client_T,
+        args.game_sync_freq,
         args.alpha,
         args.gamma,
         args.sigma,
