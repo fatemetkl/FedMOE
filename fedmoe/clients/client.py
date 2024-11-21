@@ -153,11 +153,6 @@ class Client(ABC):
         self.state.replace_beta_t(nash_beta, t)
         # Use the previous Z
         # Update prediction based on Z_t and beta_t
-        if t == 7:
-            print("in client client_id", self.id)
-            print("previous prediction is ", self.state.get_prediction_t((t)))
-            print("previous hidden state is ", self.state.get_hidden_state_t(t))
-            print("nash beta is ", nash_beta)
         next_prediction = self.state.get_prediction_t((t)).double() + torch.matmul(
             self.state.get_hidden_state_t(t).double(), nash_beta.double()
         )

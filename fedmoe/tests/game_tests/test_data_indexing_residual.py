@@ -17,6 +17,10 @@ Y_DIM = 1
 
 
 def test_data_indexing() -> None:
+    """
+    The goal of this test is to visually confirm and check that T step's prediction with game are good
+    and result is a drop in residual.
+    """
 
     TransformerClient.setup_transformer_structure = utils.setup_transformer_structure_patch  # type: ignore
     client_manager = PreTrainingClientManager(
@@ -59,4 +63,4 @@ def test_data_indexing() -> None:
             print("THIS IS SYNC STEP")
         print(f"server residual {inner_residual}, time {t} predicting {t+1}")
 
-    assert False
+    # assert False

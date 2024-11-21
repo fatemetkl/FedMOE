@@ -52,6 +52,8 @@ class TimeSeriesData:
         self.target_gen = target_gen
         self.input_matrix = input_gen.generate_input_tensor(self.time_axis)
         self.target_matrix = target_gen.generate_target_tensor(self.time_axis, self.input_matrix)
+        self.x_dim = self.input_matrix.shape[1]
+        self.y_dim = self.target_matrix.shape[1]
 
     def get_dataloader(self, num_samples: int, batch_size: int, shuffle: bool = False) -> DataLoader:
         """

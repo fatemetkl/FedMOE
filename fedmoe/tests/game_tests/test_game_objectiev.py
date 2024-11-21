@@ -20,6 +20,9 @@ DO_SYNC = True
 def test_game_objective() -> None:
     """
     This function tests if the betas optimized in nash game are all better, and reduce residual.
+    This is done by comparing residuals from the server and the ones created inside the game.
+    The main purpose of the test is around visually confirming residual values, that gave the main insight
+    to solve a issue which is we should use the latest Y in the game rather than the one previously saved in client.
     """
     # a lot of the notes are with manual seed 2
     torch.manual_seed(10)
@@ -278,7 +281,10 @@ def test_game_objective() -> None:
                     f"time is 4 (T): step 5 new game residual,{step_5_new_residual}",
                     f"vs old game residual {step_5_old_residual}",
                 )
-        for time, in_game in enumerate(inside_game_predictions_residuals):
+        for time, in_game, no_game in zip(
+            range(0, len(game_residuals)), inside_game_predictions_residuals, no_game_residuals
+        ):
+            assert no_game >= in_game
             print(f"inside game residual {in_game}, time {time} predicting {time+1}")
 
         print("This is what we get by using game Y_8: step 8 predicting for 9: ", game_residual_inner_9_new)
@@ -291,34 +297,34 @@ def test_game_objective() -> None:
 
     # Now try the whole server and see if it also uses the game prediction of Ts correctly.
     # Reset everything here
-    torch.manual_seed(10)
-    client_manager = get_transformer_client_manager(Z_DIM, sync_freq=T, gamma=GAMMA, alpha=0.5)
+    # torch.manual_seed(10)
+    # client_manager = get_transformer_client_manager(Z_DIM, sync_freq=T, gamma=GAMMA, alpha=0.5)
 
-    game = TransformerGame(
-        client_manager.clients,
-        sync_freq=T,
-        z_dim=Z_DIM,
-    )
+    # game = TransformerGame(
+    #     client_manager.clients,
+    #     sync_freq=T,
+    #     z_dim=Z_DIM,
+    # )
 
-    server2 = Server(
-        sync_freq=T,
-        client_manager=client_manager,
-        game=game,
-        metrics=[],
-        kappa=1.0,
-        eta=1.0,
-    )
-    server_residuals = []
+    # server2 = Server(
+    #     sync_freq=T,
+    #     client_manager=client_manager,
+    #     game=game,
+    #     metrics=[],
+    #     kappa=1.0,
+    #     eta=1.0,
+    # )
+    # server_residuals = []
 
-    # server goes from 0 to round-1
-    _ = server2.fit(9, have_sync=True)
-    # calculate residuals
-    for t in range(10):
-        w_t = server2.mixture_weights[t]
-        next_predictions = server2.clients_predictions[t + 1]
-        residual = TARGET_SEQUENCE[t + 1].unsqueeze(1) - torch.matmul(w_t.T, next_predictions).T
-        inner_residual = torch.pow(torch.linalg.norm(residual), 2.0)
-        server_residuals.append(inner_residual)
-        print(f"server residual {inner_residual}, time {t} predicting {t+1}")
+    # # server goes from 0 to round-1
+    # _ = server2.fit(9, have_sync=True)
+    # # calculate residuals
+    # for t in range(10):
+    #     w_t = server2.mixture_weights[t]
+    #     next_predictions = server2.clients_predictions[t + 1]
+    #     residual = TARGET_SEQUENCE[t + 1].unsqueeze(1) - torch.matmul(w_t.T, next_predictions).T
+    #     inner_residual = torch.pow(torch.linalg.norm(residual), 2.0)
+    #     server_residuals.append(inner_residual)
+    #     print(f"server residual {inner_residual}, time {t} predicting {t+1}")
 
-    assert False
+    # assert False

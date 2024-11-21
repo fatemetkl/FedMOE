@@ -3,7 +3,6 @@ import logging
 import os
 import random
 from typing import Any, Dict, List
-
 import torch
 
 from experiments.utils import load_config, load_data, save_to_json
@@ -11,6 +10,7 @@ from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.game import TransformerGame
 from fedmoe.metrics import MSEMetric
 from fedmoe.server import Server
+from experiments.transformer_experiments.pre_train_transformer import setup_transformer_structure
 
 
 def main(
@@ -50,10 +50,21 @@ def main(
         alpha,
         gamma,
         pre_training_dataloader=train_data_loader,
-        pre_training_epochs=pre_training_epochs,
+        pre_training_epochs=0,  # we don't train individual transformers
         pre_training_learning_rate=pre_training_learning_rate,
         target_sequence=data_object.target_matrix,
     )
+
+    # Load the saved models for each client
+    if config["models_dir"] is not None:
+        models_dir = config["models_dir"]
+        for client in client_manager.clients:
+            model_name = f"client_{client.id}_model.pth"
+            model_path = models_dir + model_name
+            model = setup_transformer_structure(data_object.x_dim, data_object.y_dim, hidden_dim)
+            # Load the state dictionary
+            model.load_state_dict(torch.load(model_path))
+            client.encoder = model
 
     game = TransformerGame(
         client_manager.clients,

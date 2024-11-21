@@ -90,7 +90,7 @@ def test_game_round_server() -> None:
 
     # Game needs observed values from zero to T inclusive
     torch.set_default_dtype(torch.float64)
-    past_T_betas, past_preds = server.sync_round(
+    past_T_betas, past_game_predictions = server.sync_round(
         t,
         [
             TARGET_SEQUENCE[0].reshape(-1, 1).double(),
@@ -727,14 +727,16 @@ def test_game_round_server() -> None:
     beta_game_2 = beta_game_2.reshape(NUM_CLIENTS, Z_DIM, 1)
     # We are at step T = 3, and the result of the game is, beta_2 that we use instead of beta_3
     # This function updates the beta and new prediction in each client
-    manual_game_prediction_4_c0 = clients[0].state.get_prediction_t(3) + (
+    manual_game_prediction_4_c0 = past_game_predictions[-1].reshape(NUM_CLIENTS, Y_DIM, 1)[0].reshape(-1, 1) + (
         clients[0].state.get_hidden_state_t(3) @ beta_game_2[0]
     )
+    # After debugging we found out we need to update previous prediction based on the game
+    client_manager.improve_previous_predictions_from_game(3, past_game_predictions[-1], past_T_betas[-1])
     game_prediction_4_c0 = clients[0].update_prediction_with_beta(3, beta_game_2[0])
     # Check new predictions calculations
     assert torch.allclose(manual_game_prediction_4_c0, game_prediction_4_c0, rtol=0.0, atol=1e-5)
 
-    # Repeat for client 1
+    # Repeat for client 1, now we have updated its previous Y
     manual_game_prediction_4_c1 = clients[1].state.get_prediction_t(3) + (
         clients[1].state.get_hidden_state_t(3) @ beta_game_2[1]
     )
@@ -766,6 +768,8 @@ def test_game_round_server() -> None:
     # Now let's see if previous beta optimized in the game is better than the one computed in the server (t=2)
     beta_game_2 = beta_game_2.reshape(NUM_CLIENTS, Z_DIM, 1)
     # We assume we are at step t = 2 and we use beta_1 to update the prediction
+    # After debugging we found out we need to update previous prediction based on the game
+    client_manager.improve_previous_predictions_from_game(2, past_game_predictions[-2], past_T_betas[-2])
     # client_0
     game_prediction_3_c0 = clients[0].update_prediction_with_beta(2, beta_game_2[0])
     # client_1

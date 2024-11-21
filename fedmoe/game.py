@@ -222,9 +222,6 @@ class Game(ABC):
             - self.game_state.get_C_t(t).double()
         )
         assert second_term.shape == (self.num_clients * self.z_dim, 1), f"shape is {second_term.shape}"
-        # TODO: check that it would be okay.
-        # first_term matrix is close to being singular or ill-conditioned, therefore we won't have consistency
-        # cond_number = torch.linalg.cond(matrix) is infinite. Therefore, I use a pseudo-inverse.
         inv_matrix = torch.linalg.inv(first_term)
         h_t = torch.matmul(inv_matrix, second_term.to(torch.float64))
 

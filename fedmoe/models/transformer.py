@@ -20,7 +20,6 @@ class TransformerTimeSeriesModel(nn.Module):
         # Input projection
         self.input_projection = nn.Linear(input_dim, output_dim * hidden_dim).double()
 
-        # Positional encoding
         self.positional_encoding = nn.Parameter(
             torch.zeros(1, max_seq_len, output_dim * hidden_dim)
         )  # Learnable positional encoding
@@ -34,7 +33,6 @@ class TransformerTimeSeriesModel(nn.Module):
             batch_first=True,
         ).double()
 
-        # Transformer Encoder
         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=num_encoder_layers).double()
 
         # Output projection for pre-training
@@ -49,18 +47,17 @@ class TransformerTimeSeriesModel(nn.Module):
         """
         Args:
         - x_t: Input tensor of shape (batch_size, seq_len, input_dim).
-        - attention_mask: Causal mask or padding mask of shape (seq_len, seq_len) or None.
+        - attention_mask: Causal mask or padding mask of shape (seq_len, seq_len) or None during inference.
         - pre_training: Whether the model is in pre-training mode (next-step prediction).
 
         """
-        # Input projection and positional encoding
         x_t = self.input_projection(x_t)  # Project input to transformer dimension
         seq_len = x_t.size(1)
         x_t = x_t + self.positional_encoding[:, :seq_len]  # Add positional encoding
 
         # Transformer encoder
         encoder_output = self.transformer_encoder(x_t, mask=attention_mask)
-        # print("encoder_output", encoder_output.shape)
+
         # Output projection during pre-training
         if pre_training:
 

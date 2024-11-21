@@ -168,7 +168,6 @@ class Server:
 
         # Mixture weights produce our "server prediction" here: \hat{y}_0 = hat_Y_0 * w_neg1
         self.server_outputs.append(torch.matmul(w_neg1.T, hat_Y_0.double()).T)
-        # TODO: Check num rounds
         for t in range(0, num_rounds):
             # At step t, target is tp predict t+1
             # last_observed_value = y_{t} since we're predicting for t+1.
@@ -197,27 +196,21 @@ class Server:
                 )
                 # Improve step Ts predictions with the new beta_T <-- beta_(T-1)
                 # First update Y_T for every client based on the latest Y in game.
-                # for game_t in range(0, self.sync_freq):
-                #     self.client_manager.improve_previous_predictions_from_game(
-                #         t - self.sync_freq + game_t, game_improved_predictions[game_t], past_T_betas
-                #     [game_t])
+
                 self.client_manager.improve_previous_predictions_from_game(
                     t, game_improved_predictions[-1], past_T_betas[-1]
                 )
                 # # This function updated beta_t and Y_{t+1} in each client.
                 new_predictions = self.client_manager.get_predictions_with_beta(t, past_T_betas[-1])
-
-                # Optional: update past T predictions in each client
-                # self.client_manager.update_past_predictions(t, past_T_betas)
-
-                if update_last_Y_sync:
-                    # Optional: improve previous client predictions (Y^i_{t-1})
-                    # We can use Y^i_{t-1} in this round's mixture weight computation.
-                    # Uses beta_{t-1} for updating predictions at t-1 (we used the same beta for updating Y_t)
-                    self.clients_predictions[t - 1] = self.client_manager.get_predictions_with_beta(
-                        t - 1, past_T_betas[-1]
-                    )
                 self.game_predictions.append((t, new_predictions))
+
+                # Optional: not tested yet. Replace previous betas and previous predictions based on the game
+                if update_last_Y_sync:
+                    for game_t in range(0, self.sync_freq):
+                        self.client_manager.improve_previous_predictions_from_game(
+                            t - self.sync_freq + game_t, game_improved_predictions[game_t], past_T_betas[game_t]
+                        )
+
             # A list of clients predictions is appended (Y_{t+1}^i for every i in N)
             self.clients_predictions.append(new_predictions)
             assert len(self.clients_predictions) == t + 2
@@ -230,12 +223,6 @@ class Server:
 
             self.metric_manager.update({"server_predictions": server_output}, self.client_manager.get_y(t + 1))
 
-        # Server prediction length would be num_rounds + 1
-        # At the end we have used input x_0 to x_{num_rounds-1} to predict y_1 to y_{num_rounds}
-        # but we have also appended Y_0 and y_0 to their respective lists to use them in the algorithm.
-        # But we don't need them to visualize, so we remove them here.
-
-        # Now the length of used inputs, and predictions are num_rounds.
         # Compute metric
         final_metric_value = self.metric_manager.compute()
         return final_metric_value

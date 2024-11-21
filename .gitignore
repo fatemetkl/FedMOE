@@ -145,3 +145,6 @@ experiments/**/*_results/
 *.err
 *.out
 *.json
+
+# saved models
+experiments/**/*models_*/
