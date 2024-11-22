@@ -17,15 +17,21 @@ class Server:
         client_manager: ClientManager,
         game: Game,
         metrics: Sequence[Metric],
+        game_freq: int = 0,
         kappa: float = 1.0,
         eta: float = 1.0,
     ) -> None:
         # assert (
         #     sync_freq == client_manager.sync_freq
         # ), "Sync Frequency of Server is not the same as Sync Frequency of Client Manager"
+        # The T used in the game backward steps is called sync_freq here,
+        # but the actual synchronization step is called game_freq.
         assert sync_freq == game.sync_freq, "Sync Frequency of Server is not the same as the Sync Frequency of Game"
         assert client_manager.z_dim == game.z_dim, "Latent dimension of Client Manager is not the same as the Game"
         self.sync_freq = sync_freq
+        self.game_freq = game_freq
+        if game_freq == 0:
+            self.game_freq = sync_freq
         self.num_clients = client_manager.num_clients
         self.y_dim = client_manager.y_dim
         self.client_manager = client_manager
@@ -183,8 +189,10 @@ class Server:
             w_t = self.compute_mixture_weights(self.clients_predictions[t].double(), last_observed_value.double())
             self.mixture_weights.append(w_t)
 
-            # if t%T == 0, we update predictions based on Nash game
-            if have_sync and t % self.sync_freq == 0 and t > 0:
+            # if t%T == 0, we update predictions based on Nash game.
+            # t should be greater than or equal to T used in game to have that many records for game.
+            if have_sync and t % self.game_freq == 0 and t >= self.sync_freq:
+                # Every game_freq step, we go sync_freq steps back and play the Nash game.
                 start_point = max(t - self.sync_freq, 0)
                 #  Sending the last T+1 observations and mixture weights for Nash game
                 #  (last 0 to T) --> time[t-T-1, t] inclusive current sync step.

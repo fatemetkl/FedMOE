@@ -19,6 +19,7 @@ def main(
     hidden_dim: int,
     T: int,
     game_sync_freq: int,
+    game_T: int,
     alpha: float,
     gamma: float,
     sigma: float,
@@ -68,17 +69,19 @@ def main(
 
     game = TransformerGame(
         client_manager.clients,
-        sync_freq=game_sync_freq,
+        sync_freq=game_T,
         z_dim=hidden_dim,
     )
     logger.info("Transformer clients initiated")
 
     # Run the server
     server = Server(
-        sync_freq=game_sync_freq,
+        # sync_freq is the T used in game.
+        sync_freq=game_T,
         client_manager=client_manager,
         game=game,
         metrics=[MSEMetric("MSE")],
+        game_freq=game_sync_freq,
         kappa=K,
         eta=eta,
     )
@@ -215,6 +218,13 @@ if __name__ == "__main__":
         default=5,
     )
     parser.add_argument(
+        "--game_T",
+        action="store",
+        type=int,
+        help="T used in game optimization.",
+        default=5,
+    )
+    parser.add_argument(
         "--data_loader_num_samples",
         action="store",
         type=int,
@@ -260,6 +270,7 @@ if __name__ == "__main__":
         args.hidden_dim,
         args.client_T,
         args.game_sync_freq,
+        args.game_T,
         args.alpha,
         args.gamma,
         args.sigma,
