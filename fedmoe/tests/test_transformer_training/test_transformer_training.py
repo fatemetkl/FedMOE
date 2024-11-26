@@ -1,4 +1,5 @@
 import torch
+
 from experiments.utils import load_data
 from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.game import TransformerGame
@@ -44,7 +45,7 @@ def test_inference_periodic_data_transformer() -> None:
     )
 
     _ = Server(
-        sync_freq=T,
+        total_game_steps=T,
         client_manager=client_manager,
         game=game,
         metrics=[],

@@ -39,7 +39,7 @@ def do_not_test_input_output_shapes_rfn() -> None:
     )
     # Run the server
     server = Server(
-        sync_freq=T,
+        total_game_steps=T,
         client_manager=client_manager,
         game=game,
         metrics=[],
@@ -81,7 +81,7 @@ def test_brownian_transformer() -> None:
     )
     # Run the server
     server = Server(
-        sync_freq=T,
+        total_game_steps=T,
         client_manager=client_manager,
         game=game,
         metrics=[],
@@ -134,7 +134,7 @@ def do_not_test_brownian_esn() -> None:
     )
     # Run the server
     server = Server(
-        sync_freq=T,
+        total_game_steps=T,
         client_manager=client_manager,
         game=game,
         metrics=[],

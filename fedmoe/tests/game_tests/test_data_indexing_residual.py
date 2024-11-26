@@ -43,7 +43,7 @@ def test_data_indexing() -> None:
     )
 
     server = Server(
-        sync_freq=T,
+        total_game_steps=T,
         client_manager=client_manager,
         game=game,
         metrics=[],

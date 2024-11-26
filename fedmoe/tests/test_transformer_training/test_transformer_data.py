@@ -30,7 +30,7 @@ def test_transformer_loss() -> None:
     _, target_sequence = get_data_and_target_sequences()
     client_manager = get_transformer_client_manager(Z_DIM)
     game = TransformerGame(client_manager.clients, sync_freq=T, z_dim=Z_DIM)
-    server = Server(sync_freq=T, client_manager=client_manager, game=game, metrics=[RMSEMetric("RMSE")])
+    server = Server(total_game_steps=T, client_manager=client_manager, game=game, metrics=[RMSEMetric("RMSE")])
     metric_value = server.fit(num_rounds=num_rounds, have_sync=False)
     loss = torch.Tensor([0.0])
     for time in range(num_rounds + 1):

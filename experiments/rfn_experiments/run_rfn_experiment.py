@@ -56,7 +56,7 @@ def main(
 
     # Run the server
     server = Server(
-        sync_freq=T,
+        total_game_steps=T,
         client_manager=client_manager,
         game=game,
         metrics=[RMSEMetric("RMSE")],

@@ -13,7 +13,7 @@ class Server:
 
     def __init__(
         self,
-        sync_freq: int,
+        total_game_steps: int,
         client_manager: ClientManager,
         game: Game,
         metrics: Sequence[Metric],
@@ -22,16 +22,18 @@ class Server:
         eta: float = 1.0,
     ) -> None:
         # assert (
-        #     sync_freq == client_manager.sync_freq
+        #     total_game_steps == client_manager.total_game_steps
         # ), "Sync Frequency of Server is not the same as Sync Frequency of Client Manager"
-        # The T used in the game backward steps is called sync_freq here,
+        # The T used in the game backward steps is called total_game_steps here,
         # but the actual synchronization step is called game_freq.
-        assert sync_freq == game.sync_freq, "Sync Frequency of Server is not the same as the Sync Frequency of Game"
+        assert (
+            total_game_steps == game.sync_freq
+        ), "Game T steps value of Server is not the same as the Sync Frequency of Game"
         assert client_manager.z_dim == game.z_dim, "Latent dimension of Client Manager is not the same as the Game"
-        self.sync_freq = sync_freq
+        self.total_game_steps = total_game_steps
         self.game_freq = game_freq
         if game_freq == 0:
-            self.game_freq = sync_freq
+            self.game_freq = total_game_steps
         self.num_clients = client_manager.num_clients
         self.y_dim = client_manager.y_dim
         self.client_manager = client_manager
@@ -85,13 +87,13 @@ class Server:
         # Server has the observed values of all clients for the past T time steps [0 to T] inclusive.
         # Server has the mixture weights of all the clients for the past T time steps [0 to T] inclusive.
         # Last time step (T)
-        assert len(past_observed_values) == self.sync_freq + 1
-        assert len(past_mixture_weights) == self.sync_freq + 1
+        assert len(past_observed_values) == self.total_game_steps + 1
+        assert len(past_mixture_weights) == self.total_game_steps + 1
         self.game.init_game_round_variables(current_t)
         # In first_block_alg2 S(T) and P(T) are initialized to zero.
-        self.game.first_block_alg2(time=self.sync_freq)
+        self.game.first_block_alg2(time=self.total_game_steps)
 
-        for game_t in range(self.sync_freq - 1, -1, -1):
+        for game_t in range(self.total_game_steps - 1, -1, -1):
             A_t = None
             B_t = None
             C_t = None
@@ -140,7 +142,7 @@ class Server:
         # Observed value for all the clients is the same.
         Y_hat_0 = past_observed_values[0].repeat(self.num_clients, 1)
         game_improved_predictions.append(Y_hat_0)
-        for t in range(0, self.sync_freq):
+        for t in range(0, self.total_game_steps):
             beta_t = self.game.compute_beta(t, game_improved_predictions[t])
             z_beta = self.game.compute_z_beta_clients(t, beta_t)
             # if t == 3 and current_t == 8:
@@ -191,9 +193,9 @@ class Server:
 
             # if t%T == 0, we update predictions based on Nash game.
             # t should be greater than or equal to T used in game to have that many records for game.
-            if have_sync and t % self.game_freq == 0 and t >= self.sync_freq:
-                # Every game_freq step, we go sync_freq steps back and play the Nash game.
-                start_point = max(t - self.sync_freq, 0)
+            if have_sync and t % self.game_freq == 0 and t >= self.total_game_steps:
+                # Every game_freq step, we go total_game_steps steps back and play the Nash game.
+                start_point = max(t - self.total_game_steps, 0)
                 #  Sending the last T+1 observations and mixture weights for Nash game
                 #  (last 0 to T) --> time[t-T-1, t] inclusive current sync step.
                 assert len(self.mixture_weights) == len(self.observed_values)
@@ -214,9 +216,9 @@ class Server:
 
                 # Optional: not tested yet. Replace previous betas and previous predictions based on the game
                 if update_last_Y_sync:
-                    for game_t in range(0, self.sync_freq):
+                    for game_t in range(0, self.total_game_steps):
                         self.client_manager.improve_previous_predictions_from_game(
-                            t - self.sync_freq + game_t, game_improved_predictions[game_t], past_T_betas[game_t]
+                            t - self.total_game_steps + game_t, game_improved_predictions[game_t], past_T_betas[game_t]
                         )
 
             # A list of clients predictions is appended (Y_{t+1}^i for every i in N)

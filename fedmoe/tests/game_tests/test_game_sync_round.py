@@ -35,7 +35,7 @@ def test_game_round_server() -> None:
     )
 
     server = Server(
-        sync_freq=T,
+        total_game_steps=T,
         client_manager=client_manager,
         game=game,
         metrics=[],

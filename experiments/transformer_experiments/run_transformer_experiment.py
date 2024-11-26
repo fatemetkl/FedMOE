@@ -3,14 +3,15 @@ import logging
 import os
 import random
 from typing import Any, Dict, List
+
 import torch
 
+from experiments.transformer_experiments.pre_train_transformer import setup_transformer_structure
 from experiments.utils import load_config, load_data, save_to_json
 from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.game import TransformerGame
 from fedmoe.metrics import MSEMetric
 from fedmoe.server import Server
-from experiments.transformer_experiments.pre_train_transformer import setup_transformer_structure
 
 
 def main(
@@ -77,7 +78,7 @@ def main(
     # Run the server
     server = Server(
         # sync_freq is the T used in game.
-        sync_freq=game_T,
+        total_game_steps=game_T,
         client_manager=client_manager,
         game=game,
         metrics=[MSEMetric("MSE")],
@@ -92,15 +93,13 @@ def main(
     # Plot or save server predictions and the input data sequence
     plot_info = {
         "num_clients": config["num_clients"],
-        "T": T,
+        "client T": T,
+        "game T": game_T,
+        "sync freq": game_sync_freq,
         "d_z": hidden_dim,
         "alpha": alpha,
         "gamma": gamma,
         "sigma": sigma,
-        "PT_num_samples": data_loader_num_samples,
-        "PT_batch_size": data_loader_batch_size,
-        "PT_epochs": pre_training_epochs,
-        "PT_learning_rate": pre_training_learning_rate,
     }
 
     tensors_to_save: Dict[str, List[torch.Tensor]] = {}
@@ -111,7 +110,7 @@ def main(
             f"{results_dir}/server_pred_plot.png",
             plot_info=plot_info,
             game_played=config["have_sync"],
-            T=game_sync_freq,
+            T=server.game_freq,
             show_points=True,
         )
         tensors_to_save["server_prediction"] = server.server_outputs
@@ -135,7 +134,11 @@ def main(
     if config["save_mixture_weights"]:
         detached_mixture_weights = [mixture_weight.detach() for mixture_weight in server.mixture_weights]
         data_object.visualize_mixture_weights(
-            detached_mixture_weights, f"{results_dir}/mixture_weights.png", plot_info
+            detached_mixture_weights,
+            f"{results_dir}/mixture_weights.png",
+            plot_info,
+            game_played=config["have_sync"],
+            T=server.game_freq,
         )
         tensors_to_save["mixture_weights"] = detached_mixture_weights
 

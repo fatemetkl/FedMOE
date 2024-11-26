@@ -28,7 +28,7 @@ def test_server_optimization() -> None:
     client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim, N)
     game = RfnGame(client_manager.clients, 3, z_dim)
 
-    server = Server(sync_freq=3, client_manager=client_manager, game=game, metrics=[], kappa=kappa, eta=eta)
+    server = Server(total_game_steps=3, client_manager=client_manager, game=game, metrics=[], kappa=kappa, eta=eta)
 
     predictions = torch.Tensor([[1.0, 0.5, 0.1], [2.0, 1.0, 0.2], [3.0, 1.5, 0.3]])
     y_t = torch.Tensor([0.75, 1.5, 2.0]).reshape(-1, 1)
@@ -83,7 +83,12 @@ def test_server_mixture_weights_in_flow() -> None:
     game = RfnGame(client_manager.clients, 3, z_dim)
 
     server = Server(
-        sync_freq=3, client_manager=client_manager, game=game, metrics=[RMSEMetric("RSME")], kappa=kappa, eta=eta
+        total_game_steps=3,
+        client_manager=client_manager,
+        game=game,
+        metrics=[RMSEMetric("RSME")],
+        kappa=kappa,
+        eta=eta,
     )
 
     # Perform 5 rounds of client stepping and mixing without synchronization
@@ -139,7 +144,12 @@ def test_full_flow_with_dy_dx_one() -> None:
     game = RfnGame(client_manager.clients, 3, z_dim)
 
     server = Server(
-        sync_freq=3, client_manager=client_manager, game=game, metrics=[RMSEMetric("RSME")], kappa=kappa, eta=eta
+        total_game_steps=3,
+        client_manager=client_manager,
+        game=game,
+        metrics=[RMSEMetric("RSME")],
+        kappa=kappa,
+        eta=eta,
     )
 
     # Perform 5 rounds of client stepping and mixing without synchronization, just making sure it runs all the way

@@ -148,3 +148,4 @@ experiments/**/*_results/
 
 # saved models
 experiments/**/*models_*/
+*.pth

@@ -333,10 +333,11 @@ class TimeSeriesData:
                 T_values = [mixture_weights[j, client] for j in T_indices]
                 plt.scatter(T_indices, T_values, marker="o", label="T step")
 
-        if T > 0 and not show_points:
-            for j in range(1, int((self.total_time_steps - 1) / T) + 1):
-                label = "T time steps" if j == 1 else None
-                plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
+        # This is commented because showing the game synchronization lines makes the plot too crowded.
+        # if T > 0 and not show_points:
+        #     for j in range(1, int((self.total_time_steps - 1) / T) + 1):
+        #         label = "T time steps" if j == 1 else None
+        #         plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
 
         if game_played:
             game_status = "with"

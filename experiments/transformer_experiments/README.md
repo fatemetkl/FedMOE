@@ -54,7 +54,37 @@ Make sure your environment is activated.
 
 ## Run hp sweep on you local machine
 
-Activate the environment and then run:
+First activate the environment.
+For example:
+```
+source ../fedmoe_env/bin/activate
+
+```
+#### Pre-train the transformer models
+For each client, we train a transformer and fix it across different hyper-parameter settings.
+Make sure to create RUN_OUTPUT_FILE yourself.
+
+```
+RUN_OUTPUT_FILE="${RUN_OUTPUT_DIR}log.out"
+
+python -m experiments.transformer_experiments.pre_train_transformer \
+    --config_path ${CONFIG_PATH} \
+    --random_seed ${SEED} \
+    > ${RUN_OUTPUT_FILE} 2>&1 &
+```
+
+For example:
+
+```
+python -m experiments.transformer_experiments.pre_train_transformer \
+    --config_path "experiments/transformer_experiments/pre_train_config.yaml" \
+    --random_seed 2026 \
+    > "experiments/transformer_experiments/models/log.out" 2>&1 &
+
+```
+
+#### Run experiments
+To launch the experiments run:
 
 ```
 bash experiments/transformer_experiments/local_run_hp_sweep.sh \
@@ -72,6 +102,6 @@ experiments/transformer_experiments/transformer_results/
 
 Find the best hyper-parameter:
 ```
-python -m experiments.find_best_hp --hp_sweep_dir experiments/transformer_experiments/transformer_results/transformer-sine-50
+python -m experiments.find_best_hp --hp_sweep_dir experiments/transformer_experiments/transformer_results/
 ```
 Make sure your environment is activated.
