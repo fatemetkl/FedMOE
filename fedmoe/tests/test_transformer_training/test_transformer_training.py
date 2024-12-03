@@ -2,7 +2,7 @@ import torch
 
 from experiments.utils import load_data
 from fedmoe.client_manager import PreTrainingClientManager
-from fedmoe.game import TransformerGame
+from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
 
 TOTAL_ROUNDS = 10

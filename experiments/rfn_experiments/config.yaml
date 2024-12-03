@@ -1,11 +1,11 @@
 # Experiment variables
-experiment_name: "rfn-sin"
+experiment_name: "rfn-periodic-game"
 client_type : 0 # 0: Random feature networks (fixed for this experiment)
-data: "sine_signal"  # Dataset options are saved in utils.DataOptions. Examples: periodic_signal, logistic_map, sine_signal, quadratic_data, linear_line, or horizontal_line, 2dxy, simple_brownian, brownian_addition
+data: "periodic_signal"  # Dataset options are saved in utils.DataOptions. Examples: periodic_signal, time_input_periodic, logistic_map, sine_signal, quadratic_data, linear_line, or horizontal_line, 2dxy, simple_brownian, brownian_addition
 
 num_clients : 2 # The number of experts or clients
 total_rounds : 200 # The number of total rounds (data sequence will be created to be one time-step longer)
-have_sync: False # Do we want to have Nash game and synchronization steps or not
+have_sync: True # Do we want to have Nash game and synchronization steps or not
 update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t
 
 # Options for saving the plots, and dumping tensors in JSON

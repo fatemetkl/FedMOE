@@ -9,7 +9,7 @@ import torch
 from experiments.utils import load_config, load_data, save_to_json
 from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
-from fedmoe.game import EchoStateGame
+from fedmoe.game.echo_state_game import EchoStateGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
 

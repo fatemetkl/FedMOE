@@ -1,11 +1,9 @@
-import math
 from abc import ABC, abstractmethod
 from typing import List
 
 import torch
 
 from fedmoe.clients.client import Client
-from fedmoe.clients.esn_client import EchoStateNetworkClient
 from fedmoe.state.game_state import GameState
 
 torch.set_default_dtype(torch.float64)
@@ -28,6 +26,9 @@ class Game(ABC):
         raise NotImplementedError
 
     def get_A_hat_ij_t(self, time: int, i: int, j: int, bold_w_t: torch.Tensor) -> torch.Tensor:
+        raise NotImplementedError
+
+    def get_D_client_ij_t(self, game_time: int, i: int, j: int, P_t_plus_1_client: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
     # TODO: check this function to make sure it is not changing the order of operations.
@@ -236,9 +237,6 @@ class Game(ABC):
         assert e_alpha_gamma_A.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
         return torch.linalg.inv(e_alpha_gamma_A).double()
 
-    def get_D_client_ij_t(self, game_time: int, i: int, j: int, P_t_plus_1_client: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError
-
     def calculate_Dt_client(self, game_time: int, client_id: int) -> torch.Tensor:
         Dt_client = torch.zeros(self.num_clients, self.num_clients, self.z_dim, self.z_dim, dtype=torch.float64)
         P_t_plus_1_client = self.get_client_pt(t=(game_time + 1), client_id=client_id)
@@ -396,255 +394,3 @@ class Game(ABC):
         n_z_betas = torch.cat(z_beta_clients, dim=0)
         assert n_z_betas.shape == (self.num_clients * self.y_dim, 1)
         return n_z_betas
-
-
-class TransformerGame(Game):
-    def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
-        super().__init__(clients, sync_freq, z_dim)
-
-    # def get_input(self, game_t: int, client: Client) -> torch.Tensor:
-    #     """
-    #     Maps the time game_t in the game (between 0 to sync_freq) to the time scale used in the server,
-    #     current_time, and returns the input (x_t) associated with server time.
-    #     """
-    #     server_time = self.map_game_time_to_server_time(game_t, client)
-    #     # Assuming that the input shape in transformer is (x_dim, 1)
-    #     return client.get_x(server_time), server_time
-
-    def get_hidden_state(self, game_t: int, client: Client) -> torch.Tensor:
-        """
-        Maps the time game_t in the game (between 0 to sync_freq) to the time scale used in the server,
-        current_time, and returns the hidden state (z_t) associated with server time.
-        """
-        server_time = self.map_game_time_to_server_time(game_t, client)
-        # Assuming that the hidden state shape in transformer is (z_dim, 1)
-        return client.state.get_hidden_state_t(server_time)
-
-    def get_expectation_e_zt(self, game_t: int, client: Client) -> torch.Tensor:
-        """
-        Computes "$e_i phi^{(i)}(x_t)$" for each client i
-        """
-        # We don't need to feed the transformer again.
-        Z = self.get_hidden_state(game_t, client).double()
-        # Embedding shape is y_dim x z_dim
-        assert Z.shape == (self.y_dim, self.z_dim)
-        # e_i's shape is (num_clients * self.y_dim, self.y_dim)
-        e_i = client.get_e(self.num_clients)
-        # output shape is Ny_dim x z_dim
-        return torch.matmul(
-            e_i.double(),
-            Z.double(),
-        )
-
-    def get_A_ij_t(self, game_t: int, i: int, j: int) -> torch.Tensor:
-        client_i = self.clients[i]
-        client_j = self.clients[j]
-        client_i_E = self.get_expectation_e_zt(game_t, client_i)
-        client_j_E = self.get_expectation_e_zt(game_t, client_j)
-        return torch.matmul(torch.matmul(client_i_E.T, client_i.P[game_t + 1]), client_j_E)
-
-    def get_A_hat_ij_t(self, game_t: int, i: int, j: int, bold_w_t: torch.Tensor) -> torch.Tensor:
-        client_i = self.clients[i]
-        client_j = self.clients[j]
-        client_i_E = self.get_expectation_e_zt(game_t, client_i)
-        client_j_E = self.get_expectation_e_zt(game_t, client_j)
-        return torch.matmul(torch.matmul(client_i_E.T, torch.matmul(bold_w_t, bold_w_t.T)), client_j_E)
-
-    def get_D_client_ij_t(self, game_t: int, i: int, j: int, P_t_plus_1_client: torch.Tensor) -> torch.Tensor:
-        client_i = self.clients[i]
-        client_j = self.clients[j]
-        client_i_E = self.get_expectation_e_zt(game_t, client_i)
-        client_j_E = self.get_expectation_e_zt(game_t, client_j)
-        return torch.matmul(torch.matmul(client_i_E.T, P_t_plus_1_client), client_j_E)
-
-
-class EchoStateGame(Game):
-    def __init__(
-        self,
-        clients: List[Client],
-        sync_freq: int,
-        z_dim: int,
-        N_samples: int = 100,
-    ) -> None:
-        super().__init__(clients, sync_freq, z_dim)
-        self.N_samples = N_samples
-        for client in clients:
-            assert client.sync_steps == sync_freq
-
-    def get_input(self, t: int, client: Client) -> torch.Tensor:
-        """
-        Maps the time t in the game (between 0 to sync_freq) to the time scale used in the server, current_time, and
-        returns the input (x_t) associated with server time.
-        """
-        server_time = self.map_game_time_to_server_time(t, client)
-        return client.get_input_matrix(server_time)
-
-    def simulate_z_t(self, t: int, client: Client) -> torch.Tensor:
-        # Setting z start, which is the last z before the last sync step.
-        # Based on the game time scale, it is t=-1.
-        Z = self.get_z(t=-1, client=client)
-        #  Starts the simulation from -1 (last sync step -1) to desired t
-        for back_t in range(0, t + 1):
-            Z = client.encoder(self.get_input(back_t, client), Z, client.sigma)
-        return Z
-
-    def get_expectation_e_zt(self, t: int, client: Client) -> torch.Tensor:
-        # Note that t here is not server time, but rather game time [0, sync_freq]
-        assert type(client) is EchoStateNetworkClient
-        samples = []
-        for _ in range(self.N_samples):
-            # Start from time current_t-T-1 for the trajectory
-            # If we're PREDICTING t=8, with sync frequency T=4, then we want to generate trajectories
-            # Z_3 -> Z_4 -> Z_5 -> Z_6 for our Nash game.
-            # This means we start from Z_3 and use x_4, x_5, x_6 to generate these latent values.
-            # To get Z_5, we again start from Z_3 -> Z_4 -> z_5
-            estimated_Z_t = self.simulate_z_t(t, client)
-            e_i = client.get_e(self.num_clients)
-            e_z_T = torch.matmul(e_i.double(), estimated_Z_t.double())
-            samples.append(e_z_T)
-        sum_tensor = torch.zeros_like(samples[0])
-        for sample in samples:
-            sum_tensor = sum_tensor + sample
-        return sum_tensor / self.N_samples
-
-    def get_expectation_z_t_e_t_transpose_P_z_t_e_t(self, t: int, client: Client) -> torch.Tensor:
-        # Note that t here is not server time, but rather game time [0, sync_freq]
-        # When the z_t values are the same in these expectation calculations, we can't compute the expectations
-        # separately. So we do everything together.
-        assert type(client) is EchoStateNetworkClient
-        samples = []
-        for _ in range(self.N_samples):
-            # Start from time current_t-T-1 for the trajectory
-            # If we're PREDICTING t=8, with sync frequency T=4, then we want to generate trajectories
-            # Z_3 -> Z_4 -> Z_5 -> Z_6 for our Nash game.
-            # This means we start from Z_3 and use x_4, x_5, x_6 to generate these latent values.
-            Z = self.simulate_z_t(t, client)
-            e_i = client.get_e(self.num_clients)
-            e_z_T = torch.matmul(e_i.double(), Z.double())
-            P_t_plus_1 = client.P[t + 1]
-            sample = torch.matmul(torch.matmul(e_z_T.T, P_t_plus_1), e_z_T)
-            samples.append(sample)
-        sum_tensor = torch.zeros_like(samples[0])
-        for sample in samples:
-            sum_tensor = sum_tensor + sample
-        return sum_tensor / self.N_samples
-
-    def get_A_ij_t(self, t: int, i: int, j: int) -> torch.Tensor:
-        client_i = self.clients[i]
-        client_j = self.clients[j]
-        if i != j:
-            # If we're in the off diagonal entries of A_{ij}(t) then the expectations are independent
-            # So we can calculate everything separately
-            client_i_E = self.get_expectation_e_zt(t, client_i)
-            client_j_E = self.get_expectation_e_zt(t, client_j)
-            return torch.matmul(torch.matmul(client_i_E.T, client_i.P[t + 1]), client_j_E)
-        else:
-            # If we're on the diagonal, then the Z_ts are not independent and we have to do an estimation of everything
-            # combined
-            return self.get_expectation_z_t_e_t_transpose_P_z_t_e_t(t, client_i)
-
-
-class RfnGame(Game):
-    def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
-        super().__init__(clients, sync_freq, z_dim)
-
-    def get_input(self, t: int, client: Client) -> torch.Tensor:
-        """
-        Maps the time t in the game (between 0 to sync_freq) to the time scale used in the server, current_time, and
-        returns the input (x_t) associated with server time.
-        """
-        server_time = self.map_game_time_to_server_time(t, client)
-        return client.get_input_matrix(server_time)
-
-    def get_a_t_embedding(self, time: int, client: Client) -> torch.Tensor:
-        # some parts of the forwards pass (without randomness)
-        a_t = (torch.matmul(client.encoder.A.double(), self.get_input(time, client).double())) + client.encoder.b
-        assert a_t.shape == (self.y_dim, self.z_dim)
-        return a_t
-
-    def get_expectation_zt(self, time: int, client: Client) -> torch.Tensor:
-        a_t = self.get_a_t_embedding(time, client)
-        phi = torch.distributions.Normal(0, 1).cdf((torch.mul((-1 / client.sigma), a_t)))
-        one_bar = torch.ones(client.z_dim)
-        exp_term = torch.exp((-1 / (2 * (client.sigma) ** 2)) * torch.mul(a_t, a_t))
-        second_term = client.sigma / math.sqrt(2 * math.pi) * exp_term
-        a_ti = torch.mul(a_t, (one_bar - phi)) + second_term
-        assert a_ti.shape == (self.y_dim, self.z_dim)
-        return a_ti
-
-    def calculate_b(self, t: int) -> torch.Tensor:
-        B = []
-        for client in self.clients:
-            a_ti = self.get_expectation_zt(t, client)  # shape: 1*d_z
-            e_i = client.get_e(self.num_clients)  # shape: Nd_y*d_y
-            B.append(
-                torch.matmul(
-                    torch.matmul(self.get_client_pt(t=(t + 1), client_id=client.id).double(), e_i.double()), a_ti
-                )
-            )
-        B_matrix = torch.cat(B, dim=1).T
-        assert B_matrix.shape == (self.num_clients * self.z_dim, self.num_clients * self.y_dim)
-        return B_matrix
-
-    def calculate_c(self, t: int) -> torch.Tensor:
-        C = []
-        for client in self.clients:
-            a_ti = self.get_expectation_zt(t, client)  # shape: 1*d_z
-            e_i = client.get_e(self.num_clients)  # shape: Nd_y*d_y
-            C.append(
-                torch.matmul(
-                    torch.matmul(self.get_client_st(t=(t + 1), client_id=client.id).T.double(), e_i.double()), a_ti
-                )
-            )
-        C_matrix = torch.cat(C, dim=1).T
-        assert C_matrix.shape == (self.num_clients * self.z_dim, 1)
-        return C_matrix
-
-    def calculate_d(self, t: int) -> torch.Tensor:
-        D_list = []
-        for client in self.clients:
-            a_ti = self.get_expectation_zt(t, client)  # shape: 1*d_z
-            e_i = client.get_e(self.num_clients)  # shape: Nd_y*d_y
-            D_list.append(torch.matmul(e_i, a_ti))
-        # D's shape is Nd_y x Nd_z
-        D = torch.cat(D_list, dim=1)
-        assert D.shape == (self.num_clients * self.y_dim, self.num_clients * self.z_dim)
-        return D
-
-    def get_A_ij_t(self, time: int, i: int, j: int) -> torch.Tensor:
-        client_i = self.clients[i]
-        client_j = self.clients[j]
-        # Check that client_i.P[time + 1] is set
-        next_p = self.get_client_pt(t=(time + 1), client_id=i).reshape(
-            (self.num_clients, self.num_clients, self.y_dim, self.y_dim)
-        )
-        # a_ti is a(t,i) which is the E[Z_t^i] for RFNs; shape: d_y*d_z
-        # at is a partial forward pass without randomness used in a(t,i) calculations. shape: d_y*d_Z
-        if i != j:
-            a_ti = self.get_expectation_zt(time, client_i)
-            a_tj = self.get_expectation_zt(time, client_j)
-            A_ij = torch.matmul((a_ti.T * next_p[i][j]), a_tj)
-            # A_ij shape: d_z*d_z
-            assert A_ij.shape == (self.z_dim, self.z_dim)
-            return A_ij
-        else:
-            A_ii = torch.zeros(client_i.z_dim, client_i.z_dim, dtype=torch.float64)
-            a_ti = self.get_expectation_zt(time, client_i)
-            at = self.get_a_t_embedding(time, client_i)
-
-            for p in range(client_i.z_dim):
-                for k in range(client_i.z_dim):
-                    if p == k:
-                        phi = torch.distributions.Normal(0, 1).cdf(-at[:, p] / client_i.sigma)
-
-                        second_term = (torch.mul(at, at)[:, p] + client_i.sigma**2) * (1 - phi) + at[
-                            :, p
-                        ] * client_i.sigma / math.sqrt(2 * math.pi) * torch.exp(
-                            -1 * (torch.mul(at, at)[:, p]) / (2 * (client_i.sigma**2))
-                        )
-                    else:
-                        second_term = a_ti[:, p] * a_ti[:, k]
-                    A_ii[p][k] = next_p[i][i] * second_term
-            # A_ii shape: d_z*d_z
-            assert A_ii.shape == (self.z_dim, self.z_dim)
-            return A_ii

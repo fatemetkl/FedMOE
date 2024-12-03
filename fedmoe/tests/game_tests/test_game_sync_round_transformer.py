@@ -2,7 +2,7 @@ import math
 
 import torch
 
-from fedmoe.game import TransformerGame
+from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_data_and_target_sequences, get_transformer_client_manager
 

@@ -9,7 +9,7 @@ import torch
 from experiments.transformer_experiments.pre_train_transformer import setup_transformer_structure
 from experiments.utils import load_config, load_data, save_to_json
 from fedmoe.client_manager import PreTrainingClientManager
-from fedmoe.game import TransformerGame
+from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.metrics import MSEMetric
 from fedmoe.server import Server
 
@@ -99,7 +99,6 @@ def main(
         "d_z": hidden_dim,
         "alpha": alpha,
         "gamma": gamma,
-        "sigma": sigma,
     }
 
     tensors_to_save: Dict[str, List[torch.Tensor]] = {}

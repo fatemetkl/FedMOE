@@ -4,7 +4,7 @@ import torch
 from fl4health.utils.metrics import Metric, MetricManager
 
 from fedmoe.client_manager import ClientManager
-from fedmoe.game import Game
+from fedmoe.game.game import Game
 
 torch.set_default_dtype(torch.float64)
 
@@ -145,9 +145,6 @@ class Server:
         for t in range(0, self.total_game_steps):
             beta_t = self.game.compute_beta(t, game_improved_predictions[t])
             z_beta = self.game.compute_z_beta_clients(t, beta_t)
-            # if t == 3 and current_t == 8:
-            #     print("in game previous pred (7)", game_improved_predictions[t])
-
             new_prediction = game_improved_predictions[t] + z_beta
             game_improved_predictions.append(new_prediction)
             # beta_t is a list of game calculated betas for each client.
