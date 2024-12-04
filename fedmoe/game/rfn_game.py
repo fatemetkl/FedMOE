@@ -15,15 +15,8 @@ class RfnGame(Game):
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
         for client in clients:
             assert client.y_dim == 1
+        self.standard_normal = torch.distributions.Normal(loc=0.0, scale=1.0)
         super().__init__(clients, sync_freq, z_dim)
-
-    def get_input(self, t: int, client: Client) -> torch.Tensor:
-        """
-        Maps the time t in the game (between 0 to sync_freq) to the time scale used in the server, current_time, and
-        returns the input (x_t) associated with server time.
-        """
-        server_time = self.map_game_time_to_server_time(t, client)
-        return client.get_input_matrix(server_time)
 
     def get_a_t_embedding(self, time: int, client: Client) -> torch.Tensor:
         # some parts of the forwards pass (without randomness)
@@ -34,8 +27,7 @@ class RfnGame(Game):
         return a_t
 
     def standard_normal_cdf(self, input_tensor: torch.Tensor) -> torch.Tensor:
-        normal = torch.distributions.Normal(loc=0.0, scale=1.0)
-        return normal.cdf(input_tensor)
+        return self.standard_normal.cdf(input_tensor)
 
     def get_expectation_zt(self, time: int, client: Client) -> torch.Tensor:
         a_t = self.get_a_t_embedding(time, client)

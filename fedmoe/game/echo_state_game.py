@@ -13,10 +13,10 @@ class EchoStateGame(Game):
         clients: List[Client],
         sync_freq: int,
         z_dim: int,
-        N_samples: int = 100,
+        n_samples: int = 100,
     ) -> None:
         super().__init__(clients, sync_freq, z_dim)
-        self.N_samples = N_samples
+        self.n_samples = n_samples
         for client in clients:
             assert client.sync_steps == sync_freq
 
@@ -31,7 +31,7 @@ class EchoStateGame(Game):
     def simulate_z_t(self, t: int, client: Client) -> torch.Tensor:
         # Setting z start, which is the last z before the last sync step.
         # Based on the game time scale, it is t=-1.
-        Z = self.get_z(t=-1, client=client)
+        Z = self.get_z(game_t=-1, client=client)
         #  Starts the simulation from -1 (last sync step -1) to desired t
         for back_t in range(0, t + 1):
             Z = client.encoder(self.get_input(back_t, client), Z, client.sigma)
@@ -41,7 +41,7 @@ class EchoStateGame(Game):
         # Note that t here is not server time, but rather game time [0, sync_freq]
         assert type(client) is EchoStateNetworkClient
         samples = []
-        for _ in range(self.N_samples):
+        for _ in range(self.n_samples):
             # Start from time current_t-T-1 for the trajectory
             # If we're PREDICTING t=8, with sync frequency T=4, then we want to generate trajectories
             # Z_3 -> Z_4 -> Z_5 -> Z_6 for our Nash game.
@@ -54,7 +54,7 @@ class EchoStateGame(Game):
         sum_tensor = torch.zeros_like(samples[0])
         for sample in samples:
             sum_tensor = sum_tensor + sample
-        return sum_tensor / self.N_samples
+        return sum_tensor / self.n_samples
 
     def get_expectation_z_t_e_t_transpose_P_z_t_e_t(self, t: int, client: Client) -> torch.Tensor:
         # Note that t here is not server time, but rather game time [0, sync_freq]
@@ -62,7 +62,7 @@ class EchoStateGame(Game):
         # separately. So we do everything together.
         assert type(client) is EchoStateNetworkClient
         samples = []
-        for _ in range(self.N_samples):
+        for _ in range(self.n_samples):
             # Start from time current_t-T-1 for the trajectory
             # If we're PREDICTING t=8, with sync frequency T=4, then we want to generate trajectories
             # Z_3 -> Z_4 -> Z_5 -> Z_6 for our Nash game.
@@ -76,7 +76,7 @@ class EchoStateGame(Game):
         sum_tensor = torch.zeros_like(samples[0])
         for sample in samples:
             sum_tensor = sum_tensor + sample
-        return sum_tensor / self.N_samples
+        return sum_tensor / self.n_samples
 
     def get_A_ij_t(self, t: int, i: int, j: int) -> torch.Tensor:
         client_i = self.clients[i]
