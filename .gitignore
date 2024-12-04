@@ -144,3 +144,8 @@ experiments/**/*_results/
 *.png
 *.err
 *.out
+*.json
+
+# saved models
+experiments/**/*models_*/
+*.pth

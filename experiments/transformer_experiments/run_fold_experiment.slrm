@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #SBATCH --gres=gpu:0
 #SBATCH --mem=6G
 #SBATCH --partition=cpu
@@ -11,7 +11,7 @@
 #SBATCH --job-name=fedmoe_transformer_experiment
 #SBATCH --output=%j_%x.out
 #SBATCH --error=%j_%x.err
-#SBATCH --time=00:20:00
+#SBATCH --time=00:10:00
 
 
 
@@ -22,17 +22,20 @@ ALPHA_VALUE=$4
 GAMMA_VALUE=$5
 SIGMA_VALUE=$6
 K_VALUE=$7
-ETA_VALUE=$8
-T_Value=$9
-DATA_LOADER_NUM_SAMPLES=${10}
-DATA_LOADER_BATCH_SIZE=${11}
-PRE_TRAINING_EPOCHS=${12}
-PRE_TRAINING_LEARNING_RATE=${13}
-VENV_PATH=${14}
+ETA_VALUE=${8}
+CLIENT_T_VALUE=${9}
+GAME_SYNC_VALUE=${10}
+DATA_LOADER_NUM_SAMPLES=${11}
+DATA_LOADER_BATCH_SIZE=${12}
+PRE_TRAINING_EPOCHS=${13}
+PRE_TRAINING_LEARNING_RATE=${14}
+VENV_PATH=${15}
+GAME_T_VALUE=${16}
 
-RUN_NAMES=( "Run1" )
-SEEDS=(2024 2025 2026)
-
+# RUN_NAMES=( "Run1" "Run2" "Run3" )
+# SEEDS=( 2024 2025 2026 )
+RUN_NAMES=( "Run1")
+SEEDS=( 2026 )
 
 echo "Python Venv Path: ${VENV_PATH}"
 echo "World size: ${SLURM_NTASKS}"
@@ -44,6 +47,8 @@ source ${VENV_PATH}bin/activate
 echo "Active Environment:"
 which python
 
+echo "Client T ${CLIENT_T_VALUE}"
+echo "Sync T ${GAME_SYNC_VALUE}"
 
 
 for ((i=0; i<${#RUN_NAMES[@]}; i++));
@@ -87,7 +92,9 @@ do
         --sigma ${SIGMA_VALUE} \
         --K ${K_VALUE} \
         --eta ${ETA_VALUE} \
-        --T ${T_Value} \
+        --client_T ${CLIENT_T_VALUE} \
+        --game_sync_freq ${GAME_SYNC_VALUE} \
+        --game_T ${GAME_T_VALUE} \
         --data_loader_num_samples ${DATA_LOADER_NUM_SAMPLES} \
         --data_loader_batch_size ${DATA_LOADER_BATCH_SIZE} \
         --pre_training_epochs ${PRE_TRAINING_EPOCHS} \

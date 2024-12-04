@@ -38,7 +38,7 @@ def test_transformer_client_prediction_process() -> None:
     ).double()
 
     # Making prediction for t=1
-    t = 1
+    t = 0
     predictions = client_manager.fit_clients(t)
     assert predictions.shape == (3, 2)
 
@@ -47,9 +47,9 @@ def test_transformer_client_prediction_process() -> None:
     client_0_encoder = client_0.encoder
     assert isinstance(client_0_encoder, nn.Module)
     assert isinstance(client_0, TransformerClient)
-    z_0 = client_0.state.get_hidden_state_t(t - 1)
+    z_0 = client_0.state.get_hidden_state_t(t)
 
-    beta_0_target = client_0.state.get_beta_t(t - 1)
+    beta_0_target = client_0.state.get_beta_t(t)
     assert torch.allclose(beta_0, beta_0_target, rtol=0.0, atol=1e-3)
     x_0_matrix = DATA_SEQUENCE[0].reshape(-1, 1).double()
     # y_dim = 3. Also, no idea why but pytorch does the linear algebra weirdly...
@@ -61,7 +61,7 @@ def test_transformer_client_prediction_process() -> None:
     target_pred = torch.matmul(z_0_target, beta_0) + client_0.state.Y_0
     assert torch.allclose(predictions[:, 0].reshape(-1, 1), target_pred, rtol=0.0, atol=1e-3)
 
-    t = 2
+    t = 1
     predictions = client_manager.fit_clients(t)
     assert predictions.shape == (3, 2)
 
@@ -70,9 +70,9 @@ def test_transformer_client_prediction_process() -> None:
     client_0_encoder = client_0.encoder
     assert isinstance(client_0_encoder, nn.Module)
     assert isinstance(client_0, TransformerClient)
-    z_1 = client_0.state.get_hidden_state_t(t - 1)
+    z_1 = client_0.state.get_hidden_state_t(t)
 
-    beta_1_target = client_0.state.get_beta_t(t - 1)
+    beta_1_target = client_0.state.get_beta_t(t)
     assert torch.allclose(beta_1, beta_1_target, rtol=0.0, atol=1e-3)
     x_1_matrix = DATA_SEQUENCE[1].reshape(-1, 1).double()
     # y_dim = 3. Also, no idea why but pytorch does the linear algebra weirdly...
@@ -81,10 +81,10 @@ def test_transformer_client_prediction_process() -> None:
     assert torch.allclose(z_1_target, z_1.double(), rtol=0.0, atol=1e-3)
 
     # Make sure predictions is good as well.
-    target_pred = torch.matmul(z_1_target, beta_1) + client_0.state.get_prediction_t(t - 1)
+    target_pred = torch.matmul(z_1_target, beta_1) + client_0.state.get_prediction_t(t)
     assert torch.allclose(predictions[:, 0].reshape(-1, 1), target_pred, rtol=0.0, atol=1e-3)
 
-    t = 3
+    t = 2
     predictions = client_manager.fit_clients(t)
     assert predictions.shape == (3, 2)
 
@@ -93,9 +93,9 @@ def test_transformer_client_prediction_process() -> None:
     client_0_encoder = client_0.encoder
     assert isinstance(client_0_encoder, nn.Module)
     assert isinstance(client_0, TransformerClient)
-    z_2 = client_0.state.get_hidden_state_t(t - 1)
+    z_2 = client_0.state.get_hidden_state_t(t)
 
-    beta_2_target = client_0.state.get_beta_t(t - 1)
+    beta_2_target = client_0.state.get_beta_t(t)
     assert torch.allclose(beta_2, beta_2_target, rtol=0.0, atol=1e-3)
     x_2_matrix = DATA_SEQUENCE[2].reshape(-1, 1).double()
     # y_dim = 3. Also, no idea why but pytorch does the linear algebra weirdly...
@@ -104,5 +104,5 @@ def test_transformer_client_prediction_process() -> None:
     assert torch.allclose(z_2_target, z_2.double(), rtol=0.0, atol=1e-3)
 
     # Make sure predictions is good as well.
-    target_pred = torch.matmul(z_2_target, beta_2) + client_0.state.get_prediction_t(t - 1)
+    target_pred = torch.matmul(z_2_target, beta_2) + client_0.state.get_prediction_t(t)
     assert torch.allclose(predictions[:, 0].reshape(-1, 1), target_pred, rtol=0.0, atol=1e-3)

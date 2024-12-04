@@ -19,7 +19,7 @@ def test_esn_simulate_z_function() -> None:
     esn_game = EchoStateGame(client_manager.clients, 4, z_dim, N_samples=5)
 
     # Need to fit the clients forward t=8 times to get the correct state and time.
-    for t in range(1, 9):
+    for t in range(0, 9):
         client_manager.fit_clients(t)
 
     client_0 = esn_game.clients[0]
@@ -28,11 +28,11 @@ def test_esn_simulate_z_function() -> None:
     # calculations below
     torch.manual_seed(42)
     esn_game.init_game_round_variables(8)
-    # In sync_round of the server, we play the game within the 0, T time frame, so we use t=2 because that is
-    # what is called on the server range(sync_freq - 2, -1 -1)
-    Z_test = esn_game.simulate_z_t(2, client_0)
+    # In sync_round of the server, we play the game within the 0, T time frame, so we use t=3 because that is
+    # what is called on the server range(sync_freq - 1, -1 -1)
+    Z_test = esn_game.simulate_z_t(3, client_0)
 
-    # We are PREDICTING for t=8 and have a sync frequency of 4, so we start with Z_{3} and we need to
+    # We are PREDICTING for t=9 and have a sync frequency of 4, so we start with Z_{3} and we need to
     # simulate forward using x_4, x_5, x_6, to get Z_4, Z_5, Z_6.
     # Let's do that manually.
     torch.manual_seed(42)
@@ -48,6 +48,10 @@ def test_esn_simulate_z_function() -> None:
     x_6 = DATA_SEQUENCE[6].reshape(-1, 1).double()
     input_6 = x_6.repeat(1, z_dim)
     Z_target = client_0.encoder(input_6, Z_target, client_0.sigma)
+
+    x_7 = DATA_SEQUENCE[7].reshape(-1, 1).double()
+    input_7 = x_7.repeat(1, z_dim)
+    Z_target = client_0.encoder(input_7, Z_target, client_0.sigma)
 
     assert torch.allclose(Z_test, Z_target, rtol=0.0, atol=1e-5)
 
@@ -66,7 +70,7 @@ def test_esn_get_expectation_e_z_t() -> None:
     N = client_manager.num_clients
     esn_game = EchoStateGame(client_manager.clients, 4, z_dim, N_samples=3)
 
-    for t in range(1, 9):
+    for t in range(0, 8):
         client_manager.fit_clients(t)
 
     client_0 = esn_game.clients[0]
@@ -74,7 +78,7 @@ def test_esn_get_expectation_e_z_t() -> None:
     torch.manual_seed(42)
     # Reset the manual seed here for the ESN encoders so we can follow the same basis generation in the manual
     # calculations below
-    esn_game.init_game_round_variables(8)
+    esn_game.init_game_round_variables(7)
     # We use t=2 here to simulate the sync_freq - 2 that is done when calling sync_round from the server.
     expectation_test = esn_game.get_expectation_e_zt(2, client_0)
 
@@ -115,13 +119,13 @@ def test_esn_get_formation_of_a_ij_t_2() -> None:
     N = client_manager.num_clients
     esn_game = EchoStateGame(client_manager.clients, 4, z_dim, N_samples=n_samples)
 
-    for t in range(1, 9):
+    for t in range(0, 8):
         client_manager.fit_clients(t)
 
     client_0 = esn_game.clients[0]
     client_1 = esn_game.clients[1]
 
-    esn_game.init_game_round_variables(8)
+    esn_game.init_game_round_variables(7)
     # We need to patch in non zero P[T] values to make them non-trivial (they are initialized to zero)
     for client in client_manager.clients:
         client.P[game_t + 1] = torch.randn((N * y_dim, N * y_dim), dtype=torch.float64)
@@ -205,13 +209,13 @@ def test_esn_get_formation_of_a_ij_t_1() -> None:
     N = client_manager.num_clients
     esn_game = EchoStateGame(client_manager.clients, 4, z_dim, N_samples=n_samples)
 
-    for t in range(1, 9):
+    for t in range(0, 8):
         client_manager.fit_clients(t)
 
     client_0 = esn_game.clients[0]
     client_1 = esn_game.clients[1]
 
-    esn_game.init_game_round_variables(8)
+    esn_game.init_game_round_variables(7)
     # We need to patch in non zero P[T-1] values to make them non-trivial (they are initialized to zero)
     for client in client_manager.clients:
         client.P[game_t + 1] = torch.randn((N * y_dim, N * y_dim), dtype=torch.float64)

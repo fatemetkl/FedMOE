@@ -7,6 +7,8 @@ from experiments.utils import load_data
 from fedmoe.client_manager import ClientManager, ClientType, PreTrainingClientManager
 from fedmoe.clients.transformer_client import TransformerClient
 
+torch.set_default_dtype(torch.float64)
+
 
 def get_data_and_target_sequences() -> Tuple[torch.Tensor, torch.Tensor]:
     # Setup the data and targets
@@ -137,11 +139,11 @@ class TransformerTestModel(nn.Module):
         self.linear_2 = torch.nn.Linear(4, y_dim * z_dim, bias=False).double()
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
-        outputs = self.linear_1(input.double().T)
+        outputs = self.linear_1(input.double())
         return self.linear_2(outputs).reshape(self.y_dim, self.z_dim)
 
 
-def setup_transformer_structure_patch(self, x_dim: int, y_dim: int, z_dim: int) -> nn.Module:
+def setup_transformer_structure_patch(self, x_dim: int, y_dim: int, z_dim: int) -> nn.Module:  # type: ignore
     return TransformerTestModel(x_dim, y_dim, z_dim)
 
 
@@ -150,25 +152,27 @@ def get_transformer_client_manager(
     sync_freq: int = 3,
     data_sequence: torch.Tensor | None = None,
     target_sequence: torch.Tensor | None = None,
+    gamma: float = 2.0,
+    alpha: float = 1.5,
 ) -> PreTrainingClientManager:
     # Monkey patch the setup_transformer_structure function to bypass pre-training and just
     # return a simple network in the TransformerClient to make life easier
     if data_sequence is None or target_sequence is None:
         # For the default example we have x_dim = 2, y_dim = 3, z_dim = 5.
-        TransformerClient.setup_transformer_structure = setup_transformer_structure_patch
+        TransformerClient.setup_transformer_structure = setup_transformer_structure_patch  # type: ignore
         data_sequence, target_sequence = get_data_and_target_sequences()
     else:
-        TransformerClient.setup_transformer_structure = setup_transformer_structure_patch
+        TransformerClient.setup_transformer_structure = setup_transformer_structure_patch  # type: ignore
 
-    y_dim = target_sequence.shape[1]
+    # y_dim = target_sequence.shape[1]
 
     client_manager = PreTrainingClientManager(
         num_clients=2,
         data_sequence=data_sequence,
         sync_freq=sync_freq,
         z_dim=z_dim,
-        alpha=1.5,
-        gamma=2.0,
+        alpha=alpha,
+        gamma=gamma,
         pre_training_dataloader=None,
         pre_training_epochs=0,  # Setting pre_training_epochs to zero ensures we do not pre-train the transformer
         pre_training_learning_rate=0.1,
@@ -176,14 +180,14 @@ def get_transformer_client_manager(
     )
 
     # Patching the initial conditions with random values to make calculations more complex
-    for client in client_manager.clients:
-        init_hidden_state_neg1 = torch.rand((y_dim, z_dim))
-        init_prediction_0 = torch.rand((y_dim, 1))
-        init_prediction_neg1 = torch.rand((y_dim, 1))
-        client.state.Z_neg1 = init_hidden_state_neg1
-        client.state.Y_0 = init_prediction_0
-        client.state.Y_neg1 = init_prediction_neg1
-        client.state._predictions[0] = init_prediction_0
+    # for client in client_manager.clients:
+    #     init_hidden_state_neg1 = torch.rand((y_dim, z_dim))
+    #     init_prediction_0 = torch.rand((y_dim, 1))
+    #     init_prediction_neg1 = torch.rand((y_dim, 1))
+    #     client.state.Z_neg1 = init_hidden_state_neg1
+    #     client.state.Y_0 = init_prediction_0
+    #     client.state.Y_neg1 = init_prediction_neg1
+    #     client.state._predictions[0] = init_prediction_0
 
     return client_manager
 

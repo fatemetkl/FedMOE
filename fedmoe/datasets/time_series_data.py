@@ -52,6 +52,8 @@ class TimeSeriesData:
         self.target_gen = target_gen
         self.input_matrix = input_gen.generate_input_tensor(self.time_axis)
         self.target_matrix = target_gen.generate_target_tensor(self.time_axis, self.input_matrix)
+        self.x_dim = self.input_matrix.shape[1]
+        self.y_dim = self.target_matrix.shape[1]
 
     def get_dataloader(self, num_samples: int, batch_size: int, shuffle: bool = False) -> DataLoader:
         """
@@ -66,8 +68,15 @@ class TimeSeriesData:
             sample_input = self.input_gen.generate_input_tensor(self.time_axis)
             data.append(sample_input)
             targets.append(self.target_gen.generate_target_tensor(self.time_axis, sample_input))
-
-        dataset: BaseDataset = TimeSeriesTorchDataset(data, targets)
+        # for transformer training, we are interested to predict Y_{t+1} with input x_t
+        # Therefore, we should shift the target matrix by one time step to bigger ts.
+        last_value = targets[-1]
+        # Append the last_value to the end of the target sequence.
+        # This is to make sure that the length of target sequence is equal to the
+        # length of the input sequence (in terms of time steps).
+        shifted_target = targets[1:]
+        shifted_target.append(last_value)
+        dataset: BaseDataset = TimeSeriesTorchDataset(data, shifted_target)
 
         data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
         # Each item (input or output) in the data_loader will have a shape of (batch_size, time_steps, dim)
@@ -137,13 +146,14 @@ class TimeSeriesData:
             assert T > 0, "Error: if the game is played, T should be greater than zero."
 
         server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
-        # Server prediction matrix should have the same shape as the target matrix.
         assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1]), {
             f"Error:server output matrix has a shape {server_matrix.shape},\
                 but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
         }
-        # Plot target
+        # Plot target y
+        # it starts from y_1 because we never predict y_0 in the algorithm.
         for i in range(self.target_matrix.shape[1]):
+            # Target matrix is y(t) when generated, to get y(t+1) we need to exclude the last row.
             plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i+1}", linestyle=":")
 
         # Plot server's prediction
@@ -153,13 +163,13 @@ class TimeSeriesData:
             )
             # Display synchronization steps as points
             if game_played and show_points:
-                T_indices = [i * T for i in range(1, int(self.total_time_steps / T) + 1)]
-                T_values = [server_matrix[j, i] for j in T_indices]
+                T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
+                T_values = [server_matrix[j, i].detach().numpy() for j in T_indices]
                 plt.scatter(T_indices, T_values, marker="o", label=f"T step for prediction Y{i+1}")
 
         # Display synchronization steps as vertical lines
         if game_played and not show_points:
-            for j in range(1, int(self.total_time_steps / T) + 1):
+            for j in range(1, int(self.total_time_steps / T)):
                 label = "T time steps" if j == 1 else None
                 plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
 
@@ -195,6 +205,7 @@ class TimeSeriesData:
         plot_info: Dict[str, Any],
         server_prediction: Optional[List[torch.Tensor]] = None,
         show_target: bool = True,
+        show_input: bool = False,
     ) -> None:
         """
         Saves plots showing the predictions made by individual clients.
@@ -231,22 +242,28 @@ class TimeSeriesData:
                     linestyle="-",
                 )
 
-        # Shape of client prediction tensor should be time x y_dim x num_clients
+        # Shape of client prediction tensor should be time x num_clients x y_dim
         clients_pred_matrix = torch.stack(client_predictions, dim=0)
         assert clients_pred_matrix.shape == (
             self.total_time_steps,
-            self.target_matrix.shape[1],
             plot_info["num_clients"],
-        )
+            self.target_matrix.shape[1],
+        ), {
+            f"Error: client prediction matrix shape is {clients_pred_matrix.shape},\
+            but it should be {(self.total_time_steps, plot_info['num_clients'], self.target_matrix.shape[1])}"
+        }
         if show_target:
             for i in range(self.target_matrix.shape[1]):
                 plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i+1}", linestyle=":")
+        if show_input:
+            for i in range(self.input_matrix.shape[1]):
+                plt.plot(self.time_axis, self.input_matrix[:, i], label=f"Input: x{i+1}", linestyle="--")
 
         for client in range(int(plot_info["num_clients"])):
-            for i in range(clients_pred_matrix.shape[1]):
+            for dim in range(clients_pred_matrix.shape[2]):
                 plt.plot(
                     self.time_axis,
-                    clients_pred_matrix[:, i, client],
+                    clients_pred_matrix[:, client, dim],
                     label=f"Prediction: client {client}_Y{i+1}",
                     linestyle="dashdot",
                 )
@@ -279,6 +296,7 @@ class TimeSeriesData:
         game_played: bool = False,
         T: int = 0,
         show_points: bool = False,
+        show_lines: bool = False,
     ) -> None:
         """
         Saves a plot showing the mixture weights. Important: make sure to include num_clients in plot info.
@@ -292,7 +310,7 @@ class TimeSeriesData:
                 T (int): the value of synchronization frequency. If T > 0 and game_played is true,
                    the plot will highlight the synchronization points.
                 show_points (bool): if True, the plot will show the synchronization points as points.
-                   Otherwise, it will show as vertical lines.
+                show_lines (bool): if True, the plot will show the synchronization steps as vertical lines.
         """
         assert plot_info["num_clients"] is not None
         if game_played:
@@ -301,26 +319,28 @@ class TimeSeriesData:
         # Shape of client prediction tensor should be time x num_clients x 1
         mixture_weights = torch.stack(clients_mixture_weights, dim=0)
         assert mixture_weights.shape == (
-            self.total_time_steps,
+            self.total_time_steps - 1,
             plot_info["num_clients"],
             1,
-        )
+        ), f"Error: mixture_weights.shape is {mixture_weights.shape}, but should be (time_steps - 1 , num_clients, 1)"
 
         for client in range(int(plot_info["num_clients"])):
             plt.plot(
-                self.time_axis,
+                self.time_axis[:-1],
                 mixture_weights[:, client, 0],
                 label=f"Weight: client{client}",
                 linestyle="dashdot",
             )
 
-            if T > 0 and show_points:
-                T_indices = [i * T for i in range(1, int(self.total_time_steps / T) + 1)]
+            if game_played and show_points:
+                # Highlight synchronization steps with points
+                T_indices = [i * T for i in range(1, int((self.total_time_steps - 1) / T) + 1)]
                 T_values = [mixture_weights[j, client] for j in T_indices]
                 plt.scatter(T_indices, T_values, marker="o", label="T step")
 
-        if T > 0 and not show_points:
-            for j in range(1, int(self.total_time_steps / T) + 1):
+        if game_played and show_lines:
+            # Highlight synchronization time steps with vertical lines
+            for j in range(1, int((self.total_time_steps - 1) / T) + 1):
                 label = "T time steps" if j == 1 else None
                 plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
 

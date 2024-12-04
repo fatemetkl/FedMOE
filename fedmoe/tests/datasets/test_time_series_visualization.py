@@ -79,7 +79,10 @@ def test_visualize_mixture_weights(tmp_path: Path) -> None:
     two_d_data_obj = TimeSeries2DXY(total_time_steps=time_steps)
 
     manual_mixture_weights = []
-    for t in range(time_steps):
+    # Mixture weights are saved from time 0 to time t-1
+    # This is because we predict y_t at time t-1.
+    # Therefore, we have t-1 mixture weights after the total t steps.
+    for t in range(time_steps - 1):
         mixture_weights = []
         for client in range(num_clients):
             mixture_weights.append(torch.Tensor([[(client + 1) * 0.5 * t]]))

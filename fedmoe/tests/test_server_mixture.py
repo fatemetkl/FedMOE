@@ -28,7 +28,7 @@ def test_server_optimization() -> None:
     client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim, N)
     game = RfnGame(client_manager.clients, 3, z_dim)
 
-    server = Server(sync_freq=3, client_manager=client_manager, game=game, metrics=[], kappa=kappa, eta=eta)
+    server = Server(total_game_steps=3, client_manager=client_manager, game=game, metrics=[], kappa=kappa, eta=eta)
 
     predictions = torch.Tensor([[1.0, 0.5, 0.1], [2.0, 1.0, 0.2], [3.0, 1.5, 0.3]])
     y_t = torch.Tensor([0.75, 1.5, 2.0]).reshape(-1, 1)
@@ -83,7 +83,12 @@ def test_server_mixture_weights_in_flow() -> None:
     game = RfnGame(client_manager.clients, 3, z_dim)
 
     server = Server(
-        sync_freq=3, client_manager=client_manager, game=game, metrics=[RMSEMetric("RSME")], kappa=kappa, eta=eta
+        total_game_steps=3,
+        client_manager=client_manager,
+        game=game,
+        metrics=[RMSEMetric("RSME")],
+        kappa=kappa,
+        eta=eta,
     )
 
     # Perform 5 rounds of client stepping and mixing without synchronization
@@ -95,17 +100,13 @@ def test_server_mixture_weights_in_flow() -> None:
     for observed_value_target, observed_value in zip(observed_values_target, server.observed_values):
         torch.allclose(observed_value_target, observed_value, rtol=0.0, atol=1e-6)
 
-    # Server should have mixture weights calculated for t=0, 1, ..., 5
-    # Where the weights w_0 are pre-specified (similar to \hat{Y}_0^i)
-    assert len(server.mixture_weights) == 6
+    # Server should have mixture weights calculated for t=0, 1, ..., 4
+    assert len(server.mixture_weights) == 5
     assert torch.allclose(
-        server.mixture_weights[0], torch.Tensor([[[-0.6184], [1.4100], [0.2084]]]).double(), rtol=0.0, atol=1e-3
+        server.mixture_weights[1], torch.Tensor([[0.0773], [0.0724], [0.8503]]).double(), rtol=0.0, atol=1e-3
     )
     assert torch.allclose(
-        server.mixture_weights[2], torch.Tensor([[0.0773], [0.0724], [0.8503]]).double(), rtol=0.0, atol=1e-3
-    )
-    assert torch.allclose(
-        server.mixture_weights[5], torch.Tensor([[-0.5346], [0.6333], [0.9014]]).double(), rtol=0.0, atol=1e-3
+        server.mixture_weights[4], torch.Tensor([[-0.5346], [0.6333], [0.9014]]).double(), rtol=0.0, atol=1e-3
     )
 
     # Clients should have been asked to provide predictions for t=1,..., 5, along with the a priori initialized
@@ -121,8 +122,10 @@ def test_server_mixture_weights_in_flow() -> None:
 
     # Make sure the relationship between the client predictions and server weights is correctly reflected in the
     # server outputs
+    # Server output for time t+1 is the product of clients' output at time t+1 and mixture weights at t,
+    # so the first elements in the below tests are `server_output[1] = client_predictions[1] * mixture_weights[0]`.
     for client_preds, weights, server_output in zip(
-        server.clients_predictions, server.mixture_weights, server.server_outputs
+        server.clients_predictions[1:], server.mixture_weights, server.server_outputs[1:]
     ):
         assert torch.allclose(
             torch.matmul(client_preds.double(), weights.double()), server_output.double(), rtol=0.0, atol=1e-6
@@ -141,7 +144,12 @@ def test_full_flow_with_dy_dx_one() -> None:
     game = RfnGame(client_manager.clients, 3, z_dim)
 
     server = Server(
-        sync_freq=3, client_manager=client_manager, game=game, metrics=[RMSEMetric("RSME")], kappa=kappa, eta=eta
+        total_game_steps=3,
+        client_manager=client_manager,
+        game=game,
+        metrics=[RMSEMetric("RSME")],
+        kappa=kappa,
+        eta=eta,
     )
 
     # Perform 5 rounds of client stepping and mixing without synchronization, just making sure it runs all the way
