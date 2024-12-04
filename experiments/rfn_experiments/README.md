@@ -19,9 +19,6 @@ experiments/rfn_experiments/rfn_results/ \
 ~/venv/fedmoe_env/
 ```
 
-Important points:
-- Even if you are not playing the game, don't set T to zero. Just set `have_sync: False` in `config.yaml`.
-
 
 Results of the experiment including plots will be saved at: (EXPERIMENT_NAME is set in config file)
 ```
@@ -33,7 +30,7 @@ To find the best hp based on the server loss, run 'find_best_hp.py' with the pat
 ```
 RESULTS_DIR="path_to_folder_for_artifacts/$EXPERIMENT_NAME"
 
-poetry run python -m experiments.find_best_hp --hp_sweep_dir RESULTS_DIR
+python -m experiments.find_best_hp --hp_sweep_dir RESULTS_DIR
 ```
 
 for example, for the RFN experiment, if the output files are located at: `experiments/rfn_experiments/rfn_results/`
@@ -41,5 +38,37 @@ So, we should run:
 
 
 ```
-poetry run python -m experiments.find_best_hp --hp_sweep_dir experiments/rfn_experiments/rfn_results/
+python -m experiments.find_best_hp --hp_sweep_dir experiments/rfn_experiments/rfn_results/
 ```
+## Run hp sweep on you local machine
+
+First activate the environment.
+For example:
+```
+source ../fedmoe_env/bin/activate
+
+```
+
+#### Run experiments
+To launch the experiments run:
+
+```
+bash experiments/rfn_experiments/local_run_hp_sweep.sh \
+path_to_config.yaml \
+path_to_folder_for_artifacts/ \
+```
+
+
+For example:
+
+```
+bash experiments/rfn_experiments/local_run_hp_sweep.sh \
+experiments/rfn_experiments/config.yaml \
+experiments/rfn_experiments/rfn_results/
+```
+
+Find the best hyper-parameter:
+```
+python -m experiments.find_best_hp --hp_sweep_dir experiments/rfn_experiments/rfn_results/
+```
+Make sure your environment is activated.

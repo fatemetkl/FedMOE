@@ -3,7 +3,9 @@ import torch
 from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
 from fedmoe.datasets.brownian_motion_dataset import TimeSeriesBrownianTarget
-from fedmoe.game import EchoStateGame, RfnGame, TransformerGame
+from fedmoe.game.echo_state_game import EchoStateGame
+from fedmoe.game.rfn_game import RfnGame
+from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_transformer_client_manager
 

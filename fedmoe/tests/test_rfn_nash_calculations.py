@@ -6,7 +6,7 @@ import torch
 
 from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
-from fedmoe.game import RfnGame
+from fedmoe.game.rfn_game import RfnGame
 from fedmoe.server import Server
 from fedmoe.tests.manual_calculations import (
     calculate_B1,
