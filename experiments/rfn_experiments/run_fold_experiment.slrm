@@ -23,8 +23,10 @@ GAMMA_VALUE=$5
 SIGMA_VALUE=$6
 K_VALUE=$7
 ETA_VALUE=$8
-T_Value=$9
-VENV_PATH=${10}
+CLIENT_T_VALUE=${9}
+GAME_SYNC_VALUE=${10}
+VENV_PATH=${11}
+GAME_T_VALUE=${12}
 
 RUN_NAMES=( "Run1" )
 SEEDS=(2024 2025 2026)
@@ -82,7 +84,9 @@ do
         --sigma ${SIGMA_VALUE} \
         --K ${K_VALUE} \
         --eta ${ETA_VALUE} \
-        --T ${T_Value} \
+        --client_T ${CLIENT_T_VALUE} \
+        --game_sync_freq ${GAME_SYNC_VALUE} \
+        --game_T ${GAME_T_VALUE} \
         --random_seed ${SEED} \
         > ${RUN_OUTPUT_FILE} 2>&1 &
 
