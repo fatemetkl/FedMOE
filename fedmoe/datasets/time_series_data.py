@@ -248,7 +248,10 @@ class TimeSeriesData:
             self.total_time_steps,
             plot_info["num_clients"],
             self.target_matrix.shape[1],
-        ), f"Error: client prediction matrix shape is {clients_pred_matrix.shape}"
+        ), {
+            f"Error: client prediction matrix shape is {clients_pred_matrix.shape},\
+            but it should be {(self.total_time_steps, plot_info['num_clients'], self.target_matrix.shape[1])}"
+        }
         if show_target:
             for i in range(self.target_matrix.shape[1]):
                 plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i+1}", linestyle=":")
@@ -293,6 +296,7 @@ class TimeSeriesData:
         game_played: bool = False,
         T: int = 0,
         show_points: bool = False,
+        show_lines: bool = False,
     ) -> None:
         """
         Saves a plot showing the mixture weights. Important: make sure to include num_clients in plot info.
@@ -306,7 +310,7 @@ class TimeSeriesData:
                 T (int): the value of synchronization frequency. If T > 0 and game_played is true,
                    the plot will highlight the synchronization points.
                 show_points (bool): if True, the plot will show the synchronization points as points.
-                   Otherwise, it will show as vertical lines.
+                show_lines (bool): if True, the plot will show the synchronization steps as vertical lines.
         """
         assert plot_info["num_clients"] is not None
         if game_played:
@@ -329,15 +333,16 @@ class TimeSeriesData:
             )
 
             if T > 0 and show_points:
+                # Highlight synchronization steps with points
                 T_indices = [i * T for i in range(1, int((self.total_time_steps - 1) / T) + 1)]
                 T_values = [mixture_weights[j, client] for j in T_indices]
                 plt.scatter(T_indices, T_values, marker="o", label="T step")
 
-        # This is commented because showing the game synchronization lines makes the plot too crowded.
-        # if T > 0 and not show_points:
-        #     for j in range(1, int((self.total_time_steps - 1) / T) + 1):
-        #         label = "T time steps" if j == 1 else None
-        #         plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
+        if T > 0 and show_lines:
+            # Highlight synchronization time steps with vertical lines
+            for j in range(1, int((self.total_time_steps - 1) / T) + 1):
+                label = "T time steps" if j == 1 else None
+                plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
 
         if game_played:
             game_status = "with"

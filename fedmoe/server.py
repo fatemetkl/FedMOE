@@ -21,16 +21,13 @@ class Server:
         kappa: float = 1.0,
         eta: float = 1.0,
     ) -> None:
-        # assert (
-        #     total_game_steps == client_manager.total_game_steps
-        # ), "Sync Frequency of Server is not the same as Sync Frequency of Client Manager"
-        # The T used in the game backward steps is called total_game_steps here,
-        # but the actual synchronization step is called game_freq.
         assert (
             total_game_steps == game.sync_freq
         ), "Game T steps value of Server is not the same as the Sync Frequency of Game"
         assert client_manager.z_dim == game.z_dim, "Latent dimension of Client Manager is not the same as the Game"
+        # total_game_steps is the number of steps that we look back while playing the game.
         self.total_game_steps = total_game_steps
+        # game_freq is how often the server plays the game.
         self.game_freq = game_freq
         if game_freq == 0:
             self.game_freq = total_game_steps
@@ -82,7 +79,6 @@ class Server:
         past_observed_values: List[torch.Tensor],
         past_mixture_weights: List[torch.Tensor],
     ) -> Tuple[List, List]:
-        torch.set_default_dtype(torch.float64)
         # T last steps are considered
         # Server has the observed values of all clients for the past T time steps [0 to T] inclusive.
         # Server has the mixture weights of all the clients for the past T time steps [0 to T] inclusive.
@@ -145,9 +141,6 @@ class Server:
         for t in range(0, self.total_game_steps):
             beta_t = self.game.compute_beta(t, game_improved_predictions[t])
             z_beta = self.game.compute_z_beta_clients(t, beta_t)
-            # if t == 3 and current_t == 8:
-            #     print("in game previous pred (7)", game_improved_predictions[t])
-
             new_prediction = game_improved_predictions[t] + z_beta
             game_improved_predictions.append(new_prediction)
             # beta_t is a list of game calculated betas for each client.
@@ -157,7 +150,6 @@ class Server:
 
     def fit(self, num_rounds: int, have_sync: bool = True, update_last_Y_sync: bool = False) -> Dict[str, float]:
         # num_round can be anything between 1 and data_length-1.
-        torch.set_default_dtype(torch.float64)
         self.metric_manager.clear()
         # We start from t = 1 instead of t = 0 zero.
         # Because to make predictions at step 0, we would need beta_0 which needs Y{-2} and Z{-2} that we don't have.
@@ -177,7 +169,7 @@ class Server:
         # Mixture weights produce our "server prediction" here: \hat{y}_0 = hat_Y_0 * w_neg1
         self.server_outputs.append(torch.matmul(w_neg1.T, hat_Y_0.double()).T)
         for t in range(0, num_rounds):
-            # At step t, target is tp predict t+1
+            # At step t, target is to predict t+1
             # last_observed_value = y_{t} since we're predicting for t+1.
             last_observed_value = self.client_manager.get_y(t)
             # Store observed target values

@@ -15,52 +15,43 @@ echo "CONFIG_PATH"${CONFIG_PATH}
 echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
 
-# ALPHA_VALUES=( 0.0005 0.001 0.005 0.01 )
-# GAMMA_VALUES=( 1 10 15 20 25 )
-# # Sigma is not used in transformer
-# SIGMA_VALUES=( 0.1 )
-# # Hidden dimension should be divisible by nheads (4 by default)
-# HIDDENDIM_VALUES=( 8 )
-# CLIENT_T_VALUES=( 5 10 15 20 )
-# # Remember to set this for the game and set to 0 for non-game settings.
-# GAME_SYNC_VALUES=( 1 2 3 4 )
-# K_VALUES=( 1.0 )
-# ETA_VALUES=( 1.0 )
-# DATA_LOADER_NUM_SAMPLES=( 200 )
-# DATA_LOADER_BATCH_SIZE=( 20 )
-# PRE_TRAINING_EPOCHS=( 200 )
-# PRE_TRAINING_LEARNING_RATE=( 0.01 )
+ALPHA_VALUES=( 0.0005 0.001 0.005 0.01 )
+GAMMA_VALUES=( 1 10 15 20 25 )
+# Sigma is not used in transformer
+SIGMA_VALUES=( 0.1 )
+# Hidden dimension should be divisible by nheads (4 by default)
+HIDDENDIM_VALUES=( 8 )
+# Client T value is the T used in individual client optimization (equation 4).
+CLIENT_T_VALUES=( 5 10 15 20 )
+# Remember to set this for the game and set to 0 for non-game settings.
+# Game T value is the T used in equation 9.
+GAME_T_VALUES=( 2 3 4 5 )
+# Game synchronization value is the frequency at which the game is played.
+GAME_SYNC_VALUES=( 1 2 3 )
+K_VALUES=( 1.0 )
+ETA_VALUES=( 1.0 )
+# If you are using pre-trained transformers, the below values do not matter.
+DATA_LOADER_NUM_SAMPLES=( 200 )
+DATA_LOADER_BATCH_SIZE=( 20 )
+PRE_TRAINING_EPOCHS=( 200 )
+PRE_TRAINING_LEARNING_RATE=( 0.01 )
 
 
-# No game bests
-# ALPHA_VALUES=( 0.1 )
-# GAMMA_VALUES=( 10 )
+# # Game bests
+# ALPHA_VALUES=( 0.005 0.001 )
+# GAMMA_VALUES=( 20 25 )
 # SIGMA_VALUES=( 0.1 )
 # HIDDENDIM_VALUES=( 8 )
-# CLIENT_T_VALUES=( 10 )
-# GAME_SYNC_VALUES=( 0 )
+# CLIENT_T_VALUES=( 5 10 15 )
+# # Game T values is the T used in equation 9.
+# GAME_T_VALUES=( 2 3 4 5 )
+# GAME_SYNC_VALUES=( 1 2 3 )
 # K_VALUES=( 1.0 )
 # ETA_VALUES=( 1.0 )
 # DATA_LOADER_NUM_SAMPLES=( 200 )
 # DATA_LOADER_BATCH_SIZE=( 20 )
 # PRE_TRAINING_EPOCHS=( 1 )
 # PRE_TRAINING_LEARNING_RATE=( 0.01 )
-
-# Game bests
-ALPHA_VALUES=( 0.005 0.001 )
-GAMMA_VALUES=( 20 25 )
-SIGMA_VALUES=( 0.1 )
-HIDDENDIM_VALUES=( 8 )
-CLIENT_T_VALUES=( 5 10 15 )
-# Game T values is the T used in equation 9.
-GAME_T_VALUES=( 2 3 4 5 ) 
-GAME_SYNC_VALUES=( 1 2 3 )
-K_VALUES=( 1.0 )
-ETA_VALUES=( 1.0 )
-DATA_LOADER_NUM_SAMPLES=( 200 )
-DATA_LOADER_BATCH_SIZE=( 20 )
-PRE_TRAINING_EPOCHS=( 1 )
-PRE_TRAINING_LEARNING_RATE=( 0.01 )
 
 
 for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do

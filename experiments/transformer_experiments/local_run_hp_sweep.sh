@@ -17,9 +17,11 @@ ALPHA_VALUES=( 0.001 )
 GAMMA_VALUES=( 20 )
 SIGMA_VALUES=( 0.1 )
 HIDDENDIM_VALUES=( 8 )
+# Client T value is the T used in individual client optimization (equation 4).
 CLIENT_T_VALUES=( 5 )
-# Game T values is the T used in equation 9.
+# Game T value is the T used in equation 9.
 GAME_T_VALUES=( 3 )
+# Game synchronization value is the frequency at which the game is played.
 GAME_SYNC_VALUES=( 1 )
 K_VALUES=( 1.0 )
 ETA_VALUES=( 1.0 )
@@ -29,7 +31,7 @@ DATA_LOADER_BATCH_SIZE=( 20 )
 PRE_TRAINING_EPOCHS=( 1 )
 PRE_TRAINING_LEARNING_RATE=( 0.01 )
 
-
+# We don't need to run the transformer model several times as there is no randomness after the model is pre-trained.
 # RUN_NAMES=( "Run1" "Run2" "Run3" )
 RUN_NAMES=( "Run1" )
 SEEDS=( 2026 )
@@ -39,9 +41,9 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
       for SIGMA_VALUE in "${SIGMA_VALUES[@]}"; do
         for K_VALUE in "${K_VALUES[@]}"; do
           for ETA_VALUE in "${ETA_VALUES[@]}"; do
-            for Client_T_Value in "${CLIENT_T_VALUES[@]}"; do
-              for GAME_T_Value in "${GAME_T_VALUES[@]}"; do
-                for game_sync in "${GAME_SYNC_VALUES[@]}"; do
+            for CLIENT_T_VALUE in "${CLIENT_T_VALUES[@]}"; do
+              for GAME_T_VALUE in "${GAME_T_VALUES[@]}"; do
+                for GAME_SYNC in "${GAME_SYNC_VALUES[@]}"; do
                   EXPERIMENT_SETUP="T${Client_T_Value}_sync${game_sync}_gameT${GAME_T_Value}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_sigma${SIGMA_VALUE}_DZ${HIDDEN_DIM}"
                   EXPERIMENT_DIRECTORY="${RESULTS_DIR}/${EXPERIMENT_SETUP}/"
                   mkdir -p $EXPERIMENT_DIRECTORY
@@ -64,9 +66,9 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                           --sigma ${SIGMA_VALUE} \
                           --K ${K_VALUE} \
                           --eta ${ETA_VALUE} \
-                          --client_T ${Client_T_Value} \
-                          --game_sync_freq ${game_sync} \
-                          --game_T ${GAME_T_Value} \
+                          --client_T ${CLIENT_T_VALUE} \
+                          --game_sync_freq ${GAME_SYNC} \
+                          --game_T ${GAME_T_VALUE} \
                           --data_loader_num_samples ${DATA_LOADER_NUM_SAMPLES} \
                           --data_loader_batch_size ${DATA_LOADER_BATCH_SIZE} \
                           --pre_training_epochs ${PRE_TRAINING_EPOCHS} \

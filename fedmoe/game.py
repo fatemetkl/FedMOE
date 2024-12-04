@@ -30,8 +30,6 @@ class Game(ABC):
     def get_A_hat_ij_t(self, time: int, i: int, j: int, bold_w_t: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
-    # TODO: check this function to make sure it is not changing the order of operations.
-    # It is removed from RFN class.
     def get_expectation_e_zt(self, time: int, client: Client) -> torch.Tensor:
         raise NotImplementedError
 
@@ -42,14 +40,15 @@ class Game(ABC):
 
         Examples:
 
-        For example, if the server time is 3T (self.current_time is a sync step) and the game time is t (0<=t<=T), we
-        need to get the input at time 2T+t, so this function performs: 3T - T + t = 2T+t
+        For example, if the server time is 3T (self.current_time is a sync step) and the
+        game time is game_t (0<=game_t<=T), we need to get the input at time 2T+game_t,
+        so this function performs: 3T - T + game_t = 2T+game_t
 
         A numerical example: assume T = 4, and we are in the third round of synchronization,
         so self.current_time equals 12. In the game, we go from 12 to the previous sync step, which is 8,
         and need the model input during this time.
-        When game time equals 3 (t=3), the input that we need is 8+3 based on the server time.
-        This can be calculated by self.current_time (12) - self.sync_freq (4) + t (3) =  global time (11)
+        When game time equals 3 (game_t=3), the input that we need is 8+3 based on the server time.
+        This can be calculated by self.current_time (12) - self.sync_freq (4) + game_t (3) =  global time (11)
 
         """
         # Current time gives us the current sync step
@@ -110,7 +109,6 @@ class Game(ABC):
     def first_block_alg2(self, time: int) -> None:
         """
         This function implements the first block in Algorithm 2.
-        Latest mixture weights and y_T should correspond to the given time.
         """
         # Now that we are initializing P_T and S_T to zero, we don't need to pass latest_mixture_weights
         for client_id in range(0, self.num_clients):
@@ -387,10 +385,6 @@ class Game(ABC):
         z_beta_clients = []
         bold_beta = bold_beta.reshape(self.num_clients, self.z_dim, 1)
         for client_id in range(self.num_clients):
-            # if t==3 and self.current_time==8:
-            #     print("inside game client_id", client_id)
-            #     print("inside game bold_beta", bold_beta[client_id])
-            #     print("inside game z", self.get_z(t, self.clients[client_id]))
             z_beta_client = torch.matmul(self.get_z(t, self.clients[client_id]), bold_beta[client_id])
             z_beta_clients.append(z_beta_client)
         n_z_betas = torch.cat(z_beta_clients, dim=0)
@@ -401,15 +395,6 @@ class Game(ABC):
 class TransformerGame(Game):
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
         super().__init__(clients, sync_freq, z_dim)
-
-    # def get_input(self, game_t: int, client: Client) -> torch.Tensor:
-    #     """
-    #     Maps the time game_t in the game (between 0 to sync_freq) to the time scale used in the server,
-    #     current_time, and returns the input (x_t) associated with server time.
-    #     """
-    #     server_time = self.map_game_time_to_server_time(game_t, client)
-    #     # Assuming that the input shape in transformer is (x_dim, 1)
-    #     return client.get_x(server_time), server_time
 
     def get_hidden_state(self, game_t: int, client: Client) -> torch.Tensor:
         """
