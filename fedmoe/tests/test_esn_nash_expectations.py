@@ -16,7 +16,7 @@ def test_esn_simulate_z_function() -> None:
     torch.manual_seed(42)
 
     client_manager = get_esn_client_manager(alpha, gamma, sigma, z_dim, sync_freq=4)
-    esn_game = EchoStateGame(client_manager.clients, 4, z_dim, N_samples=5)
+    esn_game = EchoStateGame(client_manager.clients, 4, z_dim, n_samples=5)
 
     # Need to fit the clients forward t=8 times to get the correct state and time.
     for t in range(0, 9):
@@ -39,7 +39,7 @@ def test_esn_simulate_z_function() -> None:
     # Reset the seed to be the same ESN basis generation as above.
     x_4 = DATA_SEQUENCE[4].reshape(-1, 1).double()
     input_4 = x_4.repeat(1, z_dim)
-    Z_target = client_0.encoder(input_4, esn_game.get_z(t=-1, client=client_0), client_0.sigma)
+    Z_target = client_0.encoder(input_4, esn_game.get_z(game_t=-1, client=client_0), client_0.sigma)
 
     x_5 = DATA_SEQUENCE[5].reshape(-1, 1).double()
     input_5 = x_5.repeat(1, z_dim)
@@ -68,7 +68,7 @@ def test_esn_get_expectation_e_z_t() -> None:
 
     client_manager = get_esn_client_manager(alpha, gamma, sigma, z_dim, sync_freq=4)
     N = client_manager.num_clients
-    esn_game = EchoStateGame(client_manager.clients, 4, z_dim, N_samples=3)
+    esn_game = EchoStateGame(client_manager.clients, 4, z_dim, n_samples=3)
 
     for t in range(0, 8):
         client_manager.fit_clients(t)
@@ -117,7 +117,7 @@ def test_esn_get_formation_of_a_ij_t_2() -> None:
 
     client_manager = get_esn_client_manager(alpha, gamma, sigma, z_dim, sync_freq=4)
     N = client_manager.num_clients
-    esn_game = EchoStateGame(client_manager.clients, 4, z_dim, N_samples=n_samples)
+    esn_game = EchoStateGame(client_manager.clients, 4, z_dim, n_samples=n_samples)
 
     for t in range(0, 8):
         client_manager.fit_clients(t)
@@ -207,7 +207,7 @@ def test_esn_get_formation_of_a_ij_t_1() -> None:
 
     client_manager = get_esn_client_manager(alpha, gamma, sigma, z_dim, sync_freq=4)
     N = client_manager.num_clients
-    esn_game = EchoStateGame(client_manager.clients, 4, z_dim, N_samples=n_samples)
+    esn_game = EchoStateGame(client_manager.clients, 4, z_dim, n_samples=n_samples)
 
     for t in range(0, 8):
         client_manager.fit_clients(t)
