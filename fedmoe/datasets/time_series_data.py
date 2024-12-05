@@ -332,13 +332,13 @@ class TimeSeriesData:
                 linestyle="dashdot",
             )
 
-            if T > 0 and show_points:
+            if game_played and show_points:
                 # Highlight synchronization steps with points
                 T_indices = [i * T for i in range(1, int((self.total_time_steps - 1) / T) + 1)]
                 T_values = [mixture_weights[j, client] for j in T_indices]
                 plt.scatter(T_indices, T_values, marker="o", label="T step")
 
-        if T > 0 and show_lines:
+        if game_played and show_lines:
             # Highlight synchronization time steps with vertical lines
             for j in range(1, int((self.total_time_steps - 1) / T) + 1):
                 label = "T time steps" if j == 1 else None
