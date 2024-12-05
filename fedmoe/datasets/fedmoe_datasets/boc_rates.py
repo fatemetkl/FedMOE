@@ -1,15 +1,12 @@
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import List, Optional, Tuple, TypeVar
+from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import torch
 
 from fedmoe.datasets.time_series_data import TimeSeriesData
-
-PandasFrame = TypeVar("pandas_frame", pd.Series, pd.DataFrame)
 
 
 class ExchangeRates(Enum):
@@ -63,12 +60,12 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
                 currencies and we include USD_t, USD_{t-1}, EUR_t, and EUR_{t-1} in the input sequence along with other
                 input values. If none, then lagged targets are not included in the input. Defaults to None.
             start_date (Optional[datetime], optional): (INCLUSIVE) When in the dataset we want our time series to
-                begin.  The minimum value for this argument is 2007-05-01. If None, the minimum value is provided.
+                begin.  The minimum value for this argument is 2007-05-01. If None, the minimum value is used.
                 If not the minimum value and input_lag/target_lag are greater than 1, we will still look back in time
                 to gather these as far as possible. When prior time stamps are not available, we set the lagged values
                 to 0. Defaults to None.
             end_date (Optional[datetime], optional): (INCLUSIVE) When in the dataset we want our time series to end.
-                The maximum value for this argument is 2017-04-28. If None, the maximum value is provided. Defaults to
+                The maximum value for this argument is 2017-04-28. If None, the maximum value is used. Defaults to
                 None.
             dtype (torch.dtype, optional): Default type for any torch tensors created. Defaults to torch.float64.
             dataset_path (str): Path to the dataset csv file. By default it is assumed to exist in the datasets/assets
@@ -152,7 +149,8 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
 
         final_input_tensor = torch.cat(input_tensors, dim=1)
 
-        date_time_filtered = raw_data.loc[str(self.start_date) : str(self.end_date)]
+        # Type is ignored here since .loc does indeed take these strings in the case of a datetime index
+        date_time_filtered = raw_data.loc[str(self.start_date) : str(self.end_date)]  # type: ignore
         target_df = date_time_filtered.loc[:, [target.value for target in self.targets]]
         final_target_tensor = torch.from_numpy(target_df.values).to(self.dtype)
 
@@ -162,7 +160,8 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         assert lag >= 0, "Lag cannot be negative"
         lagged_start_date = self.start_date - timedelta(days=lag)
         lagged_end_date = self.end_date - timedelta(days=lag)
-        return df.loc[str(lagged_start_date) : str(lagged_end_date)]
+        # Type is ignored here since .loc does indeed take these strings in the case of a datetime index
+        return df.loc[str(lagged_start_date) : str(lagged_end_date)]  # type: ignore
 
     def _verify_inputs_and_targets_are_mutually_exclusive(self) -> None:
         inputs_set = set(self.inputs)
@@ -182,5 +181,3 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         ax.set_xlabel("Time")
         ax.set_ylabel("Value")
         plt.show()
-
-

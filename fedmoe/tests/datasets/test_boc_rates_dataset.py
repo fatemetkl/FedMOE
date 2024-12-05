@@ -1,7 +1,7 @@
 from datetime import datetime
 
-import torch
 import pytest
+import torch
 
 from fedmoe.datasets.fedmoe_datasets.boc_rates import BankOfCanadaExchangeRates, ExchangeRates
 
@@ -152,6 +152,7 @@ def test_two_inputs_two_targets_beyond_min_start() -> None:
     assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
     assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
 
+
 def test_two_inputs_no_target_lag() -> None:
     inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.DKK_CLOSE]
     targets = [ExchangeRates.GBP_CLOSE, ExchangeRates.USD_CLOSE]
@@ -172,16 +173,66 @@ def test_two_inputs_no_target_lag() -> None:
     assert dataset.input_matrix.shape == (10, 4)
     target_input_tensor = torch.tensor(
         [
-            [0.0000, 0.0000, 0.0000, 0.0000,],
-            [0.9200, 0.2000, 0.0000, 0.0000,],
-            [0.9100, 0.2000, 0.9200, 0.2000,],
-            [0.9100, 0.2000, 0.9100, 0.2000,],
-            [0.9100, 0.2000, 0.9100, 0.2000,],
-            [0.9100, 0.2000, 0.9100, 0.2000,],
-            [0.9100, 0.2000, 0.9100, 0.2000,],
-            [0.9100, 0.2000, 0.9100, 0.2000,],
-            [0.9200, 0.2000, 0.9100, 0.2000,],
-            [0.9200, 0.2000, 0.9200, 0.2000,],
+            [
+                0.0000,
+                0.0000,
+                0.0000,
+                0.0000,
+            ],
+            [
+                0.9200,
+                0.2000,
+                0.0000,
+                0.0000,
+            ],
+            [
+                0.9100,
+                0.2000,
+                0.9200,
+                0.2000,
+            ],
+            [
+                0.9100,
+                0.2000,
+                0.9100,
+                0.2000,
+            ],
+            [
+                0.9100,
+                0.2000,
+                0.9100,
+                0.2000,
+            ],
+            [
+                0.9100,
+                0.2000,
+                0.9100,
+                0.2000,
+            ],
+            [
+                0.9100,
+                0.2000,
+                0.9100,
+                0.2000,
+            ],
+            [
+                0.9100,
+                0.2000,
+                0.9100,
+                0.2000,
+            ],
+            [
+                0.9200,
+                0.2000,
+                0.9100,
+                0.2000,
+            ],
+            [
+                0.9200,
+                0.2000,
+                0.9200,
+                0.2000,
+            ],
         ]
     ).double()
     target_target_tensor = torch.tensor(
@@ -200,6 +251,7 @@ def test_two_inputs_no_target_lag() -> None:
     ).double()
     assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
     assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
+
 
 def test_various_dataset_assertions() -> None:
 
@@ -222,7 +274,6 @@ def test_various_dataset_assertions() -> None:
         )
 
     assert str(assertion_error.value) == "No inputs specified. Either specify input features or specify a target lag"
-
 
     # input_lag <= 0
     with pytest.raises(AssertionError) as assertion_error:
@@ -248,7 +299,7 @@ def test_various_dataset_assertions() -> None:
             end_date=end_date,
         )
 
-    assert str(assertion_error.value) ==  "Target lag must be at least 1"
+    assert str(assertion_error.value) == "Target lag must be at least 1"
 
     # start date beyond minimum
     with pytest.raises(AssertionError) as assertion_error:
@@ -261,7 +312,7 @@ def test_various_dataset_assertions() -> None:
             end_date=end_date,
         )
 
-    assert str(assertion_error.value) ==  "Start date must occur on or after 2007-05-01 and on or before 2017-04-28"
+    assert str(assertion_error.value) == "Start date must occur on or after 2007-05-01 and on or before 2017-04-28"
 
     # end date beyond maximum
     with pytest.raises(AssertionError) as assertion_error:
@@ -274,7 +325,7 @@ def test_various_dataset_assertions() -> None:
             end_date=datetime(2024, 4, 3),
         )
 
-    assert str(assertion_error.value) ==  "End date must occur on or after 2007-05-01 and on or before 2017-04-28"
+    assert str(assertion_error.value) == "End date must occur on or after 2007-05-01 and on or before 2017-04-28"
 
     # end date before start date
     with pytest.raises(AssertionError) as assertion_error:
@@ -287,7 +338,7 @@ def test_various_dataset_assertions() -> None:
             end_date=start_date,
         )
 
-    assert str(assertion_error.value) ==  "Start date occurs after end date. This is invalid"
+    assert str(assertion_error.value) == "Start date occurs after end date. This is invalid"
 
     # inputs and targets not mutually exclusive
     with pytest.raises(AssertionError) as assertion_error:
@@ -300,4 +351,4 @@ def test_various_dataset_assertions() -> None:
             end_date=start_date,
         )
 
-    assert str(assertion_error.value) ==  "Inputs and targets should not overlap"
+    assert str(assertion_error.value) == "Inputs and targets should not overlap"
