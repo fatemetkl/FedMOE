@@ -98,7 +98,13 @@ def get_rfn_client_manager(
 
 
 def get_rfn_client_manager_dy_dx_1(
-    alpha: float, gamma: float, z_dim: int, num_clients: int = 2, data_length: int = 10, sync_freq: int = 3
+    alpha: float,
+    gamma: float,
+    sigma: torch.Tensor,
+    z_dim: int,
+    num_clients: int = 2,
+    data_length: int = 10,
+    sync_freq: int = 3,
 ) -> ClientManager:
     # Set seed for reproducibility
     torch.manual_seed(42)
@@ -113,7 +119,7 @@ def get_rfn_client_manager_dy_dx_1(
         z_dim=z_dim,
         alpha=alpha,
         gamma=gamma,
-        sigma=1.0,
+        sigma=sigma,
         target_sequence=data_object.target_matrix,
     )
 
@@ -164,7 +170,7 @@ def get_transformer_client_manager(
     else:
         TransformerClient.setup_transformer_structure = setup_transformer_structure_patch  # type: ignore
 
-    # y_dim = target_sequence.shape[1]
+    y_dim = target_sequence.shape[1]
 
     client_manager = PreTrainingClientManager(
         num_clients=2,
@@ -180,14 +186,14 @@ def get_transformer_client_manager(
     )
 
     # Patching the initial conditions with random values to make calculations more complex
-    # for client in client_manager.clients:
-    #     init_hidden_state_neg1 = torch.rand((y_dim, z_dim))
-    #     init_prediction_0 = torch.rand((y_dim, 1))
-    #     init_prediction_neg1 = torch.rand((y_dim, 1))
-    #     client.state.Z_neg1 = init_hidden_state_neg1
-    #     client.state.Y_0 = init_prediction_0
-    #     client.state.Y_neg1 = init_prediction_neg1
-    #     client.state._predictions[0] = init_prediction_0
+    for client in client_manager.clients:
+        init_hidden_state_neg1 = torch.rand((y_dim, z_dim))
+        init_prediction_0 = torch.rand((y_dim, 1))
+        init_prediction_neg1 = torch.rand((y_dim, 1))
+        client.state.Z_neg1 = init_hidden_state_neg1
+        client.state.Y_0 = init_prediction_0
+        client.state.Y_neg1 = init_prediction_neg1
+        client.state._predictions[0] = init_prediction_0
 
     return client_manager
 

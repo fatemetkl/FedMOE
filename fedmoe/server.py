@@ -4,7 +4,7 @@ import torch
 from fl4health.utils.metrics import Metric, MetricManager
 
 from fedmoe.client_manager import ClientManager
-from fedmoe.game import Game
+from fedmoe.game.game import Game
 
 torch.set_default_dtype(torch.float64)
 

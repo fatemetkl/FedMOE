@@ -60,15 +60,15 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
       for SIGMA_VALUE in "${SIGMA_VALUES[@]}"; do
         for K_VALUE in "${K_VALUES[@]}"; do
           for ETA_VALUE in "${ETA_VALUES[@]}"; do
-            for Client_T_Value in "${CLIENT_T_VALUES[@]}"; do
-              for GAME_T_Value in "${GAME_T_VALUES[@]}"; do
+            for CLIENT_T_VALUE in "${CLIENT_T_VALUES[@]}"; do
+              for GAME_T_VALUE in "${GAME_T_VALUES[@]}"; do
                 for GAME_SYNC in "${GAME_SYNC_VALUES[@]}"; do
                   for NUM_SAMPLES in "${DATA_LOADER_NUM_SAMPLES[@]}"; do
                     for BATCH_SIZE in "${DATA_LOADER_BATCH_SIZE[@]}"; do
                       for EPOCHS in "${PRE_TRAINING_EPOCHS[@]}"; do
                         for LEARNING_RATE in "${PRE_TRAINING_LEARNING_RATE[@]}"; do
 
-                            EXPERIMENT_SETUP="T${Client_T_Value}_sync${GAME_SYNC}_gameT${GAME_T_Value}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_sigma${SIGMA_VALUE}_DZ${HIDDEN_DIM}"
+                            EXPERIMENT_SETUP="T${CLIENT_T_VALUE}_sync${GAME_SYNC}_gameT${GAME_T_VALUE}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_sigma${SIGMA_VALUE}_DZ${HIDDEN_DIM}"
                             EXPERIMENT_DIRECTORY="${RESULTS_DIR}/${EXPERIMENT_SETUP}/"
                             mkdir -p $EXPERIMENT_DIRECTORY
                             echo "Beginning Experiment ${EXPERIMENT_NAME} with hyper-parameters ${EXPERIMENT_SETUP}"
@@ -82,14 +82,14 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                                 ${SIGMA_VALUE} \
                                 ${K_VALUE} \
                                 ${ETA_VALUE} \
-                                ${Client_T_Value} \
+                                ${CLIENT_T_VALUE} \
                                 ${GAME_SYNC} \
                                 ${NUM_SAMPLES} \
                                 ${BATCH_SIZE} \
                                 ${EPOCHS} \
                                 ${LEARNING_RATE} \
-                                ${VENV_PATH} \
-                                ${GAME_T_Value}"
+                                ${GAME_T_VALUE}\
+                                ${VENV_PATH} "
                             echo "Running sbatch command ${SBATCH_COMMAND}"
                             sbatch ${SBATCH_COMMAND}
 

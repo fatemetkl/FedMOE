@@ -1,6 +1,6 @@
 import torch
 
-from fedmoe.game import RfnGame
+from fedmoe.game.rfn_game import RfnGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_data_and_target_sequences, get_rfn_client_manager, get_rfn_client_manager_dy_dx_1
@@ -140,7 +140,9 @@ def test_full_flow_with_dy_dx_one() -> None:
     eta = 1
     N = 3
 
-    client_manager = get_rfn_client_manager_dy_dx_1(alpha, gamma, z_dim, N)
+    client_manager = get_rfn_client_manager_dy_dx_1(
+        alpha, gamma, sigma=torch.Tensor([[0.1]]), z_dim=z_dim, num_clients=N
+    )
     game = RfnGame(client_manager.clients, 3, z_dim)
 
     server = Server(
