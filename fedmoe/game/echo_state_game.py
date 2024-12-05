@@ -20,9 +20,9 @@ class EchoStateGame(Game):
 
     def simulate_z_t(self, game_t: int, client: Client) -> torch.Tensor:
         # Setting z start, which is the last z used in the last sync step.
-        # Based on the game time scale, it is t=0.
+        # Based on the game time scale, it is game_t=0.
         Z = self.get_z(game_t=0, client=client)
-        #  Starts the simulation from 1 (last sync step + 1) to desired current t.
+        # Starts the simulation from 1 (last sync step + 1) to desired current t.
         # First Z used in the simulation is Z_0, so the first x used should be x_1.
         for back_game_t in range(1, game_t + 1):
             # Z_t (back_game_t) is generated.
@@ -32,7 +32,7 @@ class EchoStateGame(Game):
         return Z
 
     def get_expectation_e_zt(self, game_t: int, client: Client) -> torch.Tensor:
-        # Note that t here is not server time, but rather game time [0, sync_freq]
+        # Note that game_t here is not server time, but rather game time [0, sync_freq]
         assert type(client) is EchoStateNetworkClient
         samples = []
         for _ in range(self.n_samples):
@@ -40,7 +40,7 @@ class EchoStateGame(Game):
             # If we're PREDICTING t=9 and we are at t=8, with sync frequency T=4, then we want to generate trajectories
             # Z_4 -> Z_5 -> Z_6 -> Z_7 -> Z_8 for our Nash game.
             # This means we start from Z_4 and use x_5, x_6, x_7 to generate these latent values.
-            # To get Z_5, we again start from Z_3 -> Z_4 -> z_5
+            # To get Z_7, we again start from Z_4 -> Z_5 -> Z_6 -> Z_7
             estimated_z_t = self.simulate_z_t(game_t, client)
             samples.append(estimated_z_t)
         sum_tensor = torch.zeros_like(samples[0])
@@ -52,7 +52,7 @@ class EchoStateGame(Game):
         return estimated_e_z_t
 
     def get_expectation_e_z_transpose_P_e_z(self, game_t: int, client: Client, next_p_i: torch.Tensor) -> torch.Tensor:
-        # Note that t here is not server time, but rather game time [0, sync_freq]
+        # Note that game_t here is not server time, but rather game time [0, sync_freq]
         # When the z_t values are the same in these expectation calculations, we can't compute the expectations
         # separately. So we do everything together.
         assert type(client) is EchoStateNetworkClient
@@ -60,7 +60,7 @@ class EchoStateGame(Game):
         for _ in range(self.n_samples):
             # Start from time current_t-T for the trajectory
             # If we're PREDICTING t=9 and we are at t=8, with sync frequency T=4, then we want to generate trajectories
-            # Z_4 -> Z_5 -> Z_6 -> Z_7 ->Z_8 for our Nash game.
+            # Z_4 -> Z_5 -> Z_6 -> Z_7 -> Z_8 for our Nash game.
             # This means we start from Z_4 and use x_5, x_6, x_7 to generate these latent values.
             Z_i = self.simulate_z_t(game_t, client)
             e_i = client.get_e(self.num_clients)

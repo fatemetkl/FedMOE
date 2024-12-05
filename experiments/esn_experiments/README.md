@@ -35,13 +35,13 @@ So, we should run:
 ```
 RESULTS_DIR="path_to_folder_for_artifacts/$EXPERIMENT_NAME"
 
-run python -m experiments.find_best_hp --hp_sweep_dir RESULTS_DIR
+python -m experiments.find_best_hp --hp_sweep_dir RESULTS_DIR
 ```
 
 For example:
 
 ```
-run python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/esn_results/
+python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/esn_results/
 ```
 
 
