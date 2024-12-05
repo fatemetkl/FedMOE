@@ -21,9 +21,7 @@ class InputFeatures(Enum):
 class TransformerTemperature(TimeSeriesData):
     """
     Hourly oil temperatures and various readings for a electricity transformer.
-    Readings are taking from 2016-07-01 00:00:00 to 2016-07-01 00:00:00 19:00:00.
-    There are a few missing hours in the dataset. So we have to take care of this in some way. In general, we'll
-    simply omit them.
+    Readings are taking from 2016-07-01 00:00:00 to 2018-06-26 19:00:00.
     This dataset was first introduced in the Informer paper
     https://github.com/zhouhaoyi/ETDataset
     The target is always the 1D value of oil temperature (OT column in the csv)
@@ -62,7 +60,7 @@ class TransformerTemperature(TimeSeriesData):
                 time to gather these as far as possible. When prior time stamps are not available, we set the lagged 
                 values to 0. Defaults to None.
             end_date (Optional[datetime], optional): (INCLUSIVE) When in the dataset we want our time series to end.
-                The maximum value for this argument is 2016-07-01 00:00:00 19:00:00. If None, the maximum value is 
+                The maximum value for this argument is 2018-06-26 19:00:00. If None, the maximum value is 
                 used. Defaults to None.
             dtype (torch.dtype, optional): Default type for any torch tensors created. Defaults to torch.float64.
             dataset_path (str): Path to the dataset csv file. By default it is assumed to exist in the datasets/assets

@@ -24,8 +24,6 @@ class DataOptions(Enum):
     SIMPLE_BROWNIAN = "simple_brownian"
     BROWNIAN_ADDITION = "brownian_addition"
     XY_2D = "2dxy"
-    BOC_EXCHANGE = "boc_exchange"
-    TRANSFORMER_TEMPERATURE = "transformer_temperature"
 
 
 def load_config(config_path: str) -> Dict[str, Any]:
