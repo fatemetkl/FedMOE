@@ -35,11 +35,45 @@ So, we should run:
 ```
 RESULTS_DIR="path_to_folder_for_artifacts/$EXPERIMENT_NAME"
 
-poetry run python -m experiments.find_best_hp --hp_sweep_dir RESULTS_DIR
+run python -m experiments.find_best_hp --hp_sweep_dir RESULTS_DIR
 ```
 
 For example:
 
 ```
-poetry run python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/esn_results/
+run python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/esn_results/
 ```
+
+
+## Run hp sweep on you local machine
+
+First activate the environment.
+For example:
+```
+source ../fedmoe_env/bin/activate
+
+```
+
+#### Run experiments
+To launch the experiments run:
+
+```
+bash experiments/esn_experiments/local_run_hp_sweep.sh \
+path_to_config.yaml \
+path_to_folder_for_artifacts/ \
+```
+
+
+For example:
+
+```
+bash experiments/esn_experiments/local_run_hp_sweep.sh \
+experiments/esn_experiments/config.yaml \
+experiments/esn_experiments/esn_results/
+```
+
+Find the best hyper-parameter:
+```
+python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/esn_results/
+```
+Make sure your environment is activated.

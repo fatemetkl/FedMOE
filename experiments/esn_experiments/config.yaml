@@ -1,9 +1,9 @@
 # Experiment variables
-experiment_name: "esn-logistic"
+experiment_name: "esn-logistic-no-game"
 client_type : 2 # 2: EchoState networks (fixed for this experiment)
-data: "logistic_map"  # Dataset options are saved in utils.DataOptions
+data: "logistic_map"  # Dataset options are saved in utils.DataOptions. Examples: periodic_signal, time_input_periodic, logistic_map, sine_signal, quadratic_data, linear_line, or horizontal_line, 2dxy, simple_brownian, brownian_addition
 
-num_clients : 4 # The number of experts or clients
+num_clients : 2 # The number of experts or clients
 total_rounds : 100 # The number of total rounds (data sequence will be created to be one time-step longer)
 have_sync: False # Do we want to have Nash game and synchronization steps or not
 update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t

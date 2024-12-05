@@ -21,7 +21,7 @@ class RfnGame(Game):
     def get_a_t_embedding(self, time: int, client: Client) -> torch.Tensor:
         # some parts of the forwards pass (without randomness)
         a_t = (
-            torch.matmul(client.encoder.A.double(), self.get_input(time, client).double())
+            torch.matmul(client.encoder.A.double(), self.get_input_matrix(time, client).double())
         ) + client.encoder.b.double()
         assert a_t.shape == (self.y_dim, self.z_dim)
         return a_t

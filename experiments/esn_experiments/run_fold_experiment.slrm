@@ -14,7 +14,6 @@
 #SBATCH --time=00:20:00
 
 
-
 CONFIG_PATH=$1
 EXPERIMENT_DIRECTORY=$2
 HIDDEN_DIM=$3
@@ -23,10 +22,12 @@ GAMMA_VALUE=$5
 SIGMA_VALUE=$6
 K_VALUE=$7
 ETA_VALUE=$8
-T_Value=$9
-VENV_PATH=${10}
+CLIENT_T_VALUE=${9}
+GAME_SYNC_VALUE=${10}
+GAME_T_VALUE=${11}
+VENV_PATH=${12}
 
-RUN_NAMES=( "Run1" )
+RUN_NAMES=( "Run1" "Run2" "Run3" )
 SEEDS=(2024 2025 2026)
 
 
@@ -82,7 +83,9 @@ do
         --sigma ${SIGMA_VALUE} \
         --K ${K_VALUE} \
         --eta ${ETA_VALUE} \
-        --T ${T_Value} \
+        --client_T ${CLIENT_T_VALUE} \
+        --game_sync_freq ${GAME_SYNC_VALUE} \
+        --game_T ${GAME_T_VALUE} \
         --random_seed ${SEED} \
         > ${RUN_OUTPUT_FILE} 2>&1 &
 
