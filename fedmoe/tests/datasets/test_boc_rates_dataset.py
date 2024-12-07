@@ -11,15 +11,15 @@ def test_one_input_one_target() -> None:
     # in the input.
     inputs = [ExchangeRates.AUD_CLOSE]
     targets = [ExchangeRates.USD_CLOSE]
-    input_lag = 1
-    target_lag = 1
+    input_lag = [1]
+    target_lag = [1]
     start_date = datetime(2007, 5, 10)
     end_date = datetime(2007, 5, 20)
     dataset = BankOfCanadaExchangeRates(
         inputs=inputs,
         targets=targets,
-        input_lag=input_lag,
-        target_lag=target_lag,
+        input_lags=input_lag,
+        target_lags=target_lag,
         start_date=start_date,
         end_date=end_date,
     )
@@ -50,15 +50,15 @@ def test_two_inputs_two_targets_with_lag() -> None:
     # input as well.
     inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.DKK_CLOSE]
     targets = [ExchangeRates.GBP_CLOSE, ExchangeRates.USD_CLOSE]
-    input_lag = 2
-    target_lag = 2
+    input_lag = [1, 2]
+    target_lag = [1, 2]
     start_date = datetime(2007, 5, 10)
     end_date = datetime(2007, 5, 20)
     dataset = BankOfCanadaExchangeRates(
         inputs=inputs,
         targets=targets,
-        input_lag=input_lag,
-        target_lag=target_lag,
+        input_lags=input_lag,
+        target_lags=target_lag,
         start_date=start_date,
         end_date=end_date,
     )
@@ -105,15 +105,15 @@ def test_two_inputs_two_targets_beyond_min_start() -> None:
     # input as well, but both lag steps go beyond the start of the dataset. So we need to pad those steps properly.
     inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.DKK_CLOSE]
     targets = [ExchangeRates.GBP_CLOSE, ExchangeRates.USD_CLOSE]
-    input_lag = 2
-    target_lag = 2
+    input_lag = [1, 2]
+    target_lag = [1, 2]
     start_date = datetime(2007, 5, 1)
     end_date = datetime(2007, 5, 10)
     dataset = BankOfCanadaExchangeRates(
         inputs=inputs,
         targets=targets,
-        input_lag=input_lag,
-        target_lag=target_lag,
+        input_lags=input_lag,
+        target_lags=target_lag,
         start_date=start_date,
         end_date=end_date,
     )
@@ -156,14 +156,14 @@ def test_two_inputs_two_targets_beyond_min_start() -> None:
 def test_two_inputs_no_target_lag() -> None:
     inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.DKK_CLOSE]
     targets = [ExchangeRates.GBP_CLOSE, ExchangeRates.USD_CLOSE]
-    input_lag = 2
+    input_lag = [1, 2]
     start_date = datetime(2007, 5, 1)
     end_date = datetime(2007, 5, 10)
     dataset = BankOfCanadaExchangeRates(
         inputs=inputs,
         targets=targets,
-        input_lag=input_lag,
-        target_lag=None,
+        input_lags=input_lag,
+        target_lags=None,
         start_date=start_date,
         end_date=end_date,
     )
@@ -257,8 +257,8 @@ def test_various_dataset_assertions() -> None:
 
     inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.DKK_CLOSE]
     targets = [ExchangeRates.GBP_CLOSE, ExchangeRates.USD_CLOSE]
-    input_lag = 2
-    target_lag = 2
+    input_lag = [1, 2]
+    target_lag = [1, 2]
     start_date = datetime(2007, 5, 3)
     end_date = datetime(2007, 5, 10)
 
@@ -267,8 +267,8 @@ def test_various_dataset_assertions() -> None:
         BankOfCanadaExchangeRates(
             inputs=[],
             targets=targets,
-            input_lag=input_lag,
-            target_lag=None,
+            input_lags=input_lag,
+            target_lags=None,
             start_date=start_date,
             end_date=end_date,
         )
@@ -280,34 +280,34 @@ def test_various_dataset_assertions() -> None:
         BankOfCanadaExchangeRates(
             inputs=inputs,
             targets=targets,
-            input_lag=0,
-            target_lag=target_lag,
+            input_lags=[-1],
+            target_lags=target_lag,
             start_date=start_date,
             end_date=end_date,
         )
 
-    assert str(assertion_error.value) == "Input lag must be at least 1"
+    assert str(assertion_error.value) == "Input lag must be at least 0"
 
     # target_lag <= 0
     with pytest.raises(AssertionError) as assertion_error:
         BankOfCanadaExchangeRates(
             inputs=inputs,
             targets=targets,
-            input_lag=2,
-            target_lag=0,
+            input_lags=[1, 2],
+            target_lags=[-1],
             start_date=start_date,
             end_date=end_date,
         )
 
-    assert str(assertion_error.value) == "Target lag must be at least 1"
+    assert str(assertion_error.value) == "Target lag must be at least 0"
 
     # start date beyond minimum
     with pytest.raises(AssertionError) as assertion_error:
         BankOfCanadaExchangeRates(
             inputs=inputs,
             targets=targets,
-            input_lag=input_lag,
-            target_lag=target_lag,
+            input_lags=input_lag,
+            target_lags=target_lag,
             start_date=datetime(2007, 4, 3),
             end_date=end_date,
         )
@@ -319,8 +319,8 @@ def test_various_dataset_assertions() -> None:
         BankOfCanadaExchangeRates(
             inputs=inputs,
             targets=targets,
-            input_lag=input_lag,
-            target_lag=target_lag,
+            input_lags=input_lag,
+            target_lags=target_lag,
             start_date=start_date,
             end_date=datetime(2024, 4, 3),
         )
@@ -332,8 +332,8 @@ def test_various_dataset_assertions() -> None:
         BankOfCanadaExchangeRates(
             inputs=inputs,
             targets=targets,
-            input_lag=input_lag,
-            target_lag=target_lag,
+            input_lags=input_lag,
+            target_lags=target_lag,
             start_date=end_date,
             end_date=start_date,
         )
@@ -345,8 +345,8 @@ def test_various_dataset_assertions() -> None:
         BankOfCanadaExchangeRates(
             inputs=inputs,
             targets=targets + [ExchangeRates.AUD_CLOSE],
-            input_lag=input_lag,
-            target_lag=target_lag,
+            input_lags=input_lag,
+            target_lags=target_lag,
             start_date=end_date,
             end_date=start_date,
         )

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Tuple
 
@@ -30,8 +30,8 @@ class TransformerTemperature(TimeSeriesData):
     def __init__(
         self,
         inputs: List[InputFeatures],
-        input_lag: int = 1,
-        target_lag: Optional[int] = None,
+        input_lags: List[int],
+        target_lags: Optional[List[int]] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         dtype: torch.dtype = torch.float64,
@@ -44,40 +44,40 @@ class TransformerTemperature(TimeSeriesData):
 
         Args:
             inputs (List[InputFeatures]): These are the features in the dataset to use to help make predictions.
-                If you want to include lagged values of the target in the input as well, set target_lag > 1.
-            input_lag (int, optional): How many steps back to include in the input features. For
-                example, if input_lag is 2 and we have MUFL and LULL features at inputs, then at time t, we are
-                attempting to make predictions for t+1 based on MUFL_t, MUFL_t{t-1}, LULL_t, and LULL_{t-1}. 
-                Defaults to 1.
-            target_lag (Optional[int], optional): Similar to input lag, this is how many steps backwards in time for
-                target values should be include in the input. For example, if target_lag is 2, then at time t, we are 
-                attempting to make predictions for t+1 for OT and we include OT_t and OT_{t-1} in the input sequence 
-                along with other input values. If none, then lagged targets are not included in the input. 
-                Defaults to None.
+                If you want to include lagged values of the target in the input as well, set target_lag > 0.
+            input_lags (List[int]): List of steps backward in input that should be included in the input features.
+                For example, if input_lag is [1, 2] and we have MUFL and LULL features at inputs, then at time t, then
+                x_t contains MUFL_{t-1}, MUFL_{t-2}, LULL_{t-1}, and LULL_{t-2}.
+            target_lags (Optional[List[int]], optional): Similar to input lag, this is a list of steps backward in
+                target values should be include in the input. For example, if target_lag is [1, 2], then at time t,
+                x_t for y_t contains OT_{t-1} and OT_{t-2} in the input sequence  along with other input values.
+                If none, then lagged targets are not included in the input.
             start_date (Optional[datetime], optional): (INCLUSIVE) When in the dataset we want our time series to
-                begin.  The minimum value for this argument is 2016-07-01 00:00:00. If None, the minimum value is 
-                used. If not the minimum value and input_lag/target_lag are greater than 1, we will still look back in 
-                time to gather these as far as possible. When prior time stamps are not available, we set the lagged 
+                begin.  The minimum value for this argument is 2016-07-01 00:00:00. If None, the minimum value is
+                used. If not the minimum value and input_lag/target_lag are greater than 1, we will still look back in
+                time to gather these as far as possible. When prior time stamps are not available, we set the lagged
                 values to 0. Defaults to None.
             end_date (Optional[datetime], optional): (INCLUSIVE) When in the dataset we want our time series to end.
-                The maximum value for this argument is 2018-06-26 19:00:00. If None, the maximum value is 
+                The maximum value for this argument is 2018-06-26 19:00:00. If None, the maximum value is
                 used. Defaults to None.
             dtype (torch.dtype, optional): Default type for any torch tensors created. Defaults to torch.float64.
             dataset_path (str): Path to the dataset csv file. By default it is assumed to exist in the datasets/assets
                 folder at "fedmoe/datasets/assets/ETTh1.csv".
         """
         assert (
-            len(inputs) > 0 or target_lag is not None
+            len(inputs) > 0 or target_lags is not None
         ), "No inputs specified. Either specify input features or specify a target lag"
 
-        assert input_lag > 0, "Input lag must be at least 1"
-        if target_lag is not None:
-            assert target_lag > 0, "Target lag must be at least 1"
+        for input_lag in input_lags:
+            assert input_lag >= 0, "Input lag must be at least 0"
+        if target_lags is not None:
+            for target_lag in target_lags:
+                assert target_lag >= 0, "Target lag must be at least 0"
 
         self.inputs = inputs
         self.target = "OT"
-        self.input_lag = input_lag
-        self.target_lag = target_lag
+        self.input_lags = input_lags
+        self.target_lags = target_lags
 
         self.min_date = datetime(2016, 7, 1, 0)
         self.max_date = datetime(2018, 6, 26, 19)
@@ -126,7 +126,7 @@ class TransformerTemperature(TimeSeriesData):
     def _construct_dataset(self) -> Tuple[torch.Tensor, torch.Tensor]:
 
         input_tensors = []
-        for lag in range(1, self.input_lag + 1):
+        for lag in self.input_lags:
             # Filter the data to the time period we care about
             date_time_filtered = self._get_lagged_value(lag, self.raw_data)
             # Get the input values based on the input currencies
@@ -138,8 +138,8 @@ class TransformerTemperature(TimeSeriesData):
             pad_length = self.total_time_steps - n_rows
             input_tensors.append(torch.cat([torch.zeros((pad_length, n_columns)), input_tensor], dim=0))
 
-        if self.target_lag is not None:
-            for lag in range(1, self.target_lag + 1):
+        if self.target_lags is not None:
+            for lag in self.target_lags:
                 # Filter the data to the time period we care about
                 date_time_filtered = self._get_lagged_value(lag, self.raw_data)
                 # Get the input values based on the input currencies

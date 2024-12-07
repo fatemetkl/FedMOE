@@ -3,7 +3,7 @@ from datetime import datetime
 import pytest
 import torch
 
-from fedmoe.datasets.fedmoe_datasets.transformer_temperature import TransformerTemperature, InputFeatures
+from fedmoe.datasets.fedmoe_datasets.transformer_temperature import InputFeatures, TransformerTemperature
 
 
 def test_two_input_one_target_with_pad() -> None:
@@ -11,14 +11,14 @@ def test_two_input_one_target_with_pad() -> None:
     # Because we're doing a lag from the beginning of the dataset, we also need to pad the start of each input
     # with a 0.0
     inputs = [InputFeatures.HUFL, InputFeatures.HULL]
-    input_lag = 1
-    target_lag = 1
+    input_lag = [1]
+    target_lag = [1]
     start_date = datetime(2016, 7, 1, 0)
     end_date = datetime(2016, 7, 1, 23)
     dataset = TransformerTemperature(
         inputs=inputs,
-        input_lag=input_lag,
-        target_lag=target_lag,
+        input_lags=input_lag,
+        target_lags=target_lag,
         start_date=start_date,
         end_date=end_date,
     )
@@ -89,14 +89,14 @@ def test_two_input_one_target_at_end() -> None:
     # Because we're doing a lag from the beginning of the dataset, we also need to pad the start of each input
     # with a 0.0
     inputs = [InputFeatures.MUFL, InputFeatures.LULL]
-    input_lag = 2
-    target_lag = 2
+    input_lag = [1, 2]
+    target_lag = [1, 2]
     start_date = datetime(2018, 6, 26, 10)
     end_date = datetime(2018, 6, 26, 19)
     dataset = TransformerTemperature(
         inputs=inputs,
-        input_lag=input_lag,
-        target_lag=target_lag,
+        input_lags=input_lag,
+        target_lags=target_lag,
         start_date=start_date,
         end_date=end_date,
     )
@@ -126,8 +126,8 @@ def test_two_input_one_target_at_end() -> None:
 def test_various_dataset_assertions() -> None:
 
     inputs = [InputFeatures.HUFL, InputFeatures.HULL]
-    input_lag = 2
-    target_lag = 2
+    input_lag = [1, 2]
+    target_lag = [1, 2]
     start_date = datetime(2016, 7, 1, 0)
     end_date = datetime(2016, 7, 1, 23)
 
@@ -135,8 +135,8 @@ def test_various_dataset_assertions() -> None:
     with pytest.raises(AssertionError) as assertion_error:
         TransformerTemperature(
             inputs=[],
-            input_lag=input_lag,
-            target_lag=None,
+            input_lags=input_lag,
+            target_lags=None,
             start_date=start_date,
             end_date=end_date,
         )
@@ -147,32 +147,32 @@ def test_various_dataset_assertions() -> None:
     with pytest.raises(AssertionError) as assertion_error:
         TransformerTemperature(
             inputs=inputs,
-            input_lag=0,
-            target_lag=target_lag,
+            input_lags=[-1],
+            target_lags=target_lag,
             start_date=start_date,
             end_date=end_date,
         )
 
-    assert str(assertion_error.value) == "Input lag must be at least 1"
+    assert str(assertion_error.value) == "Input lag must be at least 0"
 
     # target_lag <= 0
     with pytest.raises(AssertionError) as assertion_error:
         TransformerTemperature(
             inputs=inputs,
-            input_lag=2,
-            target_lag=0,
+            input_lags=[1, 2],
+            target_lags=[-1],
             start_date=start_date,
             end_date=end_date,
         )
 
-    assert str(assertion_error.value) == "Target lag must be at least 1"
+    assert str(assertion_error.value) == "Target lag must be at least 0"
 
     # start date beyond minimum
     with pytest.raises(AssertionError) as assertion_error:
         TransformerTemperature(
             inputs=inputs,
-            input_lag=input_lag,
-            target_lag=target_lag,
+            input_lags=input_lag,
+            target_lags=target_lag,
             start_date=datetime(2007, 4, 3),
             end_date=end_date,
         )
@@ -186,8 +186,8 @@ def test_various_dataset_assertions() -> None:
     with pytest.raises(AssertionError) as assertion_error:
         TransformerTemperature(
             inputs=inputs,
-            input_lag=input_lag,
-            target_lag=target_lag,
+            input_lags=input_lag,
+            target_lags=target_lag,
             start_date=start_date,
             end_date=datetime(2024, 4, 3),
         )
@@ -201,8 +201,8 @@ def test_various_dataset_assertions() -> None:
     with pytest.raises(AssertionError) as assertion_error:
         TransformerTemperature(
             inputs=inputs,
-            input_lag=input_lag,
-            target_lag=target_lag,
+            input_lags=input_lag,
+            target_lags=target_lag,
             start_date=end_date,
             end_date=start_date,
         )

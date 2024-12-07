@@ -35,8 +35,8 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         self,
         inputs: List[ExchangeRates],
         targets: List[ExchangeRates],
-        input_lag: int = 1,
-        target_lag: Optional[int] = None,
+        input_lags: List[int],
+        target_lags: Optional[List[int]] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         dtype: torch.dtype = torch.float64,
@@ -48,17 +48,17 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         Args:
             inputs (List[ExchangeRates]): These are the currencies in the dataset to use to help make predictions.
                 The inputs and targets should be distinct. That is, target currencies should not be included here.
-                If you want to include lagged values of the targets, set target_lag > 1.
+                If you want to include lagged values of the targets, set target_lag.
             targets (List[ExchangeRates]): These are the currencies that we are trying to make predictions for. If
                 multiple currencies are provided, we're predicting multiple exchange rates simultaneously
-            input_lag (int, optional): How many steps back to include in the input currency exchange rates. For
-                example, if input_lag is 2 and we have USD and EUR exchange rates at inputs, then at time t, we are
-                attempting to make predictions for t+1 based on USD_t, USD_{t-1}, EUR_t, and EUR_{t-1}. Defaults to 1.
-            target_lag (Optional[int], optional): Similar to input lag, this is how many steps backwards in time for
-                target values should be include in the input. For example, if target_lag is 2 and we have USD and EUR
-                exchange rates at TARGETS, then at time t, we are attempting to make predictions for t+1 for both
-                currencies and we include USD_t, USD_{t-1}, EUR_t, and EUR_{t-1} in the input sequence along with other
-                input values. If none, then lagged targets are not included in the input. Defaults to None.
+            input_lags (List[int]): List of steps backward in input that should be included in the input features.
+                For example, if input_lag is [1, 2] and we have USD and EUR exchange rates at inputs, then at time t,
+                then x_t contains USD_{t-1}, USD_{t-2}, EUR_{t-1}, and EUR_{t-2}.
+            target_lags (Optional[List[int]], optional): Similar to input lag, this is a list of steps backward in
+                target values should be include in the input. For example, if target_lag is [1, 2] and we have USD and
+                EUR exchange rates at TARGETS, then at time t, x_t for y_t contains USD_{t-1}, USD_{t-2}, EUR_{t-1},
+                EUR_{t-2} in the input sequence  along with other input values.  If none, then lagged targets are not
+                included in the input.
             start_date (Optional[datetime], optional): (INCLUSIVE) When in the dataset we want our time series to
                 begin.  The minimum value for this argument is 2007-05-01. If None, the minimum value is used.
                 If not the minimum value and input_lag/target_lag are greater than 1, we will still look back in time
@@ -72,18 +72,20 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
                 folder.
         """
         assert (
-            len(inputs) > 0 or target_lag is not None
+            len(inputs) > 0 or target_lags is not None
         ), "No inputs specified. Either specify input features or specify a target lag"
         assert len(targets) > 0, "No targets have been specified."
 
-        assert input_lag > 0, "Input lag must be at least 1"
-        if target_lag is not None:
-            assert target_lag > 0, "Target lag must be at least 1"
+        for input_lag in input_lags:
+            assert input_lag >= 0, "Input lag must be at least 0"
+        if target_lags is not None:
+            for target_lag in target_lags:
+                assert target_lag >= 0, "Target lag must be at least 0"
 
         self.inputs = inputs
         self.targets = targets
-        self.input_lag = input_lag
-        self.target_lag = target_lag
+        self.input_lags = input_lags
+        self.target_lags = target_lags
         self._verify_inputs_and_targets_are_mutually_exclusive()
 
         self.min_date = datetime(2007, 5, 1)
@@ -122,7 +124,7 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         raw_data = raw_data.set_index("date")
 
         input_tensors = []
-        for lag in range(1, self.input_lag + 1):
+        for lag in self.input_lags:
             # Filter the data to the time period we care about
             date_time_filtered = self._get_lagged_value(lag, raw_data)
             # Get the input values based on the input currencies
@@ -134,8 +136,8 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
             pad_length = self.total_time_steps - n_rows
             input_tensors.append(torch.cat([torch.zeros((pad_length, n_columns)), input_tensor], dim=0))
 
-        if self.target_lag is not None:
-            for lag in range(1, self.target_lag + 1):
+        if self.target_lags is not None:
+            for lag in self.target_lags:
                 # Filter the data to the time period we care about
                 date_time_filtered = self._get_lagged_value(lag, raw_data)
                 # Get the input values based on the input currencies
