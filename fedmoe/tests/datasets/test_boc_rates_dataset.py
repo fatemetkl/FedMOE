@@ -169,7 +169,7 @@ def test_two_inputs_no_target_lag() -> None:
     )
     # Two target currencies and 11 steps
     assert dataset.target_matrix.shape == (10, 2)
-    # Two target currencies with two steps of lag, two input currencies with two steps of lag (2*2 + 2*2)
+    # Two input currencies with two steps of lag and no targets with lag (2*2 + 0)
     assert dataset.input_matrix.shape == (10, 4)
     target_input_tensor = torch.tensor(
         [
