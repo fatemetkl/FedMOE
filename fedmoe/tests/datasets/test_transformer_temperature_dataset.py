@@ -85,7 +85,7 @@ def test_two_input_one_target_with_pad() -> None:
 
 
 def test_two_input_one_target_at_end() -> None:
-    # Test two feature inputs, but a lag of 1 time step for the target is also included in the input.
+    # Test two feature inputs, but a lag of 2 time steps for the target is also included in the input.
     # Because we're doing a lag from the beginning of the dataset, we also need to pad the start of each input
     # with a 0.0
     inputs = [InputFeatures.MUFL, InputFeatures.LULL]

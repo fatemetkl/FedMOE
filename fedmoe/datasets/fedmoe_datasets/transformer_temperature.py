@@ -38,9 +38,9 @@ class TransformerTemperature(TimeSeriesData):
         dataset_path: str = "fedmoe/datasets/assets/ETTh1.csv",
     ) -> None:
         """
-        Constructor for a Bank of Canada Exchange Rate time series dataset. Note that this dataset only has one target,
-        the oil temperature of the transformer. It corresponds to column OT in the csv file and is therefore hardcoded
-        here.
+        Constructor for an Electric Transformer temperature time series dataset. Note that this dataset only has one
+        target, the oil temperature of the transformer. It corresponds to column OT in the csv file and is therefore
+        hardcoded here.
 
         Args:
             inputs (List[InputFeatures]): These are the features in the dataset to use to help make predictions.
