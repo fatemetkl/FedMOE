@@ -141,11 +141,11 @@ class TransformerTestModel(nn.Module):
         super().__init__()
         self.y_dim = y_dim
         self.z_dim = z_dim
-        self.linear_1 = torch.nn.Linear(x_dim, 4, bias=False).double()
-        self.linear_2 = torch.nn.Linear(4, y_dim * z_dim, bias=False).double()
+        self.linear_1 = torch.nn.Linear(x_dim, 4, bias=False)
+        self.linear_2 = torch.nn.Linear(4, y_dim * z_dim, bias=False)
 
     def forward(self, input: torch.Tensor) -> torch.Tensor:
-        outputs = self.linear_1(input.double())
+        outputs = self.linear_1(input)
         return self.linear_2(outputs).reshape(self.y_dim, self.z_dim)
 
 
