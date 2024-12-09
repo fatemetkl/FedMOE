@@ -87,11 +87,11 @@ def test_client_side_optimization() -> None:
     for client in client_manager.clients:
         client.state._current_time -= 1
     predictions = client_manager.fit_clients(t)
-    assert torch.allclose(predictions[:, 0], client_0_preds_target_t1.squeeze())
+    assert torch.allclose(predictions[0, :], client_0_preds_target_t1.squeeze())
 
     # Making prediction for t=2
     t = 1
-    # Temporarily bumping the time to make everything, will reset after.
+    # Temporarily bumping the time to make everything work, will reset after.
     for client in client_manager.clients:
         client.state.next_time_step(t)
 
@@ -144,14 +144,14 @@ def test_client_side_optimization() -> None:
     for client in client_manager.clients:
         client.state._current_time -= 1
     predictions = client_manager.fit_clients(t)
-    assert torch.allclose(predictions[:, 0], client_0_preds_target_t2.squeeze())
+    assert torch.allclose(predictions[0, :], client_0_preds_target_t2.squeeze())
 
     # t = 4 (We want to make sure we're looking back the way we should )
     for t in [2, 3]:
         client_manager.fit_clients(t)
     # predicting for t=4
     t = 4
-    # Temporarily bumping the time to make everything, will reset after.
+    # Temporarily bumping the time to make everything work, will reset after.
     for client in client_manager.clients:
         client.state.next_time_step(t)
     # grab y_4
@@ -216,7 +216,7 @@ def test_client_side_optimization() -> None:
     for client in client_manager.clients:
         client.state._current_time -= 1
     predictions = client_manager.fit_clients(t)
-    assert torch.allclose(predictions[:, 0], client_0_preds_target_t5.squeeze())
+    assert torch.allclose(predictions[0, :], client_0_preds_target_t5.squeeze())
 
     # Ensure that beta is minimal for objective function
     opt_sum = compute_objective(client_0, client_0_beta, alpha, gamma, t)
