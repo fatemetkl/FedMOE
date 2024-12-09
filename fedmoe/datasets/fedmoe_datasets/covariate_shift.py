@@ -18,11 +18,11 @@ class CovariateShiftDataset(TimeSeriesData):
         # Generate a uniform x_1, x_2, x_3 from 0 to 2pi and cut into total_time_steps
         def func_x1(t_axis: torch.Tensor) -> torch.Tensor:
             return torch.linspace(start=0.0, end=2 * math.pi, steps=self.total_time_steps)
-        
+
         def func_x2(t_axis: torch.Tensor) -> torch.Tensor:
             return torch.linspace(start=0.0, end=2 * math.pi, steps=self.total_time_steps)
-        
-        def func_x3(t_axis: torch.Tensor) -> torch.Tensor:            
+
+        def func_x3(t_axis: torch.Tensor) -> torch.Tensor:
             return torch.sqrt(torch.linspace(start=0.0, end=2 * math.pi, steps=self.total_time_steps))
 
         return MultiDimensionalTimeFunctionInputGenerator([func_x1, func_x2, func_x3], x_dim=3)
@@ -42,7 +42,7 @@ class CovariateShiftDataset(TimeSeriesData):
             x_3 = input_matrix[:, 2]
 
             mixing_weights = self._get_mixing_weight(x_1)
-            y_1_1 = torch.pow(x_1, 2) + torch.sin(x_2) + torch.mul(x_1, x_3) + + 0.5*torch.cos(10*x_1)
+            y_1_1 = torch.pow(x_1, 2) + torch.sin(x_2) + torch.mul(x_1, x_3) + 0.5 * torch.cos(10 * x_1)
             y_1_2 = x_1 + x_2 - torch.sin(x_3)
             return torch.mul(mixing_weights, y_1_1) + torch.mul(1.0 - mixing_weights, y_1_2)
 
@@ -52,7 +52,7 @@ class CovariateShiftDataset(TimeSeriesData):
             x_3 = input_matrix[:, 2]
             mixing_weights = self._get_mixing_weight(x_1)
             y_2_1 = torch.mul(x_1, torch.cos(x_2)) + x_3 - torch.exp(-x_2)
-            y_2_2 = torch.mul(torch.cos(x_1), torch.sin(x_2)) + torch.pow(x_3, 2) + 0.25*torch.cos(10*x_1)
+            y_2_2 = torch.mul(torch.cos(x_1), torch.sin(x_2)) + torch.pow(x_3, 2) + 0.25 * torch.cos(10 * x_1)
             return torch.mul(mixing_weights, y_2_1) + torch.mul(1.0 - mixing_weights, y_2_2)
 
         return MultiDimensionalTargetGenerator([func_y1, func_y2], y_dim=2)
