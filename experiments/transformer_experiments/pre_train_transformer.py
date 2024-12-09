@@ -1,13 +1,14 @@
-from typing import Tuple
-from torch.utils.data import DataLoader
-import random
 import argparse
+import random
+from typing import Tuple
+
 import torch
 import torch.nn as nn
-from fedmoe.models.transformer import TransformerTimeSeriesModel
-from fedmoe.clients.transformer_client import TransformerClient
+from torch.utils.data import DataLoader
 
 from experiments.utils import load_config, load_data
+from fedmoe.clients.transformer_client import TransformerClient
+from fedmoe.models.transformer import TransformerTimeSeriesModel
 
 
 def setup_transformer_structure(x_dim: int, y_dim: int, z_dim: int) -> nn.Module:
