@@ -88,8 +88,8 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                                 ${BATCH_SIZE} \
                                 ${EPOCHS} \
                                 ${LEARNING_RATE} \
-                                ${VENV_PATH} \
-                                ${GAME_T_VALUE}"
+                                ${GAME_T_VALUE}\
+                                ${VENV_PATH} "
                             echo "Running sbatch command ${SBATCH_COMMAND}"
                             sbatch ${SBATCH_COMMAND}
 

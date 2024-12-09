@@ -58,20 +58,21 @@ class Game(ABC):
             return self.current_time - self.sync_freq + game_t
         return game_t
 
-    def get_input(self, t: int, client: Client) -> torch.Tensor:
+    def get_input_matrix(self, game_t: int, client: Client) -> torch.Tensor:
         """
         Maps the time t in the game (between 0 to sync_freq) to the time scale used in the server, current_time, and
-        returns the input (x_t) associated with server time.
+        returns the input matrix (x_t) associated with server time.
+        Input matrix has the shape of (z_dim, z_dim)
         """
-        server_time = self.map_game_time_to_server_time(t, client)
-        return client.get_x(server_time)
+        server_time = self.map_game_time_to_server_time(game_t, client)
+        return client.get_input_matrix(server_time)
 
-    def get_z(self, t: int, client: Client) -> torch.Tensor:
+    def get_z(self, game_t: int, client: Client) -> torch.Tensor:
         """
         Maps the time t in the game (between 0 to sync_freq) to the time scale used in the server, current_time, and
         returns the hidden space value associated with server time.
         """
-        server_time = self.map_game_time_to_server_time(t, client)
+        server_time = self.map_game_time_to_server_time(game_t, client)
         return client.state.get_hidden_state_t(time=server_time)
 
     def get_e_alpha(self, t: int) -> torch.Tensor:

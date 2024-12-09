@@ -10,15 +10,6 @@ class TransformerGame(Game):
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
         super().__init__(clients, sync_freq, z_dim)
 
-    # def get_input(self, game_t: int, client: Client) -> torch.Tensor:
-    #     """
-    #     Maps the time game_t in the game (between 0 to sync_freq) to the time scale used in the server,
-    #     current_time, and returns the input (x_t) associated with server time.
-    #     """
-    #     server_time = self.map_game_time_to_server_time(game_t, client)
-    #     # Assuming that the input shape in transformer is (x_dim, 1)
-    #     return client.get_x(server_time), server_time
-
     def get_hidden_state(self, game_t: int, client: Client) -> torch.Tensor:
         """
         Maps the time game_t in the game (between 0 to sync_freq) to the time scale used in the server,

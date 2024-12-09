@@ -56,8 +56,8 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                         ${ETA_VALUE} \
                         ${CLIENT_T_VALUE} \
                         ${GAME_SYNC} \
-                        ${VENV_PATH}\
-                        ${GAME_T_VALUE}"
+                        ${GAME_T_VALUE}\
+                        ${VENV_PATH}"
                     echo "Running sbatch command ${SBATCH_COMMAND}"
                     sbatch ${SBATCH_COMMAND}
                 done
