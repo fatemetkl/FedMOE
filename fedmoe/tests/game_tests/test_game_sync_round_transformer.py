@@ -14,17 +14,17 @@ Y_DIM = 3  # This is fixed for this data
 T = 3
 NUM_CLIENTS = 2
 GAMMA = 5.0
-check_game_regret_first_sync = 0
-check_game_residual_first_sync = 0
+check_game_regret_first_sync = 1
+check_game_residual_first_sync = 1
 
 
 def test_game_round_server() -> None:
     """
     This test mainly checks that all the game matrices are calculated correctly starting from t = 0 to sync step.
     Also, it checks that residuals and the regret functions are reduced in all the steps after the game is played once.
-    It passes if the game betas and game predictions in the previous steps (before the first sync) are helpful.
-    Note that, the first round of game is not always producing better results than the no game case.
-    This will be alleviated with zero state initialization rather than random initialization.
+    It passes if the game betas and game predictions in the previous steps are helpful.
+    Note that, the first round of game is not always producing better results than the no game case
+        with non-zero state initialization of Y_0.
     """
     torch.manual_seed(12)
     torch.set_default_dtype(torch.float64)

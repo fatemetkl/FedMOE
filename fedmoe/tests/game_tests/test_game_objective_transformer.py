@@ -14,7 +14,6 @@ T = 4
 NUM_CLIENTS = 2
 GAMMA = 1.0
 DO_SYNC = True
-check_first_sync = False
 
 
 def test_game_objective() -> None:
@@ -24,15 +23,6 @@ def test_game_objective() -> None:
     This is done by comparing residuals from the server and the ones created inside the game.
     The main purpose of the test is around visually confirming residual values, that gave the main insight
     to solve a issue which is we should use the latest Y in the game rather than the one previously saved in client.
-    Note that, based on our observation so far, the game usually will not improve the prediction of the
-    first sync round if initial states are randomly initialized. But it will improve the prediction of the second
-    sync round.
-    For example if we are at sync step 4 and predicting 5, prediction with game is not always better for the
-    current step(predicting 5), but it is better for previous steps like t=4, t=3 and so on.
-    However, in the second sync round, the game prediction is always better for the current step,
-    regardless of the initial states.
-    This means when we are at step 8 and predicting 9, the game prediction is always better than
-    the non-game prediction.
     """
     # a lot of the notes are with manual seed 2
     torch.manual_seed(10)
@@ -185,13 +175,6 @@ def test_game_objective() -> None:
             game_residuals.append(game_inner_residual_5)
             step_5_old_residual = game_inner_residual_5
             assert len(no_game_residuals) == len(game_residuals)
-
-            # now do the prediction for next step in the server ( for step 5)
-            game_prediction_5_new = client_manager.get_predictions_with_beta(4, past_T_betas[3])
-            game_residual_5_new = (
-                TARGET_SEQUENCE[5].unsqueeze(1) - torch.matmul(mixture_weights[4].T, game_prediction_5_new).T
-            )
-            game_residual_inner_5_new = torch.pow(torch.linalg.norm(game_residual_5_new), 2.0)
         elif t == 8 and DO_SYNC:
             # Second game round
             past_T_betas_2, game_improved_predictions = server.sync_round(
@@ -306,11 +289,6 @@ def test_game_objective() -> None:
 
         assert game_residual_inner_9_new <= game_inner_residual_9
         print("This is what we get by using game Y_8: step 8 predicting for 9: ", game_residual_inner_9_new)
-
-        # Checking if game prediction is better than no game prediction in the first sync round
-        # Note that this probably will not pass with init random states.
-        if check_first_sync:
-            assert game_residual_inner_5_new <= game_inner_residual_5
 
     else:
         assert len(no_game_residuals) == 9
