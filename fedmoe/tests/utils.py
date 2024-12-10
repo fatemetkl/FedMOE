@@ -160,6 +160,7 @@ def get_transformer_client_manager(
     target_sequence: torch.Tensor | None = None,
     gamma: float = 2.0,
     alpha: float = 1.5,
+    zero_init: bool = False,
 ) -> PreTrainingClientManager:
     # Monkey patch the setup_transformer_structure function to bypass pre-training and just
     # return a simple network in the TransformerClient to make life easier
@@ -170,7 +171,7 @@ def get_transformer_client_manager(
     else:
         TransformerClient.setup_transformer_structure = setup_transformer_structure_patch  # type: ignore
 
-    # y_dim = target_sequence.shape[1]
+    y_dim = target_sequence.shape[1]
 
     client_manager = PreTrainingClientManager(
         num_clients=2,
@@ -186,14 +187,15 @@ def get_transformer_client_manager(
     )
 
     # Patching the initial conditions with random values to make calculations more complex
-    # for client in client_manager.clients:
-    # init_hidden_state_neg1 = torch.rand((y_dim, z_dim))
-    # init_prediction_0 = torch.rand((y_dim, 1))
-    # init_prediction_neg1 = torch.rand((y_dim, 1))
-    # client.state.Z_neg1 = init_hidden_state_neg1
-    # client.state.Y_0 = init_prediction_0
-    # client.state.Y_neg1 = init_prediction_neg1
-    # client.state._predictions[0] = init_prediction_0
+    if not zero_init:
+        for client in client_manager.clients:
+            init_hidden_state_neg1 = torch.rand((y_dim, z_dim))
+            init_prediction_0 = torch.rand((y_dim, 1))
+            init_prediction_neg1 = torch.rand((y_dim, 1))
+            client.state.Z_neg1 = init_hidden_state_neg1
+            client.state.Y_0 = init_prediction_0
+            client.state.Y_neg1 = init_prediction_neg1
+            client.state._predictions[0] = init_prediction_0
 
     return client_manager
 
