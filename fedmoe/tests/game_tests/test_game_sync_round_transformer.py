@@ -14,22 +14,22 @@ Y_DIM = 3  # This is fixed for this data
 T = 3
 NUM_CLIENTS = 2
 GAMMA = 5.0
-check_game_regret = 0
-check_game_residual = 0
+check_game_regret_first_sync = 0
+check_game_residual_first_sync = 0
 
 
 def test_game_round_server() -> None:
     """
-    This test checks that all the game matrices are calculated correctly starting from t = 0 to sync step.
+    This test mainly checks that all the game matrices are calculated correctly starting from t = 0 to sync step.
     Also, it checks that residuals and the regret functions are reduced in all the steps after the game is played once.
-    So, it passes if the game betas and game predictions in the synchronization step
-      as well as previous steps are helpful. This test only passes with all random seeds if initial values are zero.
-      This is because in the first round game struggles to adjust the predictions with bad initialization.
+    It passes if the game betas and game predictions in the previous steps (before the first sync) are helpful.
+    Note that, the first round of game is not always producing better results than the no game case.
+    This will be alleviated with zero state initialization rather than random initialization.
     """
     torch.manual_seed(12)
     torch.set_default_dtype(torch.float64)
 
-    client_manager = get_transformer_client_manager(Z_DIM, gamma=GAMMA, init_zero=False)
+    client_manager = get_transformer_client_manager(Z_DIM, gamma=GAMMA)
     game = TransformerGame(
         client_manager.clients,
         sync_freq=T,
@@ -762,9 +762,9 @@ def test_game_round_server() -> None:
     T_regularizer_c0_game = GAMMA * torch.pow(torch.linalg.norm(beta_game_2[0]), 2.0)
     T_regularizer_c1_game = GAMMA * torch.pow(torch.linalg.norm(beta_game_2[1]), 2.0)
     regret_game = 2 * residual_inner_product_game + T_regularizer_c0_game + T_regularizer_c1_game
-    if check_game_regret:
+    if check_game_regret_first_sync:
         assert regret_no_game >= regret_game
-    if check_game_residual:
+    if check_game_residual_first_sync:
         assert residual_inner_product_no >= residual_inner_product_game
 
     # Now let's see if previous beta optimized in the game is better than the one computed in the server (t=2)
