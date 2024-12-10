@@ -29,7 +29,7 @@ def test_game_round_server() -> None:
     torch.manual_seed(12)
     torch.set_default_dtype(torch.float64)
 
-    client_manager = get_transformer_client_manager(Z_DIM, gamma=GAMMA, zero_init=True)
+    client_manager = get_transformer_client_manager(Z_DIM, gamma=GAMMA, patch_client_state=True)
     game = TransformerGame(
         client_manager.clients,
         sync_freq=T,

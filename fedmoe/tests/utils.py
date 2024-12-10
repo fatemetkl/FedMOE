@@ -160,7 +160,7 @@ def get_transformer_client_manager(
     target_sequence: torch.Tensor | None = None,
     gamma: float = 2.0,
     alpha: float = 1.5,
-    zero_init: bool = False,
+    patch_client_state: bool = False,
 ) -> PreTrainingClientManager:
     # Monkey patch the setup_transformer_structure function to bypass pre-training and just
     # return a simple network in the TransformerClient to make life easier
@@ -187,7 +187,7 @@ def get_transformer_client_manager(
     )
 
     # Patching the initial conditions with random values to make calculations more complex
-    if not zero_init:
+    if not patch_client_state:
         for client in client_manager.clients:
             init_hidden_state_neg1 = torch.rand((y_dim, z_dim))
             init_prediction_0 = torch.rand((y_dim, 1))

@@ -28,7 +28,9 @@ def test_game_objective() -> None:
     torch.manual_seed(10)
     torch.set_default_dtype(torch.float64)
 
-    client_manager = get_transformer_client_manager(Z_DIM, sync_freq=T, gamma=GAMMA, alpha=0.5, zero_init=True)
+    client_manager = get_transformer_client_manager(
+        Z_DIM, sync_freq=T, gamma=GAMMA, alpha=0.5, patch_client_state=True
+    )
 
     client_manager.clients[0].gamma = GAMMA
     client_manager.clients[1].gamma = GAMMA
