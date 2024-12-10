@@ -14,22 +14,22 @@ Y_DIM = 3  # This is fixed for this data
 T = 3
 NUM_CLIENTS = 2
 GAMMA = 5.0
-check_game_regret = 0
-check_game_residual = 1
+check_game_regret_first_sync = 1
+check_game_residual_first_sync = 1
 
 
 def test_game_round_server() -> None:
-    # These all pass with only 12, with other random seeds some of them fail as expected.
-    # This test does not always pass because it is using the old logic of our algorithm where
-    # we used client predictions with game betas.
+    """
+    This test mainly checks that all the game matrices are calculated correctly starting from t = 0 to sync step.
+    Also, it checks that residuals and the regret functions are reduced in all the steps after the game is played once.
+    It passes if the game betas and game predictions in the previous steps are helpful.
+    Note that, the first round of game is not always producing better results than the no game case
+        with non-zero state initialization of Y_0.
+    """
     torch.manual_seed(12)
     torch.set_default_dtype(torch.float64)
 
-    client_manager = get_transformer_client_manager(Z_DIM, gamma=GAMMA)
-
-    client_manager.clients[0].gamma = GAMMA
-    client_manager.clients[1].gamma = GAMMA
-
+    client_manager = get_transformer_client_manager(Z_DIM, gamma=GAMMA, patch_client_state=True)
     game = TransformerGame(
         client_manager.clients,
         sync_freq=T,
@@ -86,9 +86,6 @@ def test_game_round_server() -> None:
     T_regularizer_c1 = GAMMA * torch.pow(torch.linalg.norm(client_manager.clients[1].state.get_beta_t(3)), 2.0)
 
     regret_no_game = 2 * residual_inner_product_no + T_regularizer_c0 + T_regularizer_c1
-    # print(
-    #     "no game betas", client_manager.clients[0].state.get_beta_t(3), client_manager.clients[1].state.get_beta_t(3)
-    # )
 
     # Game needs observed values from zero to T inclusive
     torch.set_default_dtype(torch.float64)
@@ -725,6 +722,11 @@ def test_game_round_server() -> None:
     assert torch.allclose(past_T_betas[1], beta_game_1, rtol=0.0, atol=1e-5)
     assert torch.allclose(past_T_betas[2], beta_game_2, rtol=0.0, atol=1e-5)
 
+    assert torch.allclose(Y_0, past_game_predictions[0], rtol=0.0, atol=1e-5)
+    assert torch.allclose(game_Y_1, past_game_predictions[1], rtol=0.0, atol=1e-5)
+    assert torch.allclose(game_Y_2, past_game_predictions[2], rtol=0.0, atol=1e-5)
+    assert torch.allclose(game_Y_3, past_game_predictions[3], rtol=0.0, atol=1e-5)
+
     # Now we want to see if these new betas are better than the one computed previously on the server.
     beta_game_2 = beta_game_2.reshape(NUM_CLIENTS, Z_DIM, 1)
     # We are at step T = 3, and the result of the game is, beta_2 that we use instead of beta_3
@@ -757,21 +759,19 @@ def test_game_round_server() -> None:
     )
     residual_inner_product_game = torch.pow(torch.linalg.norm(sync_step_residual_game), 2.0)
     # Asserting that the game residual is smaller than the no game residual
-    # Residual inner product no game: 8.375447187956974
-    # Residual inner product game: 8.149154621599711
     T_regularizer_c0_game = GAMMA * torch.pow(torch.linalg.norm(beta_game_2[0]), 2.0)
     T_regularizer_c1_game = GAMMA * torch.pow(torch.linalg.norm(beta_game_2[1]), 2.0)
     regret_game = 2 * residual_inner_product_game + T_regularizer_c0_game + T_regularizer_c1_game
-    if check_game_regret:
-        assert regret_no_game > regret_game
-    if check_game_residual:
-        assert residual_inner_product_no > residual_inner_product_game
+    if check_game_regret_first_sync:
+        assert regret_no_game >= regret_game
+    if check_game_residual_first_sync:
+        assert residual_inner_product_no >= residual_inner_product_game
 
     # Now let's see if previous beta optimized in the game is better than the one computed in the server (t=2)
     beta_game_2 = beta_game_2.reshape(NUM_CLIENTS, Z_DIM, 1)
-    # We assume we are at step t = 2 and we use beta_1 to update the prediction
+    # We assume we are at step t = 2 and we use beta_2 to update the prediction
     # After debugging we found out we need to update previous prediction based on the game
-    client_manager.improve_previous_predictions_from_game(2, past_game_predictions[-2], past_T_betas[-2])
+    client_manager.improve_previous_predictions_from_game(2, past_game_predictions[-2], past_T_betas[-1])
     # client_0
     game_prediction_3_c0 = clients[0].update_prediction_with_beta(2, beta_game_2[0])
     # client_1
@@ -790,8 +790,6 @@ def test_game_round_server() -> None:
         TARGET_SEQUENCE[2].unsqueeze(1) - torch.matmul(mixture_weights[1].T, clients_predictions_step1).T
     )
     residual_inner_step_1_residual_game = torch.pow(torch.linalg.norm(step_1_residual_game), 2.0)
-    # residual_inner_step_1_residual_game tensor(1.8336, grad_fn=<PowBackward0>)
-    # no_game_residuals[1] tensor(2.0699, grad_fn=<PowBackward0>)
     assert no_game_residuals[1] > residual_inner_step_1_residual_game
 
     clients_predictions_step0 = client_manager.get_predictions_with_beta(0, beta_game_0)
@@ -799,18 +797,12 @@ def test_game_round_server() -> None:
         TARGET_SEQUENCE[1].unsqueeze(1) - torch.matmul(mixture_weights[0].T, clients_predictions_step0).T
     )
     residual_inner_step_0_residual_game = torch.pow(torch.linalg.norm(step_0_residual_game), 2.0)
-    # residual_inner_step_1_residual_game tensor(1.8336, grad_fn=<PowBackward0>)
-    # no_game_residuals[1] tensor(2.0699, grad_fn=<PowBackward0>)
     assert no_game_residuals[0] > residual_inner_step_0_residual_game
 
-    # Question: what if I use game_beta_2 and mixture_weights_2 for step 2.
     game_clients_predictions_step3_beta2 = client_manager.get_predictions_with_beta(2, beta_game_2)
     step_2_residual_game = (
         TARGET_SEQUENCE[3].unsqueeze(1) - torch.matmul(mixture_weights[2].T, game_clients_predictions_step3_beta2).T
     )
     residual_inner_step_2_residual_game = torch.pow(torch.linalg.norm(step_2_residual_game), 2.0)
-    # residual_inner_step_2_residual_game tensor(4.4808, grad_fn=<PowBackward0>)
-    # no_game_residuals[2] tensor(4.5550, grad_fn=<PowBackward0>)
-
     # It is better to use previous betas
     assert no_game_residuals[2] > residual_inner_step_2_residual_game

@@ -13,13 +13,13 @@ Y_DIM = 3  # This is fixed for this data
 T = 4
 NUM_CLIENTS = 2
 GAMMA = 1.0
-
 DO_SYNC = True
 
 
 def test_game_objective() -> None:
     """
     This function tests if the betas optimized in nash game are all better, and reduce residual.
+    You can find the main assertions in line 290 which asserts that game residual is less (assert no_game >= in_game).
     This is done by comparing residuals from the server and the ones created inside the game.
     The main purpose of the test is around visually confirming residual values, that gave the main insight
     to solve a issue which is we should use the latest Y in the game rather than the one previously saved in client.
@@ -28,7 +28,9 @@ def test_game_objective() -> None:
     torch.manual_seed(10)
     torch.set_default_dtype(torch.float64)
 
-    client_manager = get_transformer_client_manager(Z_DIM, sync_freq=T, gamma=GAMMA, alpha=0.5)
+    client_manager = get_transformer_client_manager(
+        Z_DIM, sync_freq=T, gamma=GAMMA, alpha=0.5, patch_client_state=True
+    )
 
     client_manager.clients[0].gamma = GAMMA
     client_manager.clients[1].gamma = GAMMA
@@ -175,7 +177,6 @@ def test_game_objective() -> None:
             game_residuals.append(game_inner_residual_5)
             step_5_old_residual = game_inner_residual_5
             assert len(no_game_residuals) == len(game_residuals)
-
         elif t == 8 and DO_SYNC:
             # Second game round
             past_T_betas_2, game_improved_predictions = server.sync_round(
@@ -281,12 +282,14 @@ def test_game_objective() -> None:
                     f"time is 4 (T): step 5 new game residual,{step_5_new_residual}",
                     f"vs old game residual {step_5_old_residual}",
                 )
+
         for time, in_game, no_game in zip(
             range(0, len(game_residuals)), inside_game_predictions_residuals, no_game_residuals
         ):
             assert no_game >= in_game
             print(f"inside game residual {in_game}, time {time} predicting {time+1}")
 
+        assert game_residual_inner_9_new <= game_inner_residual_9
         print("This is what we get by using game Y_8: step 8 predicting for 9: ", game_residual_inner_9_new)
 
     else:
