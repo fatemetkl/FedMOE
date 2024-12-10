@@ -20,6 +20,7 @@ DO_SYNC = True
 def test_game_objective() -> None:
     """
     This function tests if the betas optimized in nash game are all better, and reduce residual.
+    You can find the main assertions in line 290 which asserts that game residual is less (assert no_game >= in_game).
     This is done by comparing residuals from the server and the ones created inside the game.
     The main purpose of the test is around visually confirming residual values, that gave the main insight
     to solve a issue which is we should use the latest Y in the game rather than the one previously saved in client.
@@ -281,12 +282,12 @@ def test_game_objective() -> None:
                     f"time is 4 (T): step 5 new game residual,{step_5_new_residual}",
                     f"vs old game residual {step_5_old_residual}",
                 )
+
         for time, in_game, no_game in zip(
             range(0, len(game_residuals)), inside_game_predictions_residuals, no_game_residuals
         ):
             assert no_game >= in_game
             print(f"inside game residual {in_game}, time {time} predicting {time+1}")
-
         print("This is what we get by using game Y_8: step 8 predicting for 9: ", game_residual_inner_9_new)
 
     else:
