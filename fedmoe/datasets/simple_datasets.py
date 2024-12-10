@@ -8,6 +8,8 @@ from fedmoe.datasets.data_matrix_generator import (
 )
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
+torch.set_default_dtype(torch.float64)
+
 
 class TimeSeriesLinearLine(TimeSeriesData):
     """

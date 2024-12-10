@@ -43,17 +43,28 @@ class TimeSeriesTorchDataset(BaseDataset):
 
 
 class TimeSeriesData:
-
     def __init__(self, total_time_steps: int, input_gen: InputGenerator, target_gen: TargetGenerator) -> None:
         assert total_time_steps > 1, "Error, total_time_step should be positive and greater than one."
         self.total_time_steps = total_time_steps
         self.time_axis = torch.arange(0, self.total_time_steps)
         self.input_gen = input_gen
         self.target_gen = target_gen
-        self.input_matrix = input_gen.generate_input_tensor(self.time_axis)
-        self.target_matrix = target_gen.generate_target_tensor(self.time_axis, self.input_matrix)
+        # Since x_t generates y_{t+1}, we generate for an extra time step and trim the first x and the last y
+        #  -    y_1     y_2     y_3     y_4     y_5
+        # x_0   x_1     x_2     x_3     x_4
+        generation_steps = torch.arange(0, self.total_time_steps + 1)
+        self.input_matrix = input_gen.generate_input_tensor(generation_steps)
+        self.target_matrix = target_gen.generate_target_tensor(generation_steps, self.input_matrix)
+
+        self.input_matrix, self.target_matrix = self._post_process_data_matrices(self.input_matrix, self.target_matrix)
         self.x_dim = self.input_matrix.shape[1]
         self.y_dim = self.target_matrix.shape[1]
+
+    def _post_process_data_matrices(
+        self, input_matrix: torch.Tensor, target_matrix: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        # trim first x and last y
+        return input_matrix[1:, :], target_matrix[:-1, :]
 
     def get_dataloader(self, num_samples: int, batch_size: int, shuffle: bool = False) -> DataLoader:
         """
@@ -64,10 +75,16 @@ class TimeSeriesData:
         # Generate new data samples
         data: List[torch.Tensor] = []
         targets: List[torch.Tensor] = []
-        for sample in range(num_samples):
-            sample_input = self.input_gen.generate_input_tensor(self.time_axis)
+        # Since x_t generates y_{t+1}, we generate for an extra time step and trim the first x and the last y
+        #  -    y_1     y_2     y_3     y_4     y_5
+        # x_0   x_1     x_2     x_3     x_4
+        generation_steps = torch.arange(0, self.total_time_steps + 1)
+        for _ in range(num_samples):
+            sample_input = self.input_gen.generate_input_tensor(generation_steps)
+            sample_target = self.target_gen.generate_target_tensor(generation_steps, sample_input)
+            sample_input, sample_target = self._post_process_data_matrices(sample_input, sample_target)
             data.append(sample_input)
-            targets.append(self.target_gen.generate_target_tensor(self.time_axis, sample_input))
+            targets.append(sample_target)
         # for transformer training, we are interested to predict Y_{t+1} with input x_t
         # Therefore, we should shift the target matrix by one time step to bigger ts.
         last_value = targets[-1]
@@ -151,21 +168,19 @@ class TimeSeriesData:
                 but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
         }
         # Plot target y
-        # it starts from y_1 because we never predict y_0 in the algorithm.
         for i in range(self.target_matrix.shape[1]):
-            # Target matrix is y(t) when generated, to get y(t+1) we need to exclude the last row.
-            plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i+1}", linestyle=":")
+            plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i}", linestyle=":")
 
         # Plot server's prediction
         for i in range(server_matrix.shape[1]):
             plt.plot(
-                self.time_axis, server_matrix[:, i].detach().numpy(), label=f"Server prediction Y{i+1}", linestyle="-"
+                self.time_axis, server_matrix[:, i].detach().numpy(), label=f"Server prediction Y{i}", linestyle="-"
             )
             # Display synchronization steps as points
             if game_played and show_points:
                 T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
                 T_values = [server_matrix[j, i].detach().numpy() for j in T_indices]
-                plt.scatter(T_indices, T_values, marker="o", label=f"T step for prediction Y{i+1}")
+                plt.scatter(T_indices, T_values, marker="o", label=f"T step for prediction Y{i}")
 
         # Display synchronization steps as vertical lines
         if game_played and not show_points:

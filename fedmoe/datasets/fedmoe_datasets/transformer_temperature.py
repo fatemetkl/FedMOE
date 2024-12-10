@@ -8,6 +8,8 @@ import torch
 
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
+torch.set_default_dtype(torch.float64)
+
 
 class InputFeatures(Enum):
     HUFL = "HUFL"
@@ -41,6 +43,21 @@ class TransformerTemperature(TimeSeriesData):
         Constructor for an Electric Transformer temperature time series dataset. Note that this dataset only has one
         target, the oil temperature of the transformer. It corresponds to column OT in the csv file and is therefore
         hardcoded here.
+
+        NOTE: By convention, at time step t, we are making predictions for y_{t+1} using x_t. So x_t can encode
+        target values before or AT time t. As such, lags of 0 for input creation are perfectly valid for both
+        input_lags and target_lags.
+
+        For example: With the target of OT and inputs is [MUFL] with lags of [0, 1] for both input and target then the
+        tensors look like
+        Y = [OT_t,         OT_{t+1},  OT_{t+2},  ..., OT_n]^T
+
+        X = [[OT_t,          OT_{t+1},       OT_{t+2},      ...,    OT_n],
+             [OT_{t-1},      OT_t,           OT_{t+1},      ...,    OT_{n-1}],
+             [MUFL_t,        MUFL_{t+1},     MUFL_{t+2},    ...,    MUFL_n],
+             [MUFL_{t-1},    MUFL_t,         MUFL_{t+1},    ...,    MUFL_{n-1}]]^T
+
+        In this setup, X[0, :] = [OT_t, OT_{t-1}, MUFL_t, MUFL_{t-1}] would be used to predict Y[1] = OT_{t+1}
 
         Args:
             inputs (List[InputFeatures]): These are the features in the dataset to use to help make predictions.
