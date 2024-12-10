@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 
+torch.set_default_dtype(torch.float64)
+
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
 
@@ -44,6 +46,20 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
     ) -> None:
         """
         Constructor for a Bank of Canada Exchange Rate time series dataset.
+        NOTE: By convention, at time step t, we are making predictions for y_{t+1} using x_t. So x_t can encode
+        currency exchange rates before or AT time t. As such, lags of 0 for input creation are perfectly valid
+        for both input_lags and target_lags.
+
+        For example: If targets is [USD] and inputs is [AUD] with lags of [0, 1] for both input and target then the
+        tensors look like
+        Y = [USD_t,         USD_{t+1},  USD_{t+2},  ..., USD_n]^T
+
+        X = [[USD_t,        USD_{t+1},  USD_{t+2},  ..., USD_n],
+             [USD_{t-1},    USD_t,      USD_{t+1},  ..., USD_{n-1}],
+             [AUD_t,        AUD_{t+1},  AUD_{t+2},  ...,  AUD_n],
+             [AUD_{t-1},    AUD_t,      AUD_{t+1},  ..., AUD_{n-1}]]^T
+
+        In this setup, X[0, :] = [USD_t, USD_{t-1}, AUD_t, AUD_{t-1}] would be used to predict Y[1] = USD_{t+1}
 
         Args:
             inputs (List[ExchangeRates]): These are the currencies in the dataset to use to help make predictions.

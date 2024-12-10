@@ -10,6 +10,8 @@ from fedmoe.datasets.data_matrix_generator import (
 from fedmoe.datasets.fedmoe_datasets.brownian_motion import BrownianMotionDataset
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
+torch.set_default_dtype(torch.float64)
+
 
 def get_brownian_sequences_fixed_mu_sigma(
     total_time_steps: int,
@@ -92,9 +94,11 @@ class TimeSeriesBrownianTarget(TimeSeriesData):
         return MultiDimensionalTimeFunctionInputGenerator([func_x1], x_dim=1)
 
     def initiate_target_generator(self) -> MultiDimensionalTargetGenerator:
-        #  Output is a Brownian motion with 'n_brownian_trajectories' trajectories.
+        # Output is a Brownian motion with 'n_brownian_trajectories' trajectories.
+        # NOTE that we generate an extra time step to account for x_t generating y_{t+1}. See documentation in
+        # TimeSeriesData for more information
         brownian_matrix = get_brownian_sequences_fixed_mu_sigma(
-            self.total_time_steps, self.n_brownian_trajectories, self.mu, self.sigma, self.offset
+            self.total_time_steps + 1, self.n_brownian_trajectories, self.mu, self.sigma, self.offset
         )
         function_list: List[Callable[[torch.Tensor, torch.Tensor], torch.Tensor]] = []
         for trajectory_idx in range(self.n_brownian_trajectories):
@@ -147,8 +151,10 @@ class BrownianSequenceAddition(TimeSeriesData):
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
         function_list: List[Callable[[torch.Tensor], torch.Tensor]] = []
+        # NOTE that we generate an extra time step to account for x_t generating y_{t+1}. See documentation in
+        # TimeSeriesData for more information
         brownian_matrix = get_brownian_sequences_fixed_mu_sigma(
-            self.total_time_steps, self.n_brownian_trajectories, self.mu, self.sigma, self.offset
+            self.total_time_steps + 1, self.n_brownian_trajectories, self.mu, self.sigma, self.offset
         )
 
         # Example: x1: [0.0, 0.1, 0.2, ....]

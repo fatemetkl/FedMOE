@@ -5,6 +5,8 @@ import torch
 
 from fedmoe.utils.typing import InputGenerationFunction, TargetGenerationFunction
 
+torch.set_default_dtype(torch.float64)
+
 
 class InputGenerator(ABC):
     @abstractmethod
@@ -71,5 +73,5 @@ class MultiDimensionalTargetGenerator(TargetGenerator):
         assert target_matrix.shape == (
             time_axis.shape[0],
             self.y_dim,
-        ), f"Error: input matrix's shape is {target_matrix.shape}"
+        ), f"Error: target matrix's shape is {target_matrix.shape}"
         return target_matrix

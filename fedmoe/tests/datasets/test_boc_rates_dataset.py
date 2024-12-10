@@ -3,7 +3,52 @@ from datetime import datetime
 import pytest
 import torch
 
+torch.set_default_dtype(torch.float64)
+
 from fedmoe.datasets.fedmoe_datasets.boc_rates import BankOfCanadaExchangeRates, ExchangeRates
+
+
+def test_zero_lag_for_target_and_input() -> None:
+    # Recreating the dataset from the documentation of the boc_rates dataset. USD target, AUD input
+    inputs = [ExchangeRates.AUD_CLOSE]
+    targets = [ExchangeRates.USD_CLOSE]
+    input_lag = [0, 1]
+    target_lag = [0, 1]
+    start_date = datetime(2007, 5, 10)
+    end_date = datetime(2007, 5, 20)
+    dataset = BankOfCanadaExchangeRates(
+        inputs=inputs,
+        targets=targets,
+        input_lags=input_lag,
+        target_lags=target_lag,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    # One target with 2 lags, one input with two lags
+    assert dataset.input_matrix.shape == (11, 4)
+    assert dataset.target_matrix.shape == (11, 1)
+
+    target_input_tensor = torch.tensor(
+        [
+            [0.9200, 0.9200, 1.1112, 1.1055],
+            [0.9200, 0.9200, 1.1122, 1.1112],
+            [0.9200, 0.9200, 1.1122, 1.1122],
+            [0.9200, 0.9200, 1.1122, 1.1122],
+            [0.9200, 0.9200, 1.1070, 1.1122],
+            [0.9200, 0.9200, 1.0988, 1.1070],
+            [0.9100, 0.9200, 1.1039, 1.0988],
+            [0.9100, 0.9100, 1.0987, 1.1039],
+            [0.9000, 0.9100, 1.0895, 1.0987],
+            [0.9000, 0.9000, 1.0895, 1.0895],
+            [0.9000, 0.9000, 1.0895, 1.0895],
+        ]
+    )
+    target_target_tensor = torch.tensor(
+        [[1.1112], [1.1122], [1.1122], [1.1122], [1.1070], [1.0988], [1.1039], [1.0987], [1.0895], [1.0895], [1.0895]]
+    )
+    assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
+    assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
 
 
 def test_one_input_one_target() -> None:
@@ -37,10 +82,10 @@ def test_one_input_one_target() -> None:
             [0.9000, 1.0895],
             [0.9000, 1.0895],
         ]
-    ).double()
+    )
     target_target_tensor = torch.tensor(
         [[1.1112], [1.1122], [1.1122], [1.1122], [1.1070], [1.0988], [1.1039], [1.0987], [1.0895], [1.0895], [1.0895]]
-    ).double()
+    )
     assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
     assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
 
@@ -80,7 +125,7 @@ def test_two_inputs_two_targets_with_lag() -> None:
             [0.9000, 0.2000, 0.9100, 0.2000, 2.1519, 1.0895, 2.1692, 1.0987],
             [0.9000, 0.2000, 0.9000, 0.2000, 2.1519, 1.0895, 2.1519, 1.0895],
         ],
-    ).double()
+    )
     target_target_tensor = torch.tensor(
         [
             [2.1997, 1.1112],
@@ -95,7 +140,7 @@ def test_two_inputs_two_targets_with_lag() -> None:
             [2.1519, 1.0895],
             [2.1519, 1.0895],
         ]
-    ).double()
+    )
     assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
     assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
 
@@ -134,7 +179,7 @@ def test_two_inputs_two_targets_beyond_min_start() -> None:
             [0.9200, 0.2000, 0.9100, 0.2000, 2.1976, 1.1047, 2.1957, 1.1018],
             [0.9200, 0.2000, 0.9200, 0.2000, 2.2038, 1.1055, 2.1976, 1.1047],
         ]
-    ).double()
+    )
     target_target_tensor = torch.tensor(
         [
             [2.2199, 1.1105],
@@ -148,7 +193,7 @@ def test_two_inputs_two_targets_beyond_min_start() -> None:
             [2.2038, 1.1055],
             [2.1997, 1.1112],
         ]
-    ).double()
+    )
     assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
     assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
 
@@ -234,7 +279,7 @@ def test_two_inputs_no_target_lag() -> None:
                 0.2000,
             ],
         ]
-    ).double()
+    )
     target_target_tensor = torch.tensor(
         [
             [2.2199, 1.1105],
@@ -248,7 +293,7 @@ def test_two_inputs_no_target_lag() -> None:
             [2.2038, 1.1055],
             [2.1997, 1.1112],
         ]
-    ).double()
+    )
     assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
     assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
 
