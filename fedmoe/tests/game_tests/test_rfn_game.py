@@ -15,7 +15,9 @@ def test_rfn_game_metric() -> None:
     sigma = torch.Tensor([[0.01]])
     sync_freq = 2
     game_back_steps = 3
-    client_manager = get_rfn_client_manager_dy_dx_1(alpha, gamma, sigma, z_dim, sync_freq=game_back_steps)
+    client_manager = get_rfn_client_manager_dy_dx_1(
+        alpha, gamma, sigma, z_dim, sync_freq=game_back_steps, patch_client_state=True
+    )
     game = RfnGame(client_manager.clients, sync_freq=game_back_steps, z_dim=z_dim)
     server = Server(
         total_game_steps=game_back_steps,
@@ -28,7 +30,9 @@ def test_rfn_game_metric() -> None:
     )
     game_metric_value = server.fit(num_rounds=8, have_sync=True)
     # Restarting client states
-    client_manager = get_rfn_client_manager_dy_dx_1(alpha, gamma, sigma, z_dim, sync_freq=game_back_steps)
+    client_manager = get_rfn_client_manager_dy_dx_1(
+        alpha, gamma, sigma, z_dim, sync_freq=game_back_steps, patch_client_state=True
+    )
     game = RfnGame(client_manager.clients, sync_freq=game_back_steps, z_dim=z_dim)
     server = Server(
         total_game_steps=game_back_steps,

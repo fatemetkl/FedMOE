@@ -83,17 +83,18 @@ class TimeSeriesData:
             sample_input = self.input_gen.generate_input_tensor(generation_steps)
             sample_target = self.target_gen.generate_target_tensor(generation_steps, sample_input)
             sample_input, sample_target = self._post_process_data_matrices(sample_input, sample_target)
+            # for transformer training, we are interested to predict Y_{t+1} with input x_t, but transformer
+            # datasets align input to desired output i.e.
+            # y_1   y_2     y_3     y_4
+            # x_0   x_1     x_2     x_3
+            # Therefore, we should shift the target matrix by one time step to bigger ts and we need to trim the final
+            # x to make them the same size
+            sample_input = sample_input[:-1, :]
+            sample_target = sample_target[1:, :]
             data.append(sample_input)
             targets.append(sample_target)
-        # for transformer training, we are interested to predict Y_{t+1} with input x_t
-        # Therefore, we should shift the target matrix by one time step to bigger ts.
-        last_value = targets[-1]
-        # Append the last_value to the end of the target sequence.
-        # This is to make sure that the length of target sequence is equal to the
-        # length of the input sequence (in terms of time steps).
-        shifted_target = targets[1:]
-        shifted_target.append(last_value)
-        dataset: BaseDataset = TimeSeriesTorchDataset(data, shifted_target)
+        # every input and output in our dataloader has the shape (self.total_time_steps - 1 , x_dim/y_dim)
+        dataset: BaseDataset = TimeSeriesTorchDataset(data, targets)
 
         data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
         # Each item (input or output) in the data_loader will have a shape of (batch_size, time_steps, dim)

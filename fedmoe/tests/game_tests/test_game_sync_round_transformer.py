@@ -2,9 +2,14 @@ import math
 
 import torch
 
+from fedmoe.clients.transformer_client import TransformerClient
 from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
-from fedmoe.tests.utils import get_data_and_target_sequences, get_transformer_client_manager
+from fedmoe.tests.utils import (
+    get_data_and_target_sequences,
+    get_transformer_client_manager,
+    setup_transformer_structure_patch,
+)
 
 torch.set_default_dtype(torch.float64)
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
@@ -18,7 +23,7 @@ check_game_regret_first_sync = 1
 check_game_residual_first_sync = 1
 
 
-def test_game_round_server() -> None:
+def test_game_round_server(monkeypatch) -> None:
     """
     This test mainly checks that all the game matrices are calculated correctly starting from t = 0 to sync step.
     Also, it checks that residuals and the regret functions are reduced in all the steps after the game is played once.
@@ -29,7 +34,9 @@ def test_game_round_server() -> None:
     torch.manual_seed(12)
     torch.set_default_dtype(torch.float64)
 
-    client_manager = get_transformer_client_manager(Z_DIM, gamma=GAMMA, patch_client_state=True)
+    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
+    client_manager = get_transformer_client_manager(Z_DIM, gamma=GAMMA)
+
     game = TransformerGame(
         client_manager.clients,
         sync_freq=T,

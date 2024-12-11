@@ -3,7 +3,14 @@ import math
 import torch
 
 from fedmoe.clients.client import Client
-from fedmoe.tests.utils import get_data_and_target_sequences, get_transformer_client_manager
+from fedmoe.clients.transformer_client import TransformerClient
+from fedmoe.tests.utils import (
+    get_data_and_target_sequences,
+    get_transformer_client_manager,
+    setup_transformer_structure_patch,
+)
+
+torch.set_default_dtype(torch.float64)
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 Z_DIM = 5
@@ -18,9 +25,9 @@ def compute_objective(client: Client, beta: torch.Tensor, alpha: float, gamma: f
     Y_3 = client.state.get_prediction_t(t - 1)
     Y_2 = client.state.get_prediction_t(t - 2)
     Y_1 = client.state.get_prediction_t(t - 3)
-    Z_3 = client.state.get_hidden_state_t(t - 1).double()
-    Z_2 = client.state.get_hidden_state_t(t - 2).double()
-    Z_1 = client.state.get_hidden_state_t(t - 3).double()
+    Z_3 = client.state.get_hidden_state_t(t - 1)
+    Z_2 = client.state.get_hidden_state_t(t - 2)
+    Z_1 = client.state.get_hidden_state_t(t - 3)
     first_summand = torch.pow(torch.linalg.norm((y_4 - Y_3) - torch.matmul(Z_3, beta)), 2.0)
     second_summand = torch.pow(torch.linalg.norm((y_3 - Y_2) - torch.matmul(Z_2, beta)), 2.0)
     third_summand = torch.pow(torch.linalg.norm((y_2 - Y_1) - torch.matmul(Z_1, beta)), 2.0)
@@ -28,17 +35,18 @@ def compute_objective(client: Client, beta: torch.Tensor, alpha: float, gamma: f
     return first_summand + discount_1 * second_summand + discount_2 * third_summand + gamma * regularizer
 
 
-def test_client_side_optimization() -> None:
+def test_client_side_optimization(monkeypatch) -> None:
     # Fixing seed for reproducible sampling trajectory
     torch.manual_seed(42)
     alpha = 1.5
     gamma = 2.0
 
-    client_manager = get_transformer_client_manager(Z_DIM, sync_freq=3)
+    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
+    client_manager = get_transformer_client_manager(Z_DIM, sync_freq=3, patch_client_state=True)
 
     # Making prediction for t=1
     t = 0
-    # Temporarily bumping the time to make everything, will reset after.
+    # Temporarily bumping the time to make everything work properly, will reset after.
     for client in client_manager.clients:
         client.state.next_time_step(t)
     # grab y_0
@@ -56,9 +64,9 @@ def test_client_side_optimization() -> None:
     assert torch.allclose(client_0_y_t, y_t_target, rtol=0.0, atol=1e-5)
 
     # Manually perform ridge regression solution
-    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(Z_DIM, dtype=torch.double)
+    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(Z_DIM)
     b = torch.matmul(X_t_target.T, y_t_target)
-    client_0_beta_target = torch.linalg.solve(A.double(), b.double())
+    client_0_beta_target = torch.linalg.solve(A, b)
     client_0_beta = client_0.optimize_beta(t)
     assert torch.allclose(client_0_beta, client_0_beta_target, rtol=0.0, atol=1e-5)
 
@@ -66,9 +74,7 @@ def test_client_side_optimization() -> None:
     # Set seed to freeze random state generation
     torch.manual_seed(42)
     client_0_hidden_state_t1 = client_0.feed_encoder(DATA_SEQUENCE[t].reshape(-1, 1))
-    client_0_preds_target_t1 = client_0.state.Y_0 + torch.matmul(
-        client_0_hidden_state_t1.double(), client_0_beta_target
-    )
+    client_0_preds_target_t1 = client_0.state.Y_0 + torch.matmul(client_0_hidden_state_t1, client_0_beta_target)
     # Set seed to reproduce random state generation from above.
     torch.manual_seed(42)
     _, _, client_0_preds = client_0.predict(t)
@@ -87,11 +93,11 @@ def test_client_side_optimization() -> None:
     for client in client_manager.clients:
         client.state._current_time -= 1
     predictions = client_manager.fit_clients(t)
-    assert torch.allclose(predictions[:, 0], client_0_preds_target_t1.squeeze())
+    assert torch.allclose(predictions[0, :], client_0_preds_target_t1.squeeze())
 
     # Making prediction for t=2
     t = 1
-    # Temporarily bumping the time to make everything, will reset after.
+    # Temporarily bumping the time to make everything work, will reset after.
     for client in client_manager.clients:
         client.state.next_time_step(t)
 
@@ -114,9 +120,9 @@ def test_client_side_optimization() -> None:
     assert torch.allclose(client_0_y_t, y_t_target, rtol=0.0, atol=1e-5)
 
     # Manually perform ridge regression solution
-    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(Z_DIM, dtype=torch.double)
-    b = torch.matmul(X_t_target.T.double(), y_t_target.double())
-    client_0_beta_target = torch.linalg.solve(A.double(), b.double())
+    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(Z_DIM)
+    b = torch.matmul(X_t_target.T, y_t_target)
+    client_0_beta_target = torch.linalg.solve(A, b)
     client_0_beta = client_0.optimize_beta(t)
     assert torch.allclose(client_0_beta, client_0_beta_target, rtol=0.0, atol=1e-5)
 
@@ -125,7 +131,7 @@ def test_client_side_optimization() -> None:
     torch.manual_seed(42)
     client_0_hidden_state_t2 = client_0.feed_encoder(DATA_SEQUENCE[t].reshape(-1, 1))
     # client_0_preds has the t=1 predictions from previous round
-    client_0_preds_target_t2 = client_0_preds + torch.matmul(client_0_hidden_state_t2.double(), client_0_beta_target)
+    client_0_preds_target_t2 = client_0_preds + torch.matmul(client_0_hidden_state_t2, client_0_beta_target)
     # Set seed to reproduce random state generation from above.
     torch.manual_seed(42)
     _, _, client_0_preds = client_0.predict(t)
@@ -144,14 +150,14 @@ def test_client_side_optimization() -> None:
     for client in client_manager.clients:
         client.state._current_time -= 1
     predictions = client_manager.fit_clients(t)
-    assert torch.allclose(predictions[:, 0], client_0_preds_target_t2.squeeze())
+    assert torch.allclose(predictions[0, :], client_0_preds_target_t2.squeeze())
 
     # t = 4 (We want to make sure we're looking back the way we should )
     for t in [2, 3]:
         client_manager.fit_clients(t)
     # predicting for t=4
     t = 4
-    # Temporarily bumping the time to make everything, will reset after.
+    # Temporarily bumping the time to make everything work, will reset after.
     for client in client_manager.clients:
         client.state.next_time_step(t)
     # grab y_4
@@ -184,9 +190,9 @@ def test_client_side_optimization() -> None:
     assert torch.allclose(client_0_y_t, y_t_target, rtol=0.0, atol=1e-5)
 
     # Manually perform ridge regression solution
-    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(Z_DIM, dtype=torch.double)
-    b = torch.matmul(X_t_target.T.double(), y_t_target.double())
-    client_0_beta_target = torch.linalg.solve(A.double(), b.double())
+    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(Z_DIM)
+    b = torch.matmul(X_t_target.T, y_t_target)
+    client_0_beta_target = torch.linalg.solve(A, b)
     client_0_beta = client_0.optimize_beta(t)
     assert torch.allclose(client_0_beta, client_0_beta_target, rtol=0.0, atol=1e-5)
 
@@ -196,7 +202,7 @@ def test_client_side_optimization() -> None:
     client_0_hidden_state_t5 = client_0.feed_encoder(DATA_SEQUENCE[t].reshape(-1, 1))
     # client_0_preds has the t=1 predictions from previous round
     client_0_preds_target_t5 = client_0.state.get_prediction_t(t) + torch.matmul(
-        client_0_hidden_state_t5.double(), client_0_beta_target
+        client_0_hidden_state_t5, client_0_beta_target
     )
     # Set seed to reproduce random state generation from above.
     torch.manual_seed(42)
@@ -216,12 +222,12 @@ def test_client_side_optimization() -> None:
     for client in client_manager.clients:
         client.state._current_time -= 1
     predictions = client_manager.fit_clients(t)
-    assert torch.allclose(predictions[:, 0], client_0_preds_target_t5.squeeze())
+    assert torch.allclose(predictions[0, :], client_0_preds_target_t5.squeeze())
 
     # Ensure that beta is minimal for objective function
     opt_sum = compute_objective(client_0, client_0_beta, alpha, gamma, t)
     # test whether any randomly drawn betas are better
     for i in range(100000):
-        test_beta = torch.randn((Z_DIM, 1)).double()
+        test_beta = torch.randn((Z_DIM, 1))
         test_sum = compute_objective(client_0, test_beta, alpha, gamma, t)
         assert test_sum > opt_sum, f"opt sum: {opt_sum}, test_sum: {test_sum}, test_beta: {test_beta}"

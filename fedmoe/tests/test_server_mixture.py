@@ -5,12 +5,14 @@ from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_data_and_target_sequences, get_rfn_client_manager, get_rfn_client_manager_dy_dx_1
 
+torch.set_default_dtype(torch.float64)
+
 
 def compute_objective(
     w_star: torch.Tensor, predictions: torch.Tensor, targets: torch.Tensor, kappa: float
 ) -> torch.Tensor:
-    assert torch.allclose(torch.sum(w_star), torch.Tensor([1.0]).double(), rtol=0.0, atol=1e-5)
-    residual = targets - torch.matmul(predictions.double(), w_star.double())
+    assert torch.allclose(torch.sum(w_star), torch.Tensor([1.0]), rtol=0.0, atol=1e-5)
+    residual = targets - torch.matmul(predictions, w_star)
     residual_inner_product = torch.pow(torch.linalg.norm(residual), 2.0)
     regularizer = kappa * torch.pow(torch.linalg.norm(w_star), 2.0)
     return residual_inner_product + regularizer
@@ -25,7 +27,7 @@ def test_server_optimization() -> None:
     eta = 1
     N = 3
 
-    client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim, N)
+    client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim, N, patch_client_state=True)
     game = RfnGame(client_manager.clients, 3, z_dim)
 
     server = Server(total_game_steps=3, client_manager=client_manager, game=game, metrics=[], kappa=kappa, eta=eta)
@@ -52,16 +54,16 @@ def test_server_optimization() -> None:
     denominator = torch.matmul(one_N.T, torch.matmul(A_inv, one_N))
     fraction = numerator / denominator
     rhs = b - fraction * one_N
-    w_star_target = torch.matmul(A_inv, rhs).double()
+    w_star_target = torch.matmul(A_inv, rhs)
 
-    w_star = server.compute_mixture_weights(predictions, y_t).double()
+    w_star = server.compute_mixture_weights(predictions, y_t)
     assert torch.allclose(w_star, w_star_target, rtol=0.0, atol=1e-6)
 
     # Test whether w_star is the minimizer
     opt_sum = compute_objective(w_star, predictions, y_t, kappa)
     # test whether any randomly drawn weights are better
     for i in range(100000):
-        test_w = torch.randn((N, 1)).double()
+        test_w = torch.randn((N, 1))
         # Normalize to fit constraint
         test_w = eta * test_w / torch.sum(test_w)
         test_sum = compute_objective(test_w, predictions, y_t, kappa)
@@ -79,7 +81,7 @@ def test_server_mixture_weights_in_flow() -> None:
 
     _, target_sequence = get_data_and_target_sequences()
 
-    client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim, N)
+    client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim, N, patch_client_state=True)
     game = RfnGame(client_manager.clients, 3, z_dim)
 
     server = Server(
@@ -103,10 +105,10 @@ def test_server_mixture_weights_in_flow() -> None:
     # Server should have mixture weights calculated for t=0, 1, ..., 4
     assert len(server.mixture_weights) == 5
     assert torch.allclose(
-        server.mixture_weights[1], torch.Tensor([[0.0773], [0.0724], [0.8503]]).double(), rtol=0.0, atol=1e-3
+        server.mixture_weights[1], torch.Tensor([[0.6291], [-0.0511], [0.4219]]), rtol=0.0, atol=1e-3
     )
     assert torch.allclose(
-        server.mixture_weights[4], torch.Tensor([[-0.5346], [0.6333], [0.9014]]).double(), rtol=0.0, atol=1e-3
+        server.mixture_weights[4], torch.Tensor([[0.3101], [-0.0710], [0.7609]]), rtol=0.0, atol=1e-3
     )
 
     # Clients should have been asked to provide predictions for t=1,..., 5, along with the a priori initialized
@@ -127,9 +129,7 @@ def test_server_mixture_weights_in_flow() -> None:
     for client_preds, weights, server_output in zip(
         server.clients_predictions[1:], server.mixture_weights, server.server_outputs[1:]
     ):
-        assert torch.allclose(
-            torch.matmul(client_preds.double(), weights.double()), server_output.double(), rtol=0.0, atol=1e-6
-        )
+        assert torch.allclose(torch.matmul(weights.T, client_preds).T, server_output, rtol=0.0, atol=1e-6)
 
 
 def test_full_flow_with_dy_dx_one() -> None:
@@ -141,7 +141,7 @@ def test_full_flow_with_dy_dx_one() -> None:
     N = 3
 
     client_manager = get_rfn_client_manager_dy_dx_1(
-        alpha, gamma, sigma=torch.Tensor([[0.1]]), z_dim=z_dim, num_clients=N
+        alpha, gamma, sigma=torch.Tensor([[0.1]]), z_dim=z_dim, num_clients=N, patch_client_state=True
     )
     game = RfnGame(client_manager.clients, 3, z_dim)
 

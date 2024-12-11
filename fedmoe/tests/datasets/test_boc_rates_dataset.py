@@ -3,9 +3,9 @@ from datetime import datetime
 import pytest
 import torch
 
-torch.set_default_dtype(torch.float64)
-
 from fedmoe.datasets.fedmoe_datasets.boc_rates import BankOfCanadaExchangeRates, ExchangeRates
+
+torch.set_default_dtype(torch.float64)
 
 
 def test_zero_lag_for_target_and_input() -> None:

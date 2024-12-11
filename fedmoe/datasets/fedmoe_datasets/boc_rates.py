@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import torch
 
-torch.set_default_dtype(torch.float64)
-
 from fedmoe.datasets.time_series_data import TimeSeriesData
+
+torch.set_default_dtype(torch.float64)
 
 
 class ExchangeRates(Enum):

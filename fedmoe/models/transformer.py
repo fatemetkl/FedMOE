@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+torch.set_default_dtype(torch.float64)
+
 
 class TransformerTimeSeriesModel(nn.Module):
     def __init__(
@@ -18,7 +20,7 @@ class TransformerTimeSeriesModel(nn.Module):
         self.output_dim = output_dim
 
         # Input projection
-        self.input_projection = nn.Linear(input_dim, output_dim * hidden_dim).double()
+        self.input_projection = nn.Linear(input_dim, output_dim * hidden_dim)
 
         self.positional_encoding = nn.Parameter(
             torch.zeros(1, max_seq_len, output_dim * hidden_dim)
@@ -31,23 +33,21 @@ class TransformerTimeSeriesModel(nn.Module):
             dropout=self.dropout,
             dim_feedforward=dim_feedforward,
             batch_first=True,
-        ).double()
+        )
 
-        self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=num_encoder_layers).double()
+        self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer, num_layers=num_encoder_layers)
 
         # Output projection for pre-training
-        self.linear = nn.Linear(output_dim * hidden_dim, output_dim).double()
+        self.linear = nn.Linear(output_dim * hidden_dim, output_dim)
 
     def forward(
         self,
         x_t: torch.Tensor,
-        attention_mask: torch.Tensor | None = None,
         pre_training: bool = False,
     ) -> torch.Tensor:
         """
         Args:
         - x_t: Input tensor of shape (batch_size, seq_len, input_dim).
-        - attention_mask: Causal mask or padding mask of shape (seq_len, seq_len) or None during inference.
         - pre_training: Whether the model is in pre-training mode (next-step prediction).
 
         """
@@ -55,15 +55,14 @@ class TransformerTimeSeriesModel(nn.Module):
         seq_len = x_t.size(1)
         x_t = x_t + self.positional_encoding[:, :seq_len]  # Add positional encoding
 
+        causal_mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1)
         # Transformer encoder
-        encoder_output = self.transformer_encoder(x_t, mask=attention_mask)
+        encoder_output = self.transformer_encoder(x_t, mask=causal_mask, is_causal=True)
 
         # Output projection during pre-training
         if pre_training:
-
             output = self.linear(encoder_output)  # Predict next value
         else:
-
             output = encoder_output  # Return encoder outputs for downstream tasks
 
         return output
@@ -87,12 +86,12 @@ class TransformerTimeSeriesModel(nn.Module):
 #             dropout=self.dropout,
 #             dim_feedforward=dim_feedforward,
 #             batch_first=True,
-#         ).double()
+#         )
 #         self.transformer_encoder = nn.TransformerEncoder(self.encoder_layer,
-#  num_layers=num_encoder_layers).double()
-#         self.linear = nn.Linear(output_dim * hidden_dim, output_dim).double()
+#  num_layers=num_encoder_layers)
+#         self.linear = nn.Linear(output_dim * hidden_dim, output_dim)
 
-#         self.input_projection = nn.Linear(input_dim, output_dim*hidden_dim).double()
+#         self.input_projection = nn.Linear(input_dim, output_dim*hidden_dim)
 #         # self.positional_encoding = nn.Parameter(torch.zeros(1, 15, output_dim * hidden_dim))
 
 #     def forward(self, x_t: torch.Tensor,  attention_mask=None, pre_training: bool = False) -> torch.Tensor:

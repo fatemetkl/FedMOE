@@ -2,21 +2,29 @@ import torch
 import torch.nn as nn
 
 from fedmoe.clients.transformer_client import TransformerClient
-from fedmoe.tests.utils import get_data_and_target_sequences, get_transformer_client_manager
+from fedmoe.tests.utils import (
+    TransformerTestModel,
+    get_data_and_target_sequences,
+    get_transformer_client_manager,
+    setup_transformer_structure_patch,
+)
+
+torch.set_default_dtype(torch.float64)
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 Z_DIM = 5
 
 
-def test_transformer_client_prediction_process() -> None:
+def test_transformer_client_prediction_process(monkeypatch) -> None:
 
     # Fixing seed for reproducible sampling trajectory
     torch.manual_seed(42)
 
-    client_manager = get_transformer_client_manager(Z_DIM)
+    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
+    client_manager = get_transformer_client_manager(Z_DIM, patch_client_state=True)
 
-    # Transforms in the linear model (fixed by the random seed)
-    linear_1 = torch.Tensor([[0.5406, 0.5869], [-0.1657, 0.6496], [-0.1549, 0.1427], [-0.3443, 0.4153]]).double()
+    # Transforms in the linear model. We'll inject them here
+    linear_1 = torch.Tensor([[0.5406, 0.5869], [-0.1657, 0.6496], [-0.1549, 0.1427], [-0.3443, 0.4153]])
     linear_2 = torch.Tensor(
         [
             [0.4408, -0.3668, 0.4346, 0.0936],
@@ -35,14 +43,22 @@ def test_transformer_client_prediction_process() -> None:
             [0.0315, -0.3413, 0.1542, -0.1722],
             [0.1532, -0.1042, 0.4147, -0.2964],
         ]
-    ).double()
+    )
+
+    # Force model weights to match
+    for client in client_manager.clients:
+        encoder = client.encoder
+        assert isinstance(encoder, TransformerTestModel)
+        with torch.no_grad():
+            encoder.linear_1.weight.copy_(linear_1)
+            encoder.linear_2.weight.copy_(linear_2)
 
     # Making prediction for t=1
     t = 0
     predictions = client_manager.fit_clients(t)
-    assert predictions.shape == (3, 2)
+    assert predictions.shape == (2, 3)
 
-    beta_0 = torch.Tensor([[0.0050], [0.0757], [-0.1199], [-0.0651], [-0.1122]]).double()
+    beta_0 = torch.tensor([[-0.1090], [-0.0688], [-0.0401], [0.0063], [-0.0909]])
     client_0 = client_manager.clients[0]
     client_0_encoder = client_0.encoder
     assert isinstance(client_0_encoder, nn.Module)
@@ -51,21 +67,21 @@ def test_transformer_client_prediction_process() -> None:
 
     beta_0_target = client_0.state.get_beta_t(t)
     assert torch.allclose(beta_0, beta_0_target, rtol=0.0, atol=1e-3)
-    x_0_matrix = DATA_SEQUENCE[0].reshape(-1, 1).double()
+    x_0_matrix = DATA_SEQUENCE[0].reshape(-1, 1)
     # y_dim = 3. Also, no idea why but pytorch does the linear algebra weirdly...
     z_0_target = torch.matmul(linear_2, torch.matmul(linear_1, x_0_matrix)).T.reshape(3, Z_DIM)
 
-    assert torch.allclose(z_0_target, z_0.double(), rtol=0.0, atol=1e-3)
+    assert torch.allclose(z_0_target, z_0, rtol=0.0, atol=1e-3)
 
     # Make sure predictions is good as well.
     target_pred = torch.matmul(z_0_target, beta_0) + client_0.state.Y_0
-    assert torch.allclose(predictions[:, 0].reshape(-1, 1), target_pred, rtol=0.0, atol=1e-3)
+    assert torch.allclose(predictions[0, :].reshape(-1, 1), target_pred, rtol=0.0, atol=1e-3)
 
     t = 1
     predictions = client_manager.fit_clients(t)
-    assert predictions.shape == (3, 2)
+    assert predictions.shape == (2, 3)
 
-    beta_1 = torch.Tensor([[-0.0035], [0.0155], [-0.0216], [-0.0506], [-0.0523]]).double()
+    beta_1 = torch.tensor([[-0.0303], [-0.0444], [-0.0197], [-0.0305], [-0.0277]])
     client_0 = client_manager.clients[0]
     client_0_encoder = client_0.encoder
     assert isinstance(client_0_encoder, nn.Module)
@@ -74,21 +90,21 @@ def test_transformer_client_prediction_process() -> None:
 
     beta_1_target = client_0.state.get_beta_t(t)
     assert torch.allclose(beta_1, beta_1_target, rtol=0.0, atol=1e-3)
-    x_1_matrix = DATA_SEQUENCE[1].reshape(-1, 1).double()
+    x_1_matrix = DATA_SEQUENCE[1].reshape(-1, 1)
     # y_dim = 3. Also, no idea why but pytorch does the linear algebra weirdly...
     z_1_target = torch.matmul(linear_2, torch.matmul(linear_1, x_1_matrix)).T.reshape(3, Z_DIM)
 
-    assert torch.allclose(z_1_target, z_1.double(), rtol=0.0, atol=1e-3)
+    assert torch.allclose(z_1_target, z_1, rtol=0.0, atol=1e-3)
 
     # Make sure predictions is good as well.
     target_pred = torch.matmul(z_1_target, beta_1) + client_0.state.get_prediction_t(t)
-    assert torch.allclose(predictions[:, 0].reshape(-1, 1), target_pred, rtol=0.0, atol=1e-3)
+    assert torch.allclose(predictions[0, :].reshape(-1, 1), target_pred, rtol=0.0, atol=1e-3)
 
     t = 2
     predictions = client_manager.fit_clients(t)
-    assert predictions.shape == (3, 2)
+    assert predictions.shape == (2, 3)
 
-    beta_2 = torch.Tensor([[-0.0067], [0.0478], [0.0759], [-0.1007], [-0.0580]]).double()
+    beta_2 = torch.tensor([[-0.0051], [-0.0094], [0.0358], [-0.0848], [-0.0280]])
     client_0 = client_manager.clients[0]
     client_0_encoder = client_0.encoder
     assert isinstance(client_0_encoder, nn.Module)
@@ -97,12 +113,12 @@ def test_transformer_client_prediction_process() -> None:
 
     beta_2_target = client_0.state.get_beta_t(t)
     assert torch.allclose(beta_2, beta_2_target, rtol=0.0, atol=1e-3)
-    x_2_matrix = DATA_SEQUENCE[2].reshape(-1, 1).double()
+    x_2_matrix = DATA_SEQUENCE[2].reshape(-1, 1)
     # y_dim = 3. Also, no idea why but pytorch does the linear algebra weirdly...
     z_2_target = torch.matmul(linear_2, torch.matmul(linear_1, x_2_matrix)).T.reshape(3, Z_DIM)
 
-    assert torch.allclose(z_2_target, z_2.double(), rtol=0.0, atol=1e-3)
+    assert torch.allclose(z_2_target, z_2, rtol=0.0, atol=1e-3)
 
     # Make sure predictions is good as well.
     target_pred = torch.matmul(z_2_target, beta_2) + client_0.state.get_prediction_t(t)
-    assert torch.allclose(predictions[:, 0].reshape(-1, 1), target_pred, rtol=0.0, atol=1e-3)
+    assert torch.allclose(predictions[0, :].reshape(-1, 1), target_pred, rtol=0.0, atol=1e-3)

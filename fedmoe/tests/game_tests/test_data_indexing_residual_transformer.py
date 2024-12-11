@@ -16,13 +16,12 @@ GAMMA = 0.1
 Y_DIM = 1
 
 
-def test_data_indexing() -> None:
+def test_data_indexing(monkeypatch) -> None:
     """
     The goal of this test is to visually confirm and check that T step's prediction with game are good
     and result is a drop in residual.
     """
-
-    TransformerClient.setup_transformer_structure = utils.setup_transformer_structure_patch  # type: ignore
+    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", utils.setup_transformer_structure_patch)
     client_manager = PreTrainingClientManager(
         num_clients=2,
         data_sequence=data_object.input_matrix,
