@@ -143,7 +143,7 @@ def main(
 
     if config["save_error_histogram"]:
         detached_server_predictions = [server_prediction.detach() for server_prediction in server.server_outputs]
-        data_object.visualize_mean_Squared_error_histogram(
+        data_object.visualize_squared_error_histogram(
             detached_server_predictions,
             f"{results_dir}/error_histogram.png",
             plot_info,

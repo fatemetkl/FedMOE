@@ -384,7 +384,7 @@ class TimeSeriesData:
 
         plt.close()
 
-    def visualize_mean_Squared_error_histogram(
+    def visualize_squared_error_histogram(
         self,
         server_prediction: List[torch.Tensor],
         plot_path: str,
@@ -399,9 +399,9 @@ class TimeSeriesData:
             f"Error:server output matrix has a shape {server_matrix.shape},\
                 but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
         }
-        mse = (server_matrix - self.target_matrix) ** 2
-        mse = mse.flatten()
-        plt.hist(mse, bins=10)
+        squared_error = (server_matrix - self.target_matrix) ** 2
+        squared_error = squared_error.flatten()
+        plt.hist(squared_error, bins=10)
 
         if plot_info is not None:
             text_content = ""
@@ -416,9 +416,9 @@ class TimeSeriesData:
 
         game_status = "with" if game_played else "without"
 
-        plt.xlabel("Mean Squared Error values")
-        plt.ylabel("Count of Mean Squared Error values")
-        plt.title(f"Histogram of Mean Squared Error {game_status} the game ")
+        plt.xlabel("Squared Error values")
+        plt.ylabel("Count of Squared Error values")
+        plt.title(f"Histogram of Squared Error {game_status} the game ")
 
         plt.legend()
         plt.savefig(plot_path)
