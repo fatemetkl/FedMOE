@@ -1,6 +1,6 @@
 # Training variables
 data: "logistic_map"  # Dataset options are saved in utils.DataOptions. Examples: periodic_signal, time_input_periodic, logistic_map, sine_signal, quadratic_data, linear_line, or horizontal_line, 2dxy, simple_brownian, brownian_addition
-num_clients : 8 # The number of experts or clients
+num_clients : 3 # The number of experts or clients
 total_rounds : 50 # The number of total rounds (data sequence will be created to be one time-step longer)
 models_dir: "experiments/transformer_experiments/models/" # The directory of saved the models
 # For periodic data sample size is 100, for logistic map it is 10
