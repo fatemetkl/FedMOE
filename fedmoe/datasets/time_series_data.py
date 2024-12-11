@@ -93,6 +93,7 @@ class TimeSeriesData:
             sample_target = sample_target[1:, :]
             data.append(sample_input)
             targets.append(sample_target)
+        # every input and output in our dataloader has the shape (self.total_time_steps - 1 , x_dim/y_dim)
         dataset: BaseDataset = TimeSeriesTorchDataset(data, targets)
 
         data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
