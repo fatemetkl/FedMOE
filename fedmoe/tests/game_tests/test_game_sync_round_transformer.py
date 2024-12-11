@@ -36,7 +36,7 @@ def test_game_round_server(monkeypatch) -> None:
 
     monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
     client_manager = get_transformer_client_manager(Z_DIM, gamma=GAMMA)
-    
+
     game = TransformerGame(
         client_manager.clients,
         sync_freq=T,
@@ -813,5 +813,3 @@ def test_game_round_server(monkeypatch) -> None:
     residual_inner_step_2_residual_game = torch.pow(torch.linalg.norm(step_2_residual_game), 2.0)
     # It is better to use previous betas
     assert no_game_residuals[2] > residual_inner_step_2_residual_game
-
-    monkeypatch.undo()
