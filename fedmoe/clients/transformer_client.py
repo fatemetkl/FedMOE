@@ -74,11 +74,8 @@ class TransformerClient(Client):
                 # For transformer training, target at time t given input t is prediction of {t+1}
                 for inputs, targets in pre_training_dataloader:
                     optimizer.zero_grad()
-                    seq_len = inputs.size(1)
-                    # torch.triu(torch.ones(seq_len, seq_len) * float('-inf'), diagonal=1).to(inputs.device)
-                    causal_mask = torch.triu(torch.ones(seq_len, seq_len), diagonal=1)
 
-                    outputs = model(inputs.double(), attention_mask=causal_mask, pre_training=True)
+                    outputs = model(inputs.double(), pre_training=True)
 
                     loss = pre_training_criterion(outputs.double(), targets.double())
                     loss.backward()

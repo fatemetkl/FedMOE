@@ -14,7 +14,8 @@ class RfnGame(Game):
 
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
         for client in clients:
-            assert client.y_dim == 1
+            if client.y_dim != 1:
+                print("WARNING: The game is currently only well defined for dy=1")
         self.standard_normal = torch.distributions.Normal(loc=0.0, scale=1.0)
         super().__init__(clients, sync_freq, z_dim)
 

@@ -118,7 +118,7 @@ def test_1d_periodic_time_series_data_loader() -> None:
     # Test data loader
     train_loader = periodic_data_obj.get_dataloader(num_samples=20, batch_size=batch_size)
     for input, output in train_loader:
-        assert input.shape == output.shape == (batch_size, time_steps, 1)
+        assert input.shape == output.shape == (batch_size, time_steps - 1, 1)
     assert len(train_loader) == 5
 
 

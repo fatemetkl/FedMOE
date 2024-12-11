@@ -15,7 +15,13 @@ def do_not_test_nash_game_objective_sync_step() -> None:
     data_length = 20
     sync_freq = 3
     client_manager = get_rfn_client_manager_dy_dx_1(
-        alpha=0.1, gamma=0.1, z_dim=3, sigma=torch.Tensor([[0.1]]), data_length=data_length, sync_freq=sync_freq
+        alpha=0.1,
+        gamma=0.1,
+        z_dim=3,
+        sigma=torch.Tensor([[0.1]]),
+        data_length=data_length,
+        sync_freq=sync_freq,
+        patch_client_state=True,
     )
     target = client_manager.common_target_sequence
     game = RfnGame(
@@ -86,7 +92,13 @@ def do_not_test_nash_game_objective_accumulative() -> None:
     data_length = 20
     sync_freq = 3
     client_manager = get_rfn_client_manager_dy_dx_1(
-        alpha=0.1, gamma=0.1, z_dim=3, sigma=torch.Tensor([[0.1]]), data_length=data_length, sync_freq=sync_freq
+        alpha=0.1,
+        gamma=0.1,
+        z_dim=3,
+        sigma=torch.Tensor([[0.1]]),
+        data_length=data_length,
+        sync_freq=sync_freq,
+        patch_client_state=True,
     )
     target = client_manager.common_target_sequence
     game = RfnGame(
@@ -146,7 +158,13 @@ def do_not_test_nash_beta() -> None:
     data_length = 20
     sync_freq = 5
     client_manager = get_rfn_client_manager_dy_dx_1(
-        alpha=0.1, gamma=0.1, z_dim=3, sigma=torch.tensor([[0.1]]), data_length=data_length, sync_freq=sync_freq
+        alpha=0.1,
+        gamma=0.1,
+        z_dim=3,
+        sigma=torch.tensor([[0.1]]),
+        data_length=data_length,
+        sync_freq=sync_freq,
+        patch_client_state=True,
     )
     target = client_manager.common_target_sequence
     game = RfnGame(

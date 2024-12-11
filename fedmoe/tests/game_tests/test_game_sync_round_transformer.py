@@ -2,9 +2,14 @@ import math
 
 import torch
 
+from fedmoe.clients.transformer_client import TransformerClient
 from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
-from fedmoe.tests.utils import get_data_and_target_sequences, get_transformer_client_manager
+from fedmoe.tests.utils import (
+    get_data_and_target_sequences,
+    get_transformer_client_manager,
+    setup_transformer_structure_patch,
+)
 
 torch.set_default_dtype(torch.float64)
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
@@ -18,13 +23,14 @@ check_game_regret = 0
 check_game_residual = 1
 
 
-def test_game_round_server() -> None:
+def test_game_round_server(monkeypatch) -> None:
     # These all pass with only 12, with other random seeds some of them fail as expected.
     # This test does not always pass because it is using the old logic of our algorithm where
     # we used client predictions with game betas.
     torch.manual_seed(12)
     torch.set_default_dtype(torch.float64)
 
+    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
     client_manager = get_transformer_client_manager(Z_DIM, gamma=GAMMA)
 
     client_manager.clients[0].gamma = GAMMA
@@ -814,3 +820,5 @@ def test_game_round_server() -> None:
 
     # It is better to use previous betas
     assert no_game_residuals[2] > residual_inner_step_2_residual_game
+
+    monkeypatch.undo()

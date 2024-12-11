@@ -1,8 +1,13 @@
 import torch
 
+from fedmoe.clients.transformer_client import TransformerClient
 from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
-from fedmoe.tests.utils import get_data_and_target_sequences, get_transformer_client_manager
+from fedmoe.tests.utils import (
+    get_data_and_target_sequences,
+    get_transformer_client_manager,
+    setup_transformer_structure_patch,
+)
 
 torch.set_default_dtype(torch.float64)
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
@@ -17,7 +22,7 @@ GAMMA = 1.0
 DO_SYNC = True
 
 
-def test_game_objective() -> None:
+def test_game_objective(monkeypatch) -> None:
     """
     This function tests if the betas optimized in nash game are all better, and reduce residual.
     This is done by comparing residuals from the server and the ones created inside the game.
@@ -28,6 +33,7 @@ def test_game_objective() -> None:
     torch.manual_seed(10)
     torch.set_default_dtype(torch.float64)
 
+    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
     client_manager = get_transformer_client_manager(Z_DIM, sync_freq=T, gamma=GAMMA, alpha=0.5)
 
     client_manager.clients[0].gamma = GAMMA
@@ -298,6 +304,7 @@ def test_game_objective() -> None:
     # Now try the whole server and see if it also uses the game prediction of Ts correctly.
     # Reset everything here
     # torch.manual_seed(10)
+    # monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
     # client_manager = get_transformer_client_manager(Z_DIM, sync_freq=T, gamma=GAMMA, alpha=0.5)
 
     # game = TransformerGame(

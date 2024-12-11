@@ -3,10 +3,15 @@ import math
 import torch
 
 from experiments.utils import load_data
+from fedmoe.clients.transformer_client import TransformerClient
 from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.metrics import RMSEMetric
 from fedmoe.server import Server
-from fedmoe.tests.utils import get_data_and_target_sequences, get_transformer_client_manager
+from fedmoe.tests.utils import (
+    get_data_and_target_sequences,
+    get_transformer_client_manager,
+    setup_transformer_structure_patch,
+)
 
 Z_DIM = 3
 T = 3
@@ -20,14 +25,16 @@ def test_transformer_training_data_metrics() -> None:
     train_data_loader = data_object.get_dataloader(num_samples=num_samples, batch_size=batch_size, shuffle=True)
     assert len(train_data_loader) == (num_samples / batch_size)
     for inputs, targets in train_data_loader:
-        assert torch.allclose(data_object.input_matrix, inputs, rtol=0.0, atol=1e-5)
-        assert torch.allclose(data_object.target_matrix, targets, rtol=0.0, atol=1e-5)
+        assert torch.allclose(data_object.input_matrix[:-1], inputs, rtol=0.0, atol=1e-5)
+        assert torch.allclose(data_object.target_matrix[1:], targets, rtol=0.0, atol=1e-5)
 
 
-def test_transformer_loss() -> None:
+def test_transformer_loss(monkeypatch) -> None:
     torch.manual_seed(42)
     num_rounds = 5
     _, target_sequence = get_data_and_target_sequences()
+
+    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
     client_manager = get_transformer_client_manager(Z_DIM)
     game = TransformerGame(client_manager.clients, sync_freq=T, z_dim=Z_DIM)
     server = Server(total_game_steps=T, client_manager=client_manager, game=game, metrics=[RMSEMetric("RMSE")])

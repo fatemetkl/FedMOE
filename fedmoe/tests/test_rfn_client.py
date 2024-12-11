@@ -33,7 +33,7 @@ def test_client_side_optimization() -> None:
     sigma = torch.Tensor([[0.1], [0.2], [0.3]])
     z_dim = 3
 
-    client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim)
+    client_manager = get_rfn_client_manager(alpha, gamma, sigma, z_dim, patch_client_state=True)
 
     # Making prediction for t=1
     t = 0

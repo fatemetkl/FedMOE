@@ -52,53 +52,59 @@ def test_inference_periodic_data_transformer() -> None:
         kappa=1.0,
         eta=1.0,
     )
+
     # test the transformer
     client_manager.clients[0].encoder.eval()
-    input_0 = data_object.input_matrix[0].reshape(-1, 1)
-    expected_target_0 = data_object.target_matrix[0]
-    pred_0 = client_manager.clients[0].encoder(input_0, pre_training=True, flag=False)
-
+    input_0 = data_object.input_matrix[0].reshape(1, -1, 1)
+    expected_target_0 = data_object.target_matrix[1]
+    pred_0 = client_manager.clients[0].encoder(input_0, pre_training=True)
     print("input_0", input_0)
     print("expected_target_0", expected_target_0)
     print("pred_0", pred_0)
 
-    input_1 = data_object.input_matrix[1].reshape(-1, 1)
-    expected_target_1 = data_object.target_matrix[1]
-    pred_1 = client_manager.clients[0].encoder(input_1, pre_training=True, flag=False)
-    print("input_1", input_1)
+    input_1 = data_object.input_matrix[1].reshape(1, -1, 1)
+    expected_target_1 = data_object.target_matrix[2]
+    pred_1 = client_manager.clients[0].encoder(input_1, pre_training=True)
+    print("\ninput_1", input_1)
     print("expected_target_1", expected_target_1)
+    # Note that this prediction will not be that close because we're putting input_1 in the first position
+    # and the transformer is used to seeing input_0 there
     print("pred_1", pred_1)
 
-    input_2 = data_object.input_matrix[2].reshape(-1, 1)
+    input_2 = data_object.input_matrix[2].reshape(1, -1, 1)
+    pred_2 = client_manager.clients[0].encoder(input_2, pre_training=True)
+    print("\ninput_2", input_2)
+    print("expected_target_2", data_object.target_matrix[3])
+    # Note that this prediction will not be that close because we're putting input_2 in the first position
+    # and the transformer is used to seeing input_0 there
+    print("pred_2", pred_2)
 
-    pred_2 = client_manager.clients[0].encoder(input_2, pre_training=True, flag=False)
-    print("input_2", input_2)
-    print("expected_target_2", data_object.target_matrix[2])
-    print("one step pred sequence", pred_2)
-
-    pred_0_1_input2 = torch.cat((input_0, input_1, input_2), dim=0)
-    pred_2 = client_manager.clients[0].encoder(pred_0_1_input2, pre_training=True, flag=False)
-    print("cat_0_1", pred_0_1_input2.shape)
+    pred_0_1_input2 = torch.cat((input_0, input_1, input_2), dim=1)
+    pred_2 = client_manager.clients[0].encoder(pred_0_1_input2, pre_training=True)
+    print("\nInput shape (batch_size, sequence length, embedding dim)", pred_0_1_input2.shape)
+    print("expected_target_2", data_object.target_matrix[3])
     print("full pred 2", pred_2)
+    # Because this prediction is part of a sequence that the model has seen many times. This value should be close
     print("pred_2", pred_2[:, -1, :])
 
-    input_3 = data_object.input_matrix[3].reshape(-1, 1)
-    pred_0_1_input3 = torch.cat((input_0, input_1, input_2, input_3), dim=0)
-    client_manager.clients[0].state._current_time == 3
-    pred_3 = client_manager.clients[0].encoder(input_3, pre_training=True, flag=False)
-    print("target 3", data_object.target_matrix[3])
-    print(" pred 3", pred_3)
-    # print("pred_3", pred_3[:, -1, :])
+    input_3 = data_object.input_matrix[3].reshape(1, -1, 1)
+    pred_0_1_input3 = torch.cat((input_0, input_1, input_2, input_3), dim=1)
+    pred_3 = client_manager.clients[0].encoder(pred_0_1_input3, pre_training=True)
+    print("\ninput_3", pred_0_1_input3)
+    print("target 3", data_object.target_matrix[4])
+    print("Sequence Prediction", pred_3)
+    # Because this prediction is part of a sequence that the model has seen many times. This value should be close
+    print("pred_3", pred_3[:, -1, :])
 
-    pred_3_alone = client_manager.clients[0].encoder(input_3, pre_training=True, flag=False)
-    print("pred_3_alone", pred_3_alone)
-
-    input_4 = data_object.input_matrix[4].reshape(-1, 1)
-    pred_4_alone = client_manager.clients[0].encoder(input_4, pre_training=True, flag=False)
-    print("TARGET 4", data_object.target_matrix[4])
-    print("alone pred4", pred_4_alone)
-    full_seq_4 = torch.cat((pred_0_1_input3, input_4), dim=0)
-    pred_4_seq = client_manager.clients[0].encoder(full_seq_4, pre_training=True, flag=False)
+    input_4 = data_object.input_matrix[4].reshape(1, -1, 1)
+    pred_4_alone = client_manager.clients[0].encoder(input_4, pre_training=True)
+    print("\ntarget  4", data_object.target_matrix[5])
+    # Note that this prediction might not be that close because we're putting input_4 in the first position
+    # and the transformer is used to seeing input_0 there
+    print("solo pred 4", pred_4_alone)
+    full_seq_4 = torch.cat((pred_0_1_input3, input_4), dim=1)
+    pred_4_seq = client_manager.clients[0].encoder(full_seq_4, pre_training=True)
+    # Because this prediction is part of a sequence that the model has seen many times. This value should be close
     print("full pred 4,", pred_4_seq)
 
     # assert False
