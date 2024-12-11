@@ -30,7 +30,7 @@ class CovariateShiftDataset(TimeSeriesData):
         y_{1, 2} = x_1 + x_2 - sin x_3
         y_{2, 2} = cos x_1 * sin x_2 + x_3^2 + 0.25 * cos(10 * x_1)
 
-        The phase transition is facilitated by the piecewise function. Note that the function is continuous. So 
+        The phase transition is facilitated by the piecewise function. Note that the function is continuous. So
         the boundaries of the if conditions don't matter.
         alpha(x_1) = 1.0                    if x <= (7/8)*pi
                      cos(2(x_1-(7/8)pi))    if (7/8)*pi < x < (9/8)*pi

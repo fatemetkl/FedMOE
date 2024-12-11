@@ -14,3 +14,4 @@ save_input: True # Set to True if you want to save the plot that shows input.
 save_clients_predictions: True # Set to True if you want to save the plot that shows individual clients predictions.
 save_mixture_weights: True # Set to True if you want to save the plot that shows the mixture weights.
 dump_json: True #If True, dumps the above plotted tensors in JSON
+save_error_histogram: True # Set to True if you want to save the histogram of the errors.

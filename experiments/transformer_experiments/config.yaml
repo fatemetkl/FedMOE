@@ -1,9 +1,9 @@
 # Experiment variables
-experiment_name: "logistic_game_8c"
+experiment_name: "logistic_game_3c"
 client_type : 1 # 1: Pre-trained transformer model (fixed for this experiment)
 data: "logistic_map"  # Dataset options are saved in utils.DataOptions. Examples: periodic_signal, time_input_periodic, logistic_map, sine_signal, quadratic_data, linear_line, or horizontal_line, 2dxy, simple_brownian, brownian_addition
 
-num_clients : 8 # The number of experts or clients
+num_clients : 3 # The number of experts or clients
 total_rounds : 100 # The number of total rounds (data sequence will be created to be one time-step longer)
 have_sync: True # Do we want to have Nash game and synchronization steps or not
 update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t
@@ -14,5 +14,6 @@ save_input: True # Set to True if you want to save the plot that shows input.
 save_clients_predictions: True # Set to True if you want to save the plot that shows individual clients predictions.
 save_mixture_weights: True # Set to True if you want to save the plot that shows the mixture weights.
 dump_json: False #If True, dumps the above plotted tensors in JSON
+save_error_histogram: True # Set to True if you want to save the histogram of the errors.
 
 models_dir: "experiments/transformer_experiments/models/" # The directory of saved the models

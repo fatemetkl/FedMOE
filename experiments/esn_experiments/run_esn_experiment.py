@@ -116,6 +116,14 @@ def main(
         )
         tensors_to_save["mixture_weights"] = server.mixture_weights
 
+    if config["save_error_histogram"]:
+        data_object.visualize_mean_Squared_error_histogram(
+            server.server_outputs,
+            f"{results_dir}/error_histogram.png",
+            plot_info,
+            game_played=config["have_sync"],
+        )
+
     if config["dump_json"]:
         # Dump results and data in JSON
         tensors_to_save["target"] = [row for row in data_object.target_matrix]
