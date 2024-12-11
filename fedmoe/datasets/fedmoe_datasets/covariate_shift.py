@@ -16,8 +16,9 @@ class CovariateShiftDataset(TimeSeriesData):
     def __init__(self, total_time_steps: int) -> None:
         """
         In this dataset we simulate a continuous but fast covariate shift in the relationship of x_t to y_t+1
-        NOTE: By convention, at time step t, we are making predictions for y_{t+1} using x_t. So x_t can encode
-        So x_t generates y_{t+1} according to the relationship described below
+        NOTE: By convention, at time step t, we are making predictions for y_{t+1} using x_t.
+        So x_t generates y_{t+1} according to the relationship described below. See documentation in TimeSeriesData
+        for more details
 
         x_1 and x_2 are evenly spaced from 0 to 2pi, x_3 is the square root of x_1
 
@@ -29,7 +30,8 @@ class CovariateShiftDataset(TimeSeriesData):
         y_{1, 2} = x_1 + x_2 - sin x_3
         y_{2, 2} = cos x_1 * sin x_2 + x_3^2 + 0.25 * cos(10 * x_1)
 
-        The phase transition is facilitated by the piecewise function
+        The phase transition is facilitated by the piecewise function. Note that the function is continuous. So 
+        the boundaries of the if conditions don't matter.
         alpha(x_1) = 1.0                    if x <= (7/8)*pi
                      cos(2(x_1-(7/8)pi))    if (7/8)*pi < x < (9/8)*pi
                      0.0                    if x >= (9/8)*pi
