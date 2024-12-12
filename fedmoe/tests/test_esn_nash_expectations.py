@@ -5,6 +5,8 @@ from fedmoe.tests.utils import get_data_and_target_sequences, get_esn_client_man
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 
+torch.set_default_dtype(torch.float64)
+
 
 def test_esn_simulate_z_function() -> None:
     alpha = 1.5
@@ -32,24 +34,20 @@ def test_esn_simulate_z_function() -> None:
     # what is called on the server range(sync_freq - 1, -1 -1)
     Z_test = esn_game.simulate_z_t(3, client_0)
 
-    # We are PREDICTING for t=9 and have a sync frequency of 4, so we start with Z_{3} and we need to
-    # simulate forward using x_4, x_5, x_6, to get Z_4, Z_5, Z_6.
+    # We are PREDICTING for t=9 and have a sync frequency of 4, so we start with Z_{4} and we need to
+    # simulate forward using x_5, x_6, x_7, to get Z_5, Z_6, Z_7.
     # Let's do that manually.
     torch.manual_seed(42)
     # Reset the seed to be the same ESN basis generation as above.
-    x_4 = DATA_SEQUENCE[4].reshape(-1, 1).double()
-    input_4 = x_4.repeat(1, z_dim)
-    Z_target = client_0.encoder(input_4, esn_game.get_z(game_t=-1, client=client_0), client_0.sigma)
-
-    x_5 = DATA_SEQUENCE[5].reshape(-1, 1).double()
+    x_5 = DATA_SEQUENCE[5].reshape(-1, 1)
     input_5 = x_5.repeat(1, z_dim)
-    Z_target = client_0.encoder(input_5, Z_target, client_0.sigma)
+    Z_target = client_0.encoder(input_5, esn_game.get_z(game_t=0, client=client_0), client_0.sigma)
 
-    x_6 = DATA_SEQUENCE[6].reshape(-1, 1).double()
+    x_6 = DATA_SEQUENCE[6].reshape(-1, 1)
     input_6 = x_6.repeat(1, z_dim)
     Z_target = client_0.encoder(input_6, Z_target, client_0.sigma)
 
-    x_7 = DATA_SEQUENCE[7].reshape(-1, 1).double()
+    x_7 = DATA_SEQUENCE[7].reshape(-1, 1)
     input_7 = x_7.repeat(1, z_dim)
     Z_target = client_0.encoder(input_7, Z_target, client_0.sigma)
 
@@ -95,10 +93,10 @@ def test_esn_get_expectation_e_z_t() -> None:
     assert e_0.shape == (N * y_dim, y_dim)
     # Manually construct e_0
     e_0_target = torch.cat([torch.eye(y_dim), torch.zeros(y_dim, y_dim)], dim=0)
-    torch.allclose(e_0, e_0_target.double(), rtol=0.0, atol=1e-8)
-    e_0_Z_6_1 = torch.matmul(e_0.double(), Z_6_1.double())
-    e_0_Z_6_2 = torch.matmul(e_0.double(), Z_6_2.double())
-    e_0_Z_6_3 = torch.matmul(e_0.double(), Z_6_3.double())
+    torch.allclose(e_0, e_0_target, rtol=0.0, atol=1e-8)
+    e_0_Z_6_1 = torch.matmul(e_0, Z_6_1)
+    e_0_Z_6_2 = torch.matmul(e_0, Z_6_2)
+    e_0_Z_6_3 = torch.matmul(e_0, Z_6_3)
     expectation_target = (1.0 / 3.0) * (e_0_Z_6_1 + e_0_Z_6_2 + e_0_Z_6_3)
     assert torch.allclose(expectation_target, expectation_test, rtol=0.0, atol=1e-5)
 
@@ -128,7 +126,9 @@ def test_esn_get_formation_of_a_ij_t_2() -> None:
     esn_game.init_game_round_variables(7)
     # We need to patch in non zero P[T] values to make them non-trivial (they are initialized to zero)
     for client in client_manager.clients:
-        client.P[game_t + 1] = torch.randn((N * y_dim, N * y_dim), dtype=torch.float64)
+        esn_game.set_client_pt(
+            game_t + 1, client.id, pt_value=torch.randn((N * y_dim, N * y_dim), dtype=torch.float64)
+        )
     assert isinstance(esn_game, EchoStateGame)
 
     torch.manual_seed(42)
@@ -165,7 +165,7 @@ def test_esn_get_formation_of_a_ij_t_2() -> None:
     for _ in range(n_samples):
         Z = esn_game.simulate_z_t(game_t, client_0)
         e_0 = torch.cat([torch.eye(y_dim), torch.zeros(y_dim, y_dim)], dim=0)
-        e_z_T = torch.matmul(e_0.double(), Z.double())
+        e_z_T = torch.matmul(e_0, Z)
         P_t_plus_1 = client_0.P[game_t + 1]
         sample = torch.matmul(torch.matmul(e_z_T.T, P_t_plus_1), e_z_T)
         samples.append(sample)
@@ -178,7 +178,7 @@ def test_esn_get_formation_of_a_ij_t_2() -> None:
     for _ in range(n_samples):
         Z = esn_game.simulate_z_t(game_t, client_1)
         e_1 = torch.cat([torch.zeros(y_dim, y_dim), torch.eye(y_dim)], dim=0)
-        e_z_T = torch.matmul(e_1.double(), Z.double())
+        e_z_T = torch.matmul(e_1, Z)
         P_t_plus_1 = client_1.P[game_t + 1]
         sample = torch.matmul(torch.matmul(e_z_T.T, P_t_plus_1), e_z_T)
         samples.append(sample)
@@ -218,7 +218,9 @@ def test_esn_get_formation_of_a_ij_t_1() -> None:
     esn_game.init_game_round_variables(7)
     # We need to patch in non zero P[T-1] values to make them non-trivial (they are initialized to zero)
     for client in client_manager.clients:
-        client.P[game_t + 1] = torch.randn((N * y_dim, N * y_dim), dtype=torch.float64)
+        esn_game.set_client_pt(
+            game_t + 1, client.id, pt_value=torch.randn((N * y_dim, N * y_dim), dtype=torch.float64)
+        )
     assert isinstance(esn_game, EchoStateGame)
 
     torch.manual_seed(42)
@@ -255,7 +257,7 @@ def test_esn_get_formation_of_a_ij_t_1() -> None:
     for _ in range(n_samples):
         Z = esn_game.simulate_z_t(game_t, client_0)
         e_0 = torch.cat([torch.eye(y_dim), torch.zeros(y_dim, y_dim)], dim=0)
-        e_z_T = torch.matmul(e_0.double(), Z.double())
+        e_z_T = torch.matmul(e_0, Z)
         P_t_plus_1 = client_0.P[game_t + 1]
         sample = torch.matmul(torch.matmul(e_z_T.T, P_t_plus_1), e_z_T)
         samples.append(sample)
@@ -268,7 +270,7 @@ def test_esn_get_formation_of_a_ij_t_1() -> None:
     for _ in range(n_samples):
         Z = esn_game.simulate_z_t(game_t, client_1)
         e_1 = torch.cat([torch.zeros(y_dim, y_dim), torch.eye(y_dim)], dim=0)
-        e_z_T = torch.matmul(e_1.double(), Z.double())
+        e_z_T = torch.matmul(e_1, Z)
         P_t_plus_1 = client_1.P[game_t + 1]
         sample = torch.matmul(torch.matmul(e_z_T.T, P_t_plus_1), e_z_T)
         samples.append(sample)

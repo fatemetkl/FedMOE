@@ -6,6 +6,8 @@ from fedmoe.clients.client import Client
 from fedmoe.clients.esn_client import EchoStateNetworkClient
 from fedmoe.game.game import Game
 
+torch.set_default_dtype(torch.float64)
+
 
 class EchoStateGame(Game):
     def __init__(
@@ -38,9 +40,9 @@ class EchoStateGame(Game):
         for _ in range(self.n_samples):
             # Start from time current_t-T for the trajectory
             # If we're PREDICTING t=9 and we are at t=8, with sync frequency T=4, then we want to generate trajectories
-            # Z_4 -> Z_5 -> Z_6 -> Z_7 -> Z_8 for our Nash game.
+            # Z_4 -> Z_5 -> Z_6 -> Z_7 for our Nash game.
             # This means we start from Z_4 and use x_5, x_6, x_7 to generate these latent values.
-            # To get Z_7, we again start from Z_4 -> Z_5 -> Z_6 -> Z_7
+            # To get Z_6, we again start from Z_4 -> Z_5 -> Z_6
             estimated_z_t = self.simulate_z_t(game_t, client)
             samples.append(estimated_z_t)
         sum_tensor = torch.zeros_like(samples[0])
