@@ -5,6 +5,8 @@ import torch
 from fedmoe.clients.client import Client
 from fedmoe.game.game import Game
 
+torch.set_default_dtype(torch.float64)
+
 
 class TransformerGame(Game):
     def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
@@ -24,15 +26,15 @@ class TransformerGame(Game):
         Computes "$e_i phi^{(i)}(x_t)$" for each client i
         """
         # We don't need to feed the transformer again.
-        Z = self.get_hidden_state(game_t, client).double()
+        Z = self.get_hidden_state(game_t, client)
         # Embedding shape is y_dim x z_dim
         assert Z.shape == (self.y_dim, self.z_dim)
         # e_i's shape is (num_clients * self.y_dim, self.y_dim)
         e_i = client.get_e(self.num_clients)
         # output shape is Ny_dim x z_dim
         return torch.matmul(
-            e_i.double(),
-            Z.double(),
+            e_i,
+            Z,
         )
 
     def get_A_ij_t(self, game_t: int, i: int, j: int) -> torch.Tensor:

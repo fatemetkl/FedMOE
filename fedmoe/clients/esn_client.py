@@ -7,6 +7,8 @@ from fedmoe.clients.client import Client
 from fedmoe.models.echo_state_net import Esn
 from fedmoe.utils.utils import TensorGenerationType
 
+torch.set_default_dtype(torch.float64)
+
 
 class EchoStateNetworkClient(Client):
     def __init__(

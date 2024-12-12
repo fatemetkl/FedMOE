@@ -7,6 +7,8 @@ import numpy as np
 import torch
 from torch.utils.data.dataset import Dataset
 
+torch.set_default_dtype(torch.float64)
+
 
 # Logistic Map dataset
 class LogisticMapDataset(Dataset):

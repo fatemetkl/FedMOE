@@ -3,6 +3,8 @@ import torch.nn as nn
 
 from fedmoe.utils.utils import TensorGenerationType, generate_random_tensor
 
+torch.set_default_dtype(torch.float64)
+
 
 class Rfn(nn.Module):
     def __init__(
@@ -36,7 +38,7 @@ class Rfn(nn.Module):
 
         random_state = self.generate_random_state(sigma_t)
 
-        AX = torch.matmul(self.A, x_t.double())
+        AX = torch.matmul(self.A, x_t)
         #  AX shape should be y_dim x z_dim
         assert AX.shape == (self.y_dim, self.z_dim)
 

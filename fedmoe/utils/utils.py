@@ -3,6 +3,8 @@ from typing import Tuple
 
 import torch
 
+torch.set_default_dtype(torch.float64)
+
 
 class TensorGenerationType(Enum):
     UNIFORM_NEG_ONE_TO_ONE = "UNIFORM_NEG_ONE_TO_ONE"
@@ -19,4 +21,4 @@ def generate_random_tensor(
     else:
         raise ValueError(f"Unknown generator type: {generator_type.value}")
 
-    return r_tensor.double()
+    return r_tensor

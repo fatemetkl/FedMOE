@@ -10,6 +10,8 @@ from fedmoe.clients.client import Client
 from fedmoe.metrics import MSEMetric
 from fedmoe.models.transformer import TransformerTimeSeriesModel
 
+torch.set_default_dtype(torch.float64)
+
 
 class TransformerClient(Client):
     def __init__(
@@ -75,9 +77,9 @@ class TransformerClient(Client):
                 for inputs, targets in pre_training_dataloader:
                     optimizer.zero_grad()
 
-                    outputs = model(inputs.double(), pre_training=True)
+                    outputs = model(inputs, pre_training=True)
 
-                    loss = pre_training_criterion(outputs.double(), targets.double())
+                    loss = pre_training_criterion(outputs, targets)
                     loss.backward()
                     optimizer.step()
                     # The outputs and targets here are batch-first, therefore each one is a 3D tensor.

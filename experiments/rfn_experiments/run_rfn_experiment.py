@@ -13,6 +13,8 @@ from fedmoe.game.rfn_game import RfnGame
 from fedmoe.metrics import MSEMetric
 from fedmoe.server import Server
 
+torch.set_default_dtype(torch.float64)
+
 
 def main(
     config: Dict[str, Any],

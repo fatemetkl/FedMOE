@@ -6,6 +6,8 @@ from fedmoe.server import Server
 from fedmoe.tests.test_game_utils import compute_game_regret_objective
 from fedmoe.tests.utils import get_rfn_client_manager_dy_dx_1
 
+torch.set_default_dtype(torch.float64)
+
 
 def do_not_test_nash_game_objective_sync_step() -> None:
     """
@@ -203,12 +205,12 @@ def do_not_test_nash_beta() -> None:
             for j in range(100000):
                 # z_dim = 3
                 # beta shape is N x d_z x d_y
-                test_betas = torch.randn((2, 3, 1)).double()
+                test_betas = torch.randn((2, 3, 1))
                 # New predictions shape is d_y x 1
                 new_preds = client_manager.get_predictions_with_beta(i, test_betas)
                 # Nash betas are replaced with random beta in each client
                 # Compute new server output based on old mixture weights
-                new_server_output = torch.matmul(new_preds.double(), game_server.mixture_weights[i].double())
+                new_server_output = torch.matmul(new_preds, game_server.mixture_weights[i])
                 test_regret_0 = compute_game_regret_objective(
                     [test_betas[0]],
                     [target[i]],

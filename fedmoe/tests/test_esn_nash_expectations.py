@@ -126,9 +126,7 @@ def test_esn_get_formation_of_a_ij_t_2() -> None:
     esn_game.init_game_round_variables(7)
     # We need to patch in non zero P[T] values to make them non-trivial (they are initialized to zero)
     for client in client_manager.clients:
-        esn_game.set_client_pt(
-            game_t + 1, client.id, pt_value=torch.randn((N * y_dim, N * y_dim), dtype=torch.float64)
-        )
+        esn_game.set_client_pt(game_t + 1, client.id, pt_value=torch.randn((N * y_dim, N * y_dim)))
     assert isinstance(esn_game, EchoStateGame)
 
     torch.manual_seed(42)
@@ -218,9 +216,7 @@ def test_esn_get_formation_of_a_ij_t_1() -> None:
     esn_game.init_game_round_variables(7)
     # We need to patch in non zero P[T-1] values to make them non-trivial (they are initialized to zero)
     for client in client_manager.clients:
-        esn_game.set_client_pt(
-            game_t + 1, client.id, pt_value=torch.randn((N * y_dim, N * y_dim), dtype=torch.float64)
-        )
+        esn_game.set_client_pt(game_t + 1, client.id, pt_value=torch.randn((N * y_dim, N * y_dim)))
     assert isinstance(esn_game, EchoStateGame)
 
     torch.manual_seed(42)

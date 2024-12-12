@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from torch.utils.data.dataset import Dataset
 
+torch.set_default_dtype(torch.float64)
+
 
 class BrownianMotionDataset(Dataset):
     """

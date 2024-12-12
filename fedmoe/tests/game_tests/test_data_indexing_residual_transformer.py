@@ -7,6 +7,8 @@ from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
 from fedmoe.tests import utils
 
+torch.set_default_dtype(torch.float64)
+
 TOTAL_ROUNDS = 20
 data_object = load_data("periodic_signal", TOTAL_ROUNDS + 1)
 Z_DIM = 3

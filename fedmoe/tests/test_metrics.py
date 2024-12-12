@@ -3,6 +3,8 @@ from fl4health.utils.metrics import MetricManager
 
 from fedmoe.metrics import RMSEMetric
 
+torch.set_default_dtype(torch.float64)
+
 
 def test_rmse_metric() -> None:
 

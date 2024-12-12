@@ -3,6 +3,8 @@ from typing import List
 
 import torch
 
+torch.set_default_dtype(torch.float64)
+
 
 def compute_game_regret_objective(
     past_betas_i: List[torch.Tensor],
@@ -57,7 +59,7 @@ def test_regret_objective_function() -> None:
     # w_2 = torch.Tensor([[0.3, 0.7]])
     server_output_3 = torch.Tensor([0.15 + 0.7])
     # residual_3 = torch.Tensor([[1 - 0.85]])
-    random_betas_2 = torch.randn((2, 3, 1)).double()
+    random_betas_2 = torch.randn((2, 3, 1))
     regret_3_0 = (0.15) ** 2 + client_gamma * torch.pow(torch.linalg.norm(random_betas_2[0]), 2.0)
     regret_3_1 = (0.15) ** 2 + client_gamma * torch.pow(torch.linalg.norm(random_betas_2[1]), 2.0)
 
@@ -67,7 +69,7 @@ def test_regret_objective_function() -> None:
     server_output_2 = torch.Tensor([4.8 * 0.4 + 5.1 * 0.6])
     # residual_2 = torch.Tensor([[5 - 4.98]])
 
-    random_betas_1 = torch.randn((2, 3, 1)).double()
+    random_betas_1 = torch.randn((2, 3, 1))
     regret_2_0 = pow(math.e, -1.0) * (
         (0.02) ** 2 + client_gamma * torch.pow(torch.linalg.norm(random_betas_1[0]), 2.0)
     )

@@ -4,6 +4,8 @@ import torch
 
 from fedmoe.datasets.time_series_data import TimeSeries2DXY
 
+torch.set_default_dtype(torch.float64)
+
 
 def test_time_series_2d_xy(tmp_path: Path) -> None:
     save_dir = tmp_path.joinpath("artifacts")

@@ -10,6 +10,8 @@ from experiments.utils import load_config, load_data
 from fedmoe.clients.transformer_client import TransformerClient
 from fedmoe.models.transformer import TransformerTimeSeriesModel
 
+torch.set_default_dtype(torch.float64)
+
 
 def setup_transformer_structure(x_dim: int, y_dim: int, z_dim: int) -> nn.Module:
     # Hyperparameters

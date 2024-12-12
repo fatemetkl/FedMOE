@@ -3,6 +3,8 @@ from typing import Set, Tuple
 
 import torch
 
+torch.set_default_dtype(torch.float64)
+
 
 @dataclass
 class GameState:
@@ -40,31 +42,24 @@ class GameState:
         # Go over past time steps and record these values for t in [0, T-1]
         self.A = torch.zeros(
             (sync_freq, num_clients * z_dim, num_clients * z_dim),
-            dtype=torch.float64,
         )
         self.A_hat = torch.zeros(
             (sync_freq, num_clients * z_dim, num_clients * z_dim),
-            dtype=torch.float64,
         )
         self.B = torch.zeros(
             (sync_freq, num_clients * z_dim, num_clients * y_dim),
-            dtype=torch.float64,
         )
         self.C = torch.zeros(
             (sync_freq, num_clients * z_dim, 1),
-            dtype=torch.float64,
         )
         self.D = torch.zeros(
             (sync_freq, num_clients * y_dim, num_clients * z_dim),
-            dtype=torch.float64,
         )
         self.G = torch.zeros(
             (sync_freq, num_clients * z_dim, num_clients * y_dim),
-            dtype=torch.float64,
         )
         self.H = torch.zeros(
             (sync_freq, num_clients * z_dim, 1),
-            dtype=torch.float64,
         )
         self.num_clients = num_clients
         self.y_dim = y_dim

@@ -12,6 +12,8 @@ from fedmoe.datasets.data_matrix_generator import (
     TargetGenerator,
 )
 
+torch.set_default_dtype(torch.float64)
+
 
 class TimeSeriesTorchDataset(BaseDataset):
     def __init__(
@@ -46,13 +48,13 @@ class TimeSeriesData:
     def __init__(self, total_time_steps: int, input_gen: InputGenerator, target_gen: TargetGenerator) -> None:
         assert total_time_steps > 1, "Error, total_time_step should be positive and greater than one."
         self.total_time_steps = total_time_steps
-        self.time_axis = torch.arange(0, self.total_time_steps)
+        self.time_axis = torch.arange(0, self.total_time_steps, dtype=torch.float64)
         self.input_gen = input_gen
         self.target_gen = target_gen
         # Since x_t generates y_{t+1}, we generate for an extra time step and trim the first x and the last y
         #  -    y_1     y_2     y_3     y_4     y_5
         # x_0   x_1     x_2     x_3     x_4
-        generation_steps = torch.arange(0, self.total_time_steps + 1)
+        generation_steps = torch.arange(0, self.total_time_steps + 1, dtype=torch.float64)
         self.input_matrix = input_gen.generate_input_tensor(generation_steps)
         self.target_matrix = target_gen.generate_target_tensor(generation_steps, self.input_matrix)
 
@@ -78,7 +80,7 @@ class TimeSeriesData:
         # Since x_t generates y_{t+1}, we generate for an extra time step and trim the first x and the last y
         #  -    y_1     y_2     y_3     y_4     y_5
         # x_0   x_1     x_2     x_3     x_4
-        generation_steps = torch.arange(0, self.total_time_steps + 1)
+        generation_steps = torch.arange(0, self.total_time_steps + 1, dtype=torch.float64)
         for _ in range(num_samples):
             sample_input = self.input_gen.generate_input_tensor(generation_steps)
             sample_target = self.target_gen.generate_target_tensor(generation_steps, sample_input)

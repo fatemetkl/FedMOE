@@ -4,9 +4,12 @@ import os
 from typing import List, Optional
 
 import numpy as np
+import torch
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+torch.set_default_dtype(torch.float64)
 
 
 def get_hp_folders(hp_sweep_dir: str) -> List[str]:

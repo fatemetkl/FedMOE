@@ -10,6 +10,7 @@ from fedmoe.tests.utils import (
 )
 
 torch.set_default_dtype(torch.float64)
+
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 
 Z_DIM = 2
@@ -68,18 +69,16 @@ def test_game_objective(monkeypatch) -> None:
     hat_Y_0 = client_manager.get_Y_0()
     client_predictions.append(hat_Y_0)
 
-    w_neg1 = torch.randn((NUM_CLIENTS, 1)).double()
+    w_neg1 = torch.randn((NUM_CLIENTS, 1))
     w_neg1 = 1.0 * w_neg1 / torch.sum(w_neg1)
-    server_outputs.append(torch.matmul(w_neg1.T, hat_Y_0.double()).T)
+    server_outputs.append(torch.matmul(w_neg1.T, hat_Y_0).T)
 
     # For every step 0 to T inclusive.
     for t in range(len(DATA_SEQUENCE) - 1):
         # at time t we are predicting t+1, so the last prediction is time 8 when we predict 9 (data length is 10).
         next_predictions = client_manager.fit_clients(t)
         client_predictions.append(next_predictions)
-        w_t = server.compute_mixture_weights(
-            client_predictions[t].double(), TARGET_SEQUENCE[t].reshape(-1, 1).double()
-        )
+        w_t = server.compute_mixture_weights(client_predictions[t], TARGET_SEQUENCE[t].reshape(-1, 1))
         assert w_t.shape == (NUM_CLIENTS, 1)
         mixture_weights.append(w_t)
         regular_residual = TARGET_SEQUENCE[t + 1].unsqueeze(1) - torch.matmul(w_t.T, next_predictions).T
@@ -90,18 +89,18 @@ def test_game_objective(monkeypatch) -> None:
             past_T_betas, game_improved_predictions = server.sync_round(
                 4,
                 [
-                    TARGET_SEQUENCE[0].reshape(-1, 1).double(),
-                    TARGET_SEQUENCE[1].reshape(-1, 1).double(),
-                    TARGET_SEQUENCE[2].reshape(-1, 1).double(),
-                    TARGET_SEQUENCE[3].reshape(-1, 1).double(),
-                    TARGET_SEQUENCE[4].reshape(-1, 1).double(),
+                    TARGET_SEQUENCE[0].reshape(-1, 1),
+                    TARGET_SEQUENCE[1].reshape(-1, 1),
+                    TARGET_SEQUENCE[2].reshape(-1, 1),
+                    TARGET_SEQUENCE[3].reshape(-1, 1),
+                    TARGET_SEQUENCE[4].reshape(-1, 1),
                 ],
                 [
-                    mixture_weights[0].double(),
-                    mixture_weights[1].double(),
-                    mixture_weights[2].double(),
-                    mixture_weights[3].double(),
-                    mixture_weights[4].double(),
+                    mixture_weights[0],
+                    mixture_weights[1],
+                    mixture_weights[2],
+                    mixture_weights[3],
+                    mixture_weights[4],
                 ],
             )
             # the output of the game is beta for 0 to T-1 (3)
@@ -186,18 +185,18 @@ def test_game_objective(monkeypatch) -> None:
             past_T_betas_2, game_improved_predictions = server.sync_round(
                 8,
                 [
-                    TARGET_SEQUENCE[4].reshape(-1, 1).double(),
-                    TARGET_SEQUENCE[5].reshape(-1, 1).double(),
-                    TARGET_SEQUENCE[6].reshape(-1, 1).double(),
-                    TARGET_SEQUENCE[7].reshape(-1, 1).double(),
-                    TARGET_SEQUENCE[8].reshape(-1, 1).double(),
+                    TARGET_SEQUENCE[4].reshape(-1, 1),
+                    TARGET_SEQUENCE[5].reshape(-1, 1),
+                    TARGET_SEQUENCE[6].reshape(-1, 1),
+                    TARGET_SEQUENCE[7].reshape(-1, 1),
+                    TARGET_SEQUENCE[8].reshape(-1, 1),
                 ],
                 [
-                    mixture_weights[4].double(),
-                    mixture_weights[5].double(),
-                    mixture_weights[6].double(),
-                    mixture_weights[7].double(),
-                    mixture_weights[8].double(),
+                    mixture_weights[4],
+                    mixture_weights[5],
+                    mixture_weights[6],
+                    mixture_weights[7],
+                    mixture_weights[8],
                 ],
             )
             # the output of the game is beta for 0 to T-1 (3)

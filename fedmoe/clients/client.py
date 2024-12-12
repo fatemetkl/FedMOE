@@ -8,6 +8,8 @@ import torch.nn as nn
 
 from fedmoe.state.client_state import ClientState
 
+torch.set_default_dtype(torch.float64)
+
 
 class ClientType(Enum):
     RFN = 0
@@ -66,14 +68,14 @@ class Client(ABC):
     ) -> None:
         if init_hidden_state_neg1 is None:
             # Initializing Z to zero rather than a random value
-            init_hidden_state_neg1 = torch.zeros((self.y_dim, self.z_dim)).double()
+            init_hidden_state_neg1 = torch.zeros((self.y_dim, self.z_dim))
         if init_prediction_0 is None:
             # Initializing with zero rather than a random value
-            # init_prediction_0 = torch.zeros((self.y_dim, 1)).double()
-            init_prediction_0 = self.get_y(0).double()
+            # init_prediction_0 = torch.zeros((self.y_dim, 1))
+            init_prediction_0 = self.get_y(0)
         if init_prediction_neg1 is None:
             # Initializing with zero rather than a random value
-            init_prediction_neg1 = torch.zeros((self.y_dim, 1)).double()
+            init_prediction_neg1 = torch.zeros((self.y_dim, 1))
         assert (
             init_prediction_0 is not None and init_prediction_neg1 is not None and init_hidden_state_neg1 is not None
         )
@@ -85,14 +87,12 @@ class Client(ABC):
             self.sync_steps + 1,  # Game records P values for 0 to T inclusive.
             num_clients * self.y_dim,
             num_clients * self.y_dim,
-            dtype=torch.float64,
         )
-        self.S = torch.zeros(self.sync_steps + 1, num_clients * self.y_dim, 1, dtype=torch.float64)
+        self.S = torch.zeros(self.sync_steps + 1, num_clients * self.y_dim, 1)
         self.D = torch.zeros(
             self.sync_steps,  # D_i is only calculated from T-1 to 0
             num_clients * self.z_dim,
             num_clients * self.z_dim,
-            dtype=torch.float64,
         )
 
     def get_x(self, t: int) -> torch.Tensor:
@@ -112,7 +112,7 @@ class Client(ABC):
         return self._target[t].reshape(self.y_dim, 1)
 
     def get_e(self, num_clients: int) -> torch.Tensor:
-        e = torch.nn.functional.one_hot(torch.tensor(self.id), num_clients).double()
+        e = torch.nn.functional.one_hot(torch.tensor(self.id), num_clients)
         # Creates a BLOCK column vector where each block is a y_dim x y_dim matrix. The self.id^th row is the identity
         # matrix of dim y_dim x y_dim
         bold_e_i = torch.kron(e, torch.eye(self.y_dim)).T
@@ -120,7 +120,7 @@ class Client(ABC):
         return bold_e_i
 
     def get_hat_e(self, num_clients: int) -> torch.Tensor:
-        e = torch.nn.functional.one_hot(torch.tensor(self.id), num_clients).double()
+        e = torch.nn.functional.one_hot(torch.tensor(self.id), num_clients)
         # Creates a BLOCK column vector where each block is a z_dim x z_dim matrix. The self.id^th row is the identity
         # matrix of dim z_dim x z_dim
         bold_hat_e_i = torch.kron(e, torch.eye(self.z_dim)).T
@@ -153,9 +153,7 @@ class Client(ABC):
         self.state.replace_beta_t(nash_beta, t)
         # Use the previous Z
         # Update prediction based on Z_t and beta_t
-        next_prediction = self.state.get_prediction_t((t)).double() + torch.matmul(
-            self.state.get_hidden_state_t(t).double(), nash_beta.double()
-        )
+        next_prediction = self.state.get_prediction_t((t)) + torch.matmul(self.state.get_hidden_state_t(t), nash_beta)
         # next_prediction shape: y_dim*1
         assert next_prediction.shape == (self.y_dim, 1)
         # self.state.replace_prediction_t(next_prediction, (t+1))
@@ -168,10 +166,10 @@ class Client(ABC):
         y_t = self.compute_y_t(t)
 
         X_t_T = X_t.T
-        identity_matrix = torch.eye(self.z_dim, dtype=torch.float64)
+        identity_matrix = torch.eye(self.z_dim)
         first_term = torch.matmul(X_t_T, X_t) + self.gamma * identity_matrix
-        second_term = torch.matmul(torch.inverse(first_term).double(), X_t_T.double())
-        beta_t = torch.matmul(second_term.double(), y_t.double())
+        second_term = torch.matmul(torch.inverse(first_term), X_t_T)
+        beta_t = torch.matmul(second_term, y_t)
         return beta_t
 
     def predict(self, t: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -184,8 +182,8 @@ class Client(ABC):
 
         # Update prediction based on Z_t and beta_t
         # Having \hat{Y}_t we want to predict \hat{Y}_t+1
-        # next_prediction = self.state.get_prediction_t(t) + torch.matmul(updated_z.double(), beta_t.double())
-        next_prediction = self.state.get_prediction_t(t) + torch.matmul(updated_z.double(), beta_t.double())
+        # next_prediction = self.state.get_prediction_t(t) + torch.matmul(updated_z, beta_t)
+        next_prediction = self.state.get_prediction_t(t) + torch.matmul(updated_z, beta_t)
 
         return beta_t, updated_z, next_prediction
 

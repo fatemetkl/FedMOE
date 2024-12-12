@@ -7,6 +7,8 @@ from fedmoe.clients.client import Client
 from fedmoe.models.random_feature_net import Rfn
 from fedmoe.utils.utils import TensorGenerationType
 
+torch.set_default_dtype(torch.float64)
+
 
 class RandomFeatureNetworkClient(Client):
     def __init__(

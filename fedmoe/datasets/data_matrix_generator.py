@@ -36,7 +36,7 @@ class MultiDimensionalTimeFunctionInputGenerator(InputGenerator):
         for func_x in self.function_list:
             input_dimension_list.append(func_x(time_axis))
 
-        input_matrix = torch.stack(input_dimension_list, dim=1).double()
+        input_matrix = torch.stack(input_dimension_list, dim=1)
         # Input matrix's shape should be (time_steps, x_dim)
         assert input_matrix.shape == (
             time_axis.shape[0],
@@ -67,7 +67,7 @@ class MultiDimensionalTargetGenerator(TargetGenerator):
             # last input to the function is always time
             y_list.append(self.function_list[y_idx](input_matrix, time_axis))
 
-        target_matrix = torch.stack(y_list, dim=1).double()
+        target_matrix = torch.stack(y_list, dim=1)
 
         # Target matrix's shape should be (time_steps, y_dim)
         assert target_matrix.shape == (

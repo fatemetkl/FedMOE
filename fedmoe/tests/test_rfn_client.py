@@ -5,10 +5,9 @@ import torch
 from fedmoe.clients.client import Client
 from fedmoe.tests.utils import get_data_and_target_sequences, get_rfn_client_manager
 
-DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
-
-
 torch.set_default_dtype(torch.float64)
+
+DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 
 
 def compute_objective(client: Client, beta: torch.Tensor, alpha: float, gamma: float, t: int) -> torch.Tensor:

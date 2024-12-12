@@ -21,6 +21,8 @@ from fedmoe.tests.manual_calculations import (
 )
 from fedmoe.tests.test_game_utils import compute_game_regret_objective
 
+torch.set_default_dtype(torch.float64)
+
 
 class experiment_setup:
     def __init__(self, y_dim: int, z_dim: int, sync_freq: int, alpha: float, gamma: float, sigma: float) -> None:
@@ -108,8 +110,8 @@ def _do_not_test_server_game() -> None:
     game.first_block_alg2(w_2, y_2, time=2)
     manual_P_T, manual_S_T = manual_block_1()
 
-    assert torch.allclose(game.clients[0].P[2], torch.Tensor(manual_P_T).double(), rtol=0.0, atol=1e-5)
-    assert torch.allclose(game.clients[0].S[2], torch.Tensor(manual_S_T).double(), rtol=0.0, atol=1e-5)
+    assert torch.allclose(game.clients[0].P[2], torch.Tensor(manual_P_T), rtol=0.0, atol=1e-5)
+    assert torch.allclose(game.clients[0].S[2], torch.Tensor(manual_S_T), rtol=0.0, atol=1e-5)
 
     #  Go over all the steps before T
     #  Test the backward loop (t = T-2, ..., 0 do)
@@ -129,7 +131,7 @@ def _do_not_test_server_game() -> None:
     manual_Z_client_0, a_client_0 = calculate_z1_manually(game.clients)
     game_Z_client_0 = game.get_expectation_zt(time=1, client=game.clients[0])
     # Check that calculated a(t, i) is correct
-    assert torch.allclose(manual_Z_client_0.double(), game_Z_client_0, rtol=0.0, atol=1e-4)
+    assert torch.allclose(manual_Z_client_0, game_Z_client_0, rtol=0.0, atol=1e-4)
 
     game_Z_client_1 = game.get_expectation_zt(time=1, client=game.clients[1])
 
@@ -137,33 +139,33 @@ def _do_not_test_server_game() -> None:
     # A for i!=j (i = 0, j = 1)
     manual_block_A_01 = compute_block_A_01(P_next=manual_P_T)
     game_block_A_01 = game.get_A_ij_t(1, 0, 1)
-    assert torch.allclose(manual_block_A_01.double(), game_block_A_01, rtol=0.0, atol=1e-4)
+    assert torch.allclose(manual_block_A_01, game_block_A_01, rtol=0.0, atol=1e-4)
 
     # A for i == j == 0 (i is client id 0)
     manual_block_A_00 = compute_block_A_00()
     game_block_A_00 = game.get_A_ij_t(1, 0, 0)
-    assert torch.allclose(manual_block_A_00.double(), game_block_A_00, rtol=0.0, atol=1e-4)
+    assert torch.allclose(manual_block_A_00, game_block_A_00, rtol=0.0, atol=1e-4)
 
     B_1 = game.calculate_b(t=1)
     game.set_B_t(t, B_1)
     manual_B_1 = calculate_B1(game_Z_client_1)
-    assert torch.allclose(B_1, manual_B_1.double(), rtol=0.0, atol=1e-4)
+    assert torch.allclose(B_1, manual_B_1, rtol=0.0, atol=1e-4)
 
     C_1 = game.calculate_c(t=1)
     game.set_C_t(t, C_1)
     manual_C1 = calculate_C1(game_Z_client_1)
-    assert torch.allclose(C_1, manual_C1.double(), rtol=0.0, atol=1e-3)
+    assert torch.allclose(C_1, manual_C1, rtol=0.0, atol=1e-3)
 
     D_1 = game.calculate_d(t=1)
     game.set_D_t(t, D_1)
     manual_D1 = calculate_D1(game_Z_client_1)
-    assert torch.allclose(D_1, manual_D1.double(), rtol=0.0, atol=1e-4)
+    assert torch.allclose(D_1, manual_D1, rtol=0.0, atol=1e-4)
 
     # The below function is checked manually
     e_alpha_gamma_A_inv = game.get_e_alpha_gamma_A_inv(1)
 
     initial_term = torch.matmul(bold_w_t_1, bold_w_t_1.T)
-    wtyt = torch.matmul(bold_w_t_1, y_1.double())
+    wtyt = torch.matmul(bold_w_t_1, y_1)
 
     # Calculate P(1) manually : because alpha and gamma of clients are the same, they will have the same P
     manual_p1 = calculate_p1_manually(exp_var.alpha, exp_var.gamma, initial_term)
@@ -176,17 +178,17 @@ def _do_not_test_server_game() -> None:
             initial_term,
         )
         game.set_client_pt(1, client_id, pt_value=client_pt)
-        assert torch.allclose(manual_p1.double(), client_pt, rtol=0.0, atol=1e-4)
+        assert torch.allclose(manual_p1, client_pt, rtol=0.0, atol=1e-4)
 
         client_st = game.calculate_st_client(
             1,
             client_id,
-            e_alpha_gamma_A_inv.double(),
+            e_alpha_gamma_A_inv,
             wtyt,
         )
         game.set_client_st(1, client_id, st_value=client_st)
         #  we only check 2 decimal places because so many manual errors are accumulated.
-        assert torch.allclose(manual_S1.double(), client_st, rtol=0.0, atol=1e-2)
+        assert torch.allclose(manual_S1, client_st, rtol=0.0, atol=1e-2)
 
     #  Compute game beta_1 (for all clients) --> shape: Nd_z x 1
     game_beta_1 = game.compute_beta(1, predictions_1)

@@ -50,7 +50,7 @@ class EchoStateGame(Game):
             sum_tensor = sum_tensor + sample
         average_estimated_z_t = sum_tensor / self.n_samples
         e_i = client.get_e(self.num_clients)
-        estimated_e_z_t = torch.matmul(e_i.double(), average_estimated_z_t.double())
+        estimated_e_z_t = torch.matmul(e_i, average_estimated_z_t)
         return estimated_e_z_t
 
     def get_expectation_e_z_transpose_P_e_z(self, game_t: int, client: Client, next_p_i: torch.Tensor) -> torch.Tensor:
@@ -66,7 +66,7 @@ class EchoStateGame(Game):
             # This means we start from Z_4 and use x_5, x_6, x_7 to generate these latent values.
             Z_i = self.simulate_z_t(game_t, client)
             e_i = client.get_e(self.num_clients)
-            estimated_e_z_i = torch.matmul(e_i.double(), Z_i.double())
+            estimated_e_z_i = torch.matmul(e_i, Z_i)
             sample = torch.matmul(torch.matmul(estimated_e_z_i.T, next_p_i), estimated_e_z_i)
             samples.append(sample)
         sum_tensor = torch.zeros_like(samples[0])
@@ -101,10 +101,8 @@ class EchoStateGame(Game):
             # This means we start from Z_4 and use x_5, x_6, x_7 to generate these latent values.
             Z_i = self.simulate_z_t(game_t, client)
             e_i = client.get_e(self.num_clients)
-            estimated_e_z_i = torch.matmul(e_i.double(), Z_i.double())
-            sample = torch.matmul(
-                torch.matmul(torch.matmul(estimated_e_z_i.T, bold_w_t), bold_w_t.T), estimated_e_z_i
-            ).double()
+            estimated_e_z_i = torch.matmul(e_i, Z_i)
+            sample = torch.matmul(torch.matmul(torch.matmul(estimated_e_z_i.T, bold_w_t), bold_w_t.T), estimated_e_z_i)
             samples.append(sample)
         sum_tensor = torch.zeros_like(samples[0])
         for sample in samples:
