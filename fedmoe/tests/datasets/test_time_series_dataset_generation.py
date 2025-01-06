@@ -19,7 +19,7 @@ def test_linear_line() -> None:
     assert dataset.target_matrix.shape == (10, 1)
 
     # Input should be time axis (shift to 1 because we trim the first x_0)
-    assert torch.allclose(dataset.input_matrix, torch.linspace(1, 10, 10).reshape(-1, 1))
+    assert torch.allclose(dataset.input_matrix, torch.linspace(1.0, 10.0, 10).reshape(-1, 1))
     # Output should be 2*x + 1 starting at x=0 to x=9 (since x_t generates y_{t+1})
     target_matrix = torch.tensor([1.0, 3.0, 5.0, 7.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0]).reshape(-1, 1)
     assert torch.allclose(dataset.target_matrix, target_matrix)

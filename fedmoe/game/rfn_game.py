@@ -6,6 +6,8 @@ import torch
 from fedmoe.clients.client import Client
 from fedmoe.game.game import Game
 
+torch.set_default_dtype(torch.float64)
+
 
 class RfnGame(Game):
     """
@@ -21,9 +23,7 @@ class RfnGame(Game):
 
     def get_a_t_embedding(self, time: int, client: Client) -> torch.Tensor:
         # some parts of the forwards pass (without randomness)
-        a_t = (
-            torch.matmul(client.encoder.A.double(), self.get_input_matrix(time, client).double())
-        ) + client.encoder.b.double()
+        a_t = (torch.matmul(client.encoder.A, self.get_input_matrix(time, client))) + client.encoder.b
         assert a_t.shape == (self.y_dim, self.z_dim)
         return a_t
 
@@ -46,16 +46,13 @@ class RfnGame(Game):
         Computes "$e_i a(t, i)$" for each client i
         """
         # We don't need to feed the transformer again.
-        a_z_ti = self.get_expectation_zt(game_t, client).double()
+        a_z_ti = self.get_expectation_zt(game_t, client)
         # Embedding shape is y_dim x z_dim
         assert a_z_ti.shape == (self.y_dim, self.z_dim)
         # e_i's shape is (num_clients * self.y_dim, self.y_dim)
         e_i = client.get_e(self.num_clients)
         # output shape is Ny_dim x z_dim
-        return torch.matmul(
-            e_i.double(),
-            a_z_ti.double(),
-        )
+        return torch.matmul(e_i, a_z_ti)
 
     def compute_ii_sub_matrices(self, time: int, client_i: Client, first_term: torch.Tensor) -> torch.Tensor:
         """
@@ -68,7 +65,7 @@ class RfnGame(Game):
             first_term (torch.Tensor): It is the value multiplied with the rest of the elements in the sub-matrices.
                 Depending on the matrix, it can be P_{t+1}^{ii} used for A and D_i, or w_t^{(i)} **2 used for A_hat.
         """
-        matrix_ii = torch.zeros(self.z_dim, self.z_dim, dtype=torch.float64)
+        matrix_ii = torch.zeros(self.z_dim, self.z_dim)
         a_z_ti = self.get_expectation_zt(time, client_i)
         at = self.get_a_t_embedding(time, client_i)
         # Instead of j, k from 0 to d_z in the equations, we use p, k to distinguish from the client indices.

@@ -6,6 +6,8 @@ import numpy as np
 import torch
 from torch.utils.data.dataset import Dataset
 
+torch.set_default_dtype(torch.float64)
+
 
 # This dataset normalizes the values of period between -0.9 and +0.9, and samples them one by one, then repeats.
 # Two of the values are always -0.9(min) and the last is +0.9(max).

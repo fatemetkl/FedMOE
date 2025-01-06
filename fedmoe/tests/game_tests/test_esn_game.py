@@ -5,6 +5,8 @@ from fedmoe.metrics import MSEMetric
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_esn_client_manager
 
+torch.set_default_dtype(torch.float64)
+
 
 def test_rfn_game_metric() -> None:
     torch.manual_seed(12)

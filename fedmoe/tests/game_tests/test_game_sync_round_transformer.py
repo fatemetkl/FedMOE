@@ -12,6 +12,7 @@ from fedmoe.tests.utils import (
 )
 
 torch.set_default_dtype(torch.float64)
+
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 Z_DIM = 2
 Y_DIM = 3  # This is fixed for this data
@@ -55,9 +56,9 @@ def test_game_round_server(monkeypatch) -> None:
     t = -1
     hat_Y_0 = client_manager.get_Y_0()
 
-    w_neg1 = torch.randn((NUM_CLIENTS, 1)).double()
+    w_neg1 = torch.randn((NUM_CLIENTS, 1))
     w_neg1 = 1.0 * w_neg1 / torch.sum(w_neg1)
-    _ = torch.matmul(w_neg1.T, hat_Y_0.double()).T
+    _ = torch.matmul(w_neg1.T, hat_Y_0).T
 
     # t = 0
     # next_predictions = client_manager.fit_clients(t)
@@ -73,9 +74,7 @@ def test_game_round_server(monkeypatch) -> None:
         torch.set_default_dtype(torch.float64)
         next_predictions = client_manager.fit_clients(t)
         client_predictions.append(next_predictions)
-        w_t = server.compute_mixture_weights(
-            client_predictions[t].double(), TARGET_SEQUENCE[t].reshape(-1, 1).double()
-        )
+        w_t = server.compute_mixture_weights(client_predictions[t], TARGET_SEQUENCE[t].reshape(-1, 1))
         assert w_t.shape == (NUM_CLIENTS, 1)
         mixture_weights.append(w_t)
         server_out_t = torch.matmul(w_t.T, next_predictions)
@@ -84,7 +83,7 @@ def test_game_round_server(monkeypatch) -> None:
 
     t = 3
     prediction_4 = client_manager.fit_clients(t)
-    w_3 = server.compute_mixture_weights(client_predictions[3].double(), TARGET_SEQUENCE[t].reshape(-1, 1).double())
+    w_3 = server.compute_mixture_weights(client_predictions[3], TARGET_SEQUENCE[t].reshape(-1, 1))
     assert w_3.shape == (NUM_CLIENTS, 1)
     mixture_weights.append(w_3)
     sync_step_residual = TARGET_SEQUENCE[4].unsqueeze(1) - torch.matmul(mixture_weights[3].T, prediction_4).T
@@ -99,16 +98,16 @@ def test_game_round_server(monkeypatch) -> None:
     past_T_betas, past_game_predictions = server.sync_round(
         t,
         [
-            TARGET_SEQUENCE[0].reshape(-1, 1).double(),
-            TARGET_SEQUENCE[1].reshape(-1, 1).double(),
-            TARGET_SEQUENCE[2].reshape(-1, 1).double(),
-            TARGET_SEQUENCE[3].reshape(-1, 1).double(),
+            TARGET_SEQUENCE[0].reshape(-1, 1),
+            TARGET_SEQUENCE[1].reshape(-1, 1),
+            TARGET_SEQUENCE[2].reshape(-1, 1),
+            TARGET_SEQUENCE[3].reshape(-1, 1),
         ],
         [
-            mixture_weights[0].double(),
-            mixture_weights[1].double(),
-            mixture_weights[2].double(),
-            mixture_weights[3].double(),
+            mixture_weights[0],
+            mixture_weights[1],
+            mixture_weights[2],
+            mixture_weights[3],
         ],
     )
     # Improve step Ts predictions with the new beta_T <-- beta_(T-1)
@@ -142,15 +141,15 @@ def test_game_round_server(monkeypatch) -> None:
     # Checking A hat for T-1
     mixture_weights_2 = mixture_weights[2]
     bold_w_2 = game.create_bold_w_t(mixture_weights_2)
-    W_2_W_2_T = torch.matmul(bold_w_2, bold_w_2.T).double()
-    manual_A_hat_2 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM)).double()
+    W_2_W_2_T = torch.matmul(bold_w_2, bold_w_2.T)
+    manual_A_hat_2 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM))
     for i in range(NUM_CLIENTS):
         # here we don't need to convert times because it is the first game round
-        Z_t = clients[i].state.get_hidden_state_t(2).double()
-        e_i = clients[i].get_e(NUM_CLIENTS).double()
+        Z_t = clients[i].state.get_hidden_state_t(2)
+        e_i = clients[i].get_e(NUM_CLIENTS)
         for j in range(NUM_CLIENTS):
-            Z_t_j = clients[j].state.get_hidden_state_t(2).double()
-            e_j = clients[j].get_e(NUM_CLIENTS).double()
+            Z_t_j = clients[j].state.get_hidden_state_t(2)
+            e_j = clients[j].get_e(NUM_CLIENTS)
             manual_A_hat_2[i, j] = torch.matmul(
                 torch.matmul(torch.matmul(Z_t.T, e_i.T), W_2_W_2_T), torch.matmul(e_j, Z_t_j)
             )
@@ -160,15 +159,15 @@ def test_game_round_server(monkeypatch) -> None:
     # Checking D for T-1
     manual_D_2_list = []
     for i in range(NUM_CLIENTS):
-        e_i = clients[i].get_e(NUM_CLIENTS).double()
-        Z_i = clients[i].state.get_hidden_state_t(2).double()
+        e_i = clients[i].get_e(NUM_CLIENTS)
+        Z_i = clients[i].state.get_hidden_state_t(2)
         manual_D_2_list.append(torch.matmul(e_i, Z_i))
 
     manual_D_2 = torch.cat(manual_D_2_list, dim=1)
     assert torch.allclose(game.game_state.get_D_t(2), manual_D_2, rtol=0.0, atol=1e-5)
 
     # Checking G hat for T-1 (needs D_2 and \hat{A}_2)
-    Iz = torch.eye(Z_DIM).double()
+    Iz = torch.eye(Z_DIM)
 
     alpha_tensor = torch.exp(torch.Tensor([-1 * client.alpha * 0.0 for client in clients]))
     e_t_2 = torch.block_diag(*[alpha * Iz for alpha in alpha_tensor])
@@ -190,8 +189,8 @@ def test_game_round_server(monkeypatch) -> None:
     )
 
     manual_H_part_2 = torch.matmul(
-        torch.matmul(torch.matmul(e_t_2, game.game_state.get_D_t(2).double().T), bold_w_2.double()),
-        TARGET_SEQUENCE[3].reshape(-1, 1).double(),
+        torch.matmul(torch.matmul(e_t_2, game.game_state.get_D_t(2).T), bold_w_2),
+        TARGET_SEQUENCE[3].reshape(-1, 1),
     ) - game.game_state.get_C_t(2)
 
     # inv_matrix = torch.linalg.pinv(manual_H_2_part1.to(torch.float64))
@@ -200,92 +199,88 @@ def test_game_round_server(monkeypatch) -> None:
     assert torch.allclose(game.game_state.get_H_t(2), manual_H_2, rtol=0.0, atol=1e-5)
 
     # # A, B, C, and D_i for T-1 should be zero.
-    manual_A_2 = torch.zeros((NUM_CLIENTS * Z_DIM, NUM_CLIENTS * Z_DIM)).double()
+    manual_A_2 = torch.zeros((NUM_CLIENTS * Z_DIM, NUM_CLIENTS * Z_DIM))
     assert torch.allclose(game.game_state.get_A_t(2), manual_A_2, rtol=0.0, atol=1e-5)
-    manual_B_2 = torch.zeros((NUM_CLIENTS * Z_DIM, NUM_CLIENTS * Y_DIM)).double()
+    manual_B_2 = torch.zeros((NUM_CLIENTS * Z_DIM, NUM_CLIENTS * Y_DIM))
     assert torch.allclose(game.game_state.get_B_t(2), manual_B_2, rtol=0.0, atol=1e-5)
-    manual_C_2 = torch.zeros((NUM_CLIENTS * Z_DIM, 1)).double()
+    manual_C_2 = torch.zeros((NUM_CLIENTS * Z_DIM, 1))
     assert torch.allclose(game.game_state.get_C_t(2), manual_C_2, rtol=0.0, atol=1e-5)
 
     # Checking D_i_2 for client 0 and client 1
-    manual_D_c0_2 = torch.zeros((NUM_CLIENTS * Z_DIM, NUM_CLIENTS * Z_DIM)).double()
+    manual_D_c0_2 = torch.zeros((NUM_CLIENTS * Z_DIM, NUM_CLIENTS * Z_DIM))
     assert torch.allclose(clients[0].D[2], manual_D_c0_2, rtol=0.0, atol=1e-5)
-    manual_D_c1_2 = torch.zeros((NUM_CLIENTS * Z_DIM, NUM_CLIENTS * Z_DIM)).double()
+    manual_D_c1_2 = torch.zeros((NUM_CLIENTS * Z_DIM, NUM_CLIENTS * Z_DIM))
     assert torch.allclose(clients[1].D[2], manual_D_c1_2, rtol=0.0, atol=1e-5)
 
     # Checking P and S for t=2 (T-1)
     # P(T) and S(T) are zero (t=3)
     # Client 0
-    P_c0_3 = torch.zeros((NUM_CLIENTS * Y_DIM, NUM_CLIENTS * Y_DIM)).double()
-    S_c0_3 = torch.zeros((NUM_CLIENTS * Y_DIM, 1)).double()
+    P_c0_3 = torch.zeros((NUM_CLIENTS * Y_DIM, NUM_CLIENTS * Y_DIM))
+    S_c0_3 = torch.zeros((NUM_CLIENTS * Y_DIM, 1))
     assert torch.allclose(clients[0].P[3], P_c0_3, rtol=0.0, atol=1e-5)
     assert torch.allclose(clients[0].S[3], S_c0_3, rtol=0.0, atol=1e-5)
 
     # Manually compute P and S for t=2 (T-1) for client 0
-    e_hat_c0 = clients[0].get_hat_e(NUM_CLIENTS).double()
-    e_hat_c0_e_hat_c0 = torch.matmul(e_hat_c0, e_hat_c0.T).double()
+    e_hat_c0 = clients[0].get_hat_e(NUM_CLIENTS)
+    e_hat_c0_e_hat_c0 = torch.matmul(e_hat_c0, e_hat_c0.T)
     P_c0_2_part1 = torch.matmul(
-        torch.matmul(
-            manual_G_2.T.double(), torch.add(manual_A_hat_2.double(), clients[0].gamma * e_hat_c0_e_hat_c0.double())
-        ),
-        manual_G_2.double(),
-    ).double()
+        torch.matmul(manual_G_2.T, torch.add(manual_A_hat_2, clients[0].gamma * e_hat_c0_e_hat_c0)),
+        manual_G_2,
+    )
 
-    line2_manual = torch.matmul(torch.matmul(W_2_W_2_T, manual_D_2.double()), manual_G_2.double())
-    line_3_manual = torch.matmul(torch.matmul(manual_G_2.T.double(), manual_D_2.T.double()), W_2_W_2_T.T.double())
-    manual_P_c0_2 = P_c0_2_part1 + line2_manual + line_3_manual + W_2_W_2_T.double()
+    line2_manual = torch.matmul(torch.matmul(W_2_W_2_T, manual_D_2), manual_G_2)
+    line_3_manual = torch.matmul(torch.matmul(manual_G_2.T, manual_D_2.T), W_2_W_2_T.T)
+    manual_P_c0_2 = P_c0_2_part1 + line2_manual + line_3_manual + W_2_W_2_T
     manual_P_c0_2 = manual_P_c0_2.reshape(NUM_CLIENTS * Y_DIM, NUM_CLIENTS * Y_DIM)
 
     assert torch.allclose(clients[0].P[2], manual_P_c0_2, rtol=0.0, atol=1e-4)
 
     # S for client 0
     S_c0_2_line1 = torch.matmul(
-        torch.matmul(manual_G_2.T, (manual_A_hat_2 + clients[0].gamma * e_hat_c0_e_hat_c0.double())), manual_H_2
+        torch.matmul(manual_G_2.T, (manual_A_hat_2 + clients[0].gamma * e_hat_c0_e_hat_c0)), manual_H_2
     )
     S_c0_2_line2 = torch.matmul(torch.matmul(W_2_W_2_T, manual_D_2), manual_H_2)
     S_c0_2_line3 = torch.matmul(
-        torch.matmul(manual_G_2.T, manual_D_2.T).double(),
-        -1 * torch.matmul(bold_w_2.double(), TARGET_SEQUENCE[3].reshape(-1, 1).double()),
+        torch.matmul(manual_G_2.T, manual_D_2.T),
+        -1 * torch.matmul(bold_w_2, TARGET_SEQUENCE[3].reshape(-1, 1)),
     )
-    S_c0_2_line4 = -1 * torch.matmul(bold_w_2, TARGET_SEQUENCE[3].reshape(-1, 1).double())
+    S_c0_2_line4 = -1 * torch.matmul(bold_w_2, TARGET_SEQUENCE[3].reshape(-1, 1))
 
     manual_S_c0_2 = S_c0_2_line1 + S_c0_2_line2 + S_c0_2_line3 + S_c0_2_line4
 
     assert torch.allclose(clients[0].S[2].detach(), manual_S_c0_2.detach(), rtol=0.0, atol=1e-5)
 
     # Client 1
-    P_c1_3 = torch.zeros((NUM_CLIENTS * Y_DIM, NUM_CLIENTS * Y_DIM)).double()
-    S_c1_3 = torch.zeros((NUM_CLIENTS * Y_DIM, 1)).double()
+    P_c1_3 = torch.zeros((NUM_CLIENTS * Y_DIM, NUM_CLIENTS * Y_DIM))
+    S_c1_3 = torch.zeros((NUM_CLIENTS * Y_DIM, 1))
     assert torch.allclose(clients[1].P[3], P_c1_3, rtol=0.0, atol=1e-5)
     assert torch.allclose(clients[1].S[3], S_c1_3, rtol=0.0, atol=1e-5)
 
     # Manually compute P and S for t=2 (T-1) for client 0
-    e_hat_c1 = clients[1].get_hat_e(NUM_CLIENTS).double()
-    e_hat_c1_e_hat_c1 = torch.matmul(e_hat_c1, e_hat_c1.T).double()
+    e_hat_c1 = clients[1].get_hat_e(NUM_CLIENTS)
+    e_hat_c1_e_hat_c1 = torch.matmul(e_hat_c1, e_hat_c1.T)
     P_c1_2_part1 = torch.matmul(
-        torch.matmul(
-            manual_G_2.T.double(), torch.add(manual_A_hat_2.double(), clients[1].gamma * e_hat_c1_e_hat_c1.double())
-        ),
-        manual_G_2.double(),
-    ).double()
+        torch.matmul(manual_G_2.T, torch.add(manual_A_hat_2, clients[1].gamma * e_hat_c1_e_hat_c1)),
+        manual_G_2,
+    )
 
-    line2_manual = torch.matmul(torch.matmul(W_2_W_2_T, manual_D_2.double()), manual_G_2.double())
-    line_3_manual = torch.matmul(torch.matmul(manual_G_2.T.double(), manual_D_2.T.double()), W_2_W_2_T.T.double())
-    manual_P_c1_2 = P_c1_2_part1 + line2_manual + line_3_manual + W_2_W_2_T.double()
+    line2_manual = torch.matmul(torch.matmul(W_2_W_2_T, manual_D_2), manual_G_2)
+    line_3_manual = torch.matmul(torch.matmul(manual_G_2.T, manual_D_2.T), W_2_W_2_T.T)
+    manual_P_c1_2 = P_c1_2_part1 + line2_manual + line_3_manual + W_2_W_2_T
     manual_P_c1_2 = manual_P_c1_2.reshape(NUM_CLIENTS * Y_DIM, NUM_CLIENTS * Y_DIM)
 
     assert torch.allclose(clients[1].P[2], manual_P_c1_2, rtol=0.0, atol=1e-4)
 
     # S for client 1
     S_c1_2_line1 = torch.matmul(
-        torch.matmul(manual_G_2.T, (manual_A_hat_2 + clients[1].gamma * e_hat_c1_e_hat_c1.double())), manual_H_2
+        torch.matmul(manual_G_2.T, (manual_A_hat_2 + clients[1].gamma * e_hat_c1_e_hat_c1)), manual_H_2
     )
     S_c1_2_line2 = torch.matmul(torch.matmul(W_2_W_2_T, manual_D_2), manual_H_2)
     S_c1_2_line3 = torch.matmul(
-        torch.matmul(manual_G_2.T, manual_D_2.T).double(),
-        -1 * torch.matmul(bold_w_2.double(), TARGET_SEQUENCE[3].reshape(-1, 1).double()),
+        torch.matmul(manual_G_2.T, manual_D_2.T),
+        -1 * torch.matmul(bold_w_2, TARGET_SEQUENCE[3].reshape(-1, 1)),
     )
-    S_c1_2_line4 = -1 * torch.matmul(bold_w_2, TARGET_SEQUENCE[3].reshape(-1, 1).double())
+    S_c1_2_line4 = -1 * torch.matmul(bold_w_2, TARGET_SEQUENCE[3].reshape(-1, 1))
 
     manual_S_c1_2 = S_c1_2_line1 + S_c1_2_line2 + S_c1_2_line3 + S_c1_2_line4
     assert torch.allclose(clients[1].S[2], manual_S_c1_2, rtol=0.0, atol=1e-5)
@@ -294,15 +289,15 @@ def test_game_round_server(monkeypatch) -> None:
     # Checking A hat for T-2 (t=1)
     mixture_weights_1 = mixture_weights[1]
     bold_w_1 = game.create_bold_w_t(mixture_weights_1)
-    W_1_W_1_T = torch.matmul(bold_w_1, bold_w_1.T).double()
-    manual_A_hat_1 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM)).double()
+    W_1_W_1_T = torch.matmul(bold_w_1, bold_w_1.T)
+    manual_A_hat_1 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM))
     for i in range(NUM_CLIENTS):
         # here we don't need to convert times because it is the first game round
-        Z_1 = clients[i].state.get_hidden_state_t(1).double()
-        e_i = clients[i].get_e(NUM_CLIENTS).double()
+        Z_1 = clients[i].state.get_hidden_state_t(1)
+        e_i = clients[i].get_e(NUM_CLIENTS)
         for j in range(NUM_CLIENTS):
-            Z_1_j = clients[j].state.get_hidden_state_t(1).double()
-            e_j = clients[j].get_e(NUM_CLIENTS).double()
+            Z_1_j = clients[j].state.get_hidden_state_t(1)
+            e_j = clients[j].get_e(NUM_CLIENTS)
             manual_A_hat_1[i, j] = torch.matmul(
                 torch.matmul(torch.matmul(Z_1.T, e_i.T), W_1_W_1_T), torch.matmul(e_j, Z_1_j)
             )
@@ -312,25 +307,23 @@ def test_game_round_server(monkeypatch) -> None:
     # Checking D for T-2 (t=1)
     manual_D_1_list = []
     for i in range(NUM_CLIENTS):
-        e_i = clients[i].get_e(NUM_CLIENTS).double()
-        Z_i = clients[i].state.get_hidden_state_t(1).double()
+        e_i = clients[i].get_e(NUM_CLIENTS)
+        Z_i = clients[i].state.get_hidden_state_t(1)
         manual_D_1_list.append(torch.matmul(e_i, Z_i))
 
     manual_D_1 = torch.cat(manual_D_1_list, dim=1)
     assert torch.allclose(game.game_state.get_D_t(1), manual_D_1, rtol=0.0, atol=1e-5)
 
     # Checking A_1
-    manual_A_1 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM)).double()
+    manual_A_1 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM))
     for i, client_i in enumerate(clients):
         for j, client_j in enumerate(clients):
             manual_A_1[i, j] = torch.matmul(
                 torch.matmul(
-                    torch.matmul(
-                        client_i.state.get_hidden_state_t(1).T.double(), client_i.get_e(NUM_CLIENTS).T.double()
-                    ),
-                    client_i.P[2].double(),
+                    torch.matmul(client_i.state.get_hidden_state_t(1).T, client_i.get_e(NUM_CLIENTS).T),
+                    client_i.P[2],
                 ),
-                torch.matmul(client_j.get_e(NUM_CLIENTS).double(), client_j.state.get_hidden_state_t(1).double()),
+                torch.matmul(client_j.get_e(NUM_CLIENTS), client_j.state.get_hidden_state_t(1)),
             )
     manual_A_1 = manual_A_1.reshape(NUM_CLIENTS * Z_DIM, NUM_CLIENTS * Z_DIM)
     assert torch.allclose(game.game_state.get_A_t(1), manual_A_1, rtol=0.0, atol=1e-5)
@@ -360,7 +353,7 @@ def test_game_round_server(monkeypatch) -> None:
 
     # Checking G hat for T-2 (t=1) (needs D_1 and \hat{A}_1, A_1, and B_1)
 
-    Iz = torch.eye(Z_DIM).double()
+    Iz = torch.eye(Z_DIM)
     alpha_tensor = torch.exp(torch.Tensor([-1 * client.alpha for client in clients]))
     exp_neg_alpha = torch.block_diag(*[alpha * Iz for alpha in alpha_tensor])
     bold_gamma = torch.block_diag(*[client.gamma * Iz for client in clients])
@@ -378,8 +371,8 @@ def test_game_round_server(monkeypatch) -> None:
     manual_H_1_part1 = torch.add(torch.add(e_t_1_gamma, manual_A_1), torch.matmul(exp_neg_alpha, manual_A_hat_1))
     manual_H_1_part2 = (
         torch.matmul(
-            torch.matmul(torch.matmul(exp_neg_alpha, game.game_state.get_D_t(1).double().T), bold_w_1.double()),
-            TARGET_SEQUENCE[2].reshape(-1, 1).double(),
+            torch.matmul(torch.matmul(exp_neg_alpha, game.game_state.get_D_t(1).T), bold_w_1),
+            TARGET_SEQUENCE[2].reshape(-1, 1),
         )
         - manual_C_1
     )
@@ -388,15 +381,15 @@ def test_game_round_server(monkeypatch) -> None:
     assert torch.allclose(game.game_state.get_H_t(1), manual_H_1, rtol=0.0, atol=1e-5)
 
     # Checking D_i_1 for client 0 and client 1
-    manual_D_c0_1 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM)).double()
+    manual_D_c0_1 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM))
 
     for client in clients:
-        e_i = client.get_e(NUM_CLIENTS).double()
-        Z_i = client.state.get_hidden_state_t(1).double()
-        first_term = torch.matmul(torch.matmul(e_i, Z_i).T, clients[0].P[2].double())
+        e_i = client.get_e(NUM_CLIENTS)
+        Z_i = client.state.get_hidden_state_t(1)
+        first_term = torch.matmul(torch.matmul(e_i, Z_i).T, clients[0].P[2])
         for client_j in clients:
-            e_j = client_j.get_e(NUM_CLIENTS).double()
-            Z_j = client_j.state.get_hidden_state_t(1).double()
+            e_j = client_j.get_e(NUM_CLIENTS)
+            Z_j = client_j.state.get_hidden_state_t(1)
             item = torch.matmul(first_term, torch.matmul(e_j, Z_j))
             manual_D_c0_1[client.id][client_j.id] = item
 
@@ -405,14 +398,14 @@ def test_game_round_server(monkeypatch) -> None:
     assert torch.allclose(clients[0].D[1], manual_D_c0_1, rtol=0.0, atol=1e-5)
 
     # D_1 for client 1
-    manual_D_c1_1 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM)).double()
+    manual_D_c1_1 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM))
     for client in clients:
-        e_i = client.get_e(NUM_CLIENTS).double()
-        Z_i = client.state.get_hidden_state_t(1).double()
-        first_term = torch.matmul(torch.matmul(e_i, Z_i).T, clients[1].P[2].double())
+        e_i = client.get_e(NUM_CLIENTS)
+        Z_i = client.state.get_hidden_state_t(1)
+        first_term = torch.matmul(torch.matmul(e_i, Z_i).T, clients[1].P[2])
         for client_j in clients:
-            e_j = client_j.get_e(NUM_CLIENTS).double()
-            Z_j = client_j.state.get_hidden_state_t(1).double()
+            e_j = client_j.get_e(NUM_CLIENTS)
+            Z_j = client_j.state.get_hidden_state_t(1)
             item = torch.matmul(first_term, torch.matmul(e_j, Z_j))
             manual_D_c1_1[client.id][client_j.id] = item
 
@@ -496,15 +489,15 @@ def test_game_round_server(monkeypatch) -> None:
     # Checking A hat for T-3 (t=0)
     mixture_weights_0 = mixture_weights[0]
     bold_w_0 = game.create_bold_w_t(mixture_weights_0)
-    W_0_W_0_T = torch.matmul(bold_w_0, bold_w_0.T).double()
-    manual_A_hat_0 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM)).double()
+    W_0_W_0_T = torch.matmul(bold_w_0, bold_w_0.T)
+    manual_A_hat_0 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM))
     for i in range(NUM_CLIENTS):
         # here we don't need to convert times because it is the first game round
-        Z_0 = clients[i].state.get_hidden_state_t(0).double()
-        e_i = clients[i].get_e(NUM_CLIENTS).double()
+        Z_0 = clients[i].state.get_hidden_state_t(0)
+        e_i = clients[i].get_e(NUM_CLIENTS)
         for j in range(NUM_CLIENTS):
-            Z_0_j = clients[j].state.get_hidden_state_t(0).double()
-            e_j = clients[j].get_e(NUM_CLIENTS).double()
+            Z_0_j = clients[j].state.get_hidden_state_t(0)
+            e_j = clients[j].get_e(NUM_CLIENTS)
             manual_A_hat_0[i, j] = torch.matmul(
                 torch.matmul(torch.matmul(Z_0.T, e_i.T), W_0_W_0_T), torch.matmul(e_j, Z_0_j)
             )
@@ -514,25 +507,23 @@ def test_game_round_server(monkeypatch) -> None:
     # Checking D for T-3 (t=0)
     manual_D_0_list = []
     for i in range(NUM_CLIENTS):
-        e_i = clients[i].get_e(NUM_CLIENTS).double()
-        Z_i = clients[i].state.get_hidden_state_t(0).double()
+        e_i = clients[i].get_e(NUM_CLIENTS)
+        Z_i = clients[i].state.get_hidden_state_t(0)
         manual_D_0_list.append(torch.matmul(e_i, Z_i))
 
     manual_D_0 = torch.cat(manual_D_0_list, dim=1)
     assert torch.allclose(game.game_state.get_D_t(0), manual_D_0, rtol=0.0, atol=1e-5)
 
     # Checking A_0
-    manual_A_0 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM)).double()
+    manual_A_0 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM))
     for i, client_i in enumerate(clients):
         for j, client_j in enumerate(clients):
             manual_A_0[i, j] = torch.matmul(
                 torch.matmul(
-                    torch.matmul(
-                        client_i.state.get_hidden_state_t(0).T.double(), client_i.get_e(NUM_CLIENTS).T.double()
-                    ),
-                    client_i.P[1].double(),
+                    torch.matmul(client_i.state.get_hidden_state_t(0).T, client_i.get_e(NUM_CLIENTS).T),
+                    client_i.P[1],
                 ),
-                torch.matmul(client_j.get_e(NUM_CLIENTS).double(), client_j.state.get_hidden_state_t(0).double()),
+                torch.matmul(client_j.get_e(NUM_CLIENTS), client_j.state.get_hidden_state_t(0)),
             )
     manual_A_0 = manual_A_0.reshape(NUM_CLIENTS * Z_DIM, NUM_CLIENTS * Z_DIM)
     assert torch.allclose(game.game_state.get_A_t(0), manual_A_0, rtol=0.0, atol=1e-5)
@@ -561,7 +552,7 @@ def test_game_round_server(monkeypatch) -> None:
     assert torch.allclose(game.game_state.get_C_t(0), manual_C_0, rtol=0.0, atol=1e-5)
 
     # Checking G hat for T-3 (t=0) (needs D_0 and \hat{A}_0, A_0, and B_0)
-    Iz = torch.eye(Z_DIM).double()
+    Iz = torch.eye(Z_DIM)
     alpha_tensor = torch.exp(torch.Tensor([-1 * 2 * client.alpha for client in clients]))
     exp_neg_2alpha = torch.block_diag(*[alpha * Iz for alpha in alpha_tensor])
     bold_gamma = torch.block_diag(*[client.gamma * Iz for client in clients])
@@ -579,8 +570,8 @@ def test_game_round_server(monkeypatch) -> None:
     manual_H_0_part1 = torch.add(torch.add(e_t_0_gamma, manual_A_0), torch.matmul(exp_neg_2alpha, manual_A_hat_0))
     manual_H_0_part2 = (
         torch.matmul(
-            torch.matmul(torch.matmul(exp_neg_2alpha, game.game_state.get_D_t(0).double().T), bold_w_0.double()),
-            TARGET_SEQUENCE[1].reshape(-1, 1).double(),
+            torch.matmul(torch.matmul(exp_neg_2alpha, game.game_state.get_D_t(0).T), bold_w_0),
+            TARGET_SEQUENCE[1].reshape(-1, 1),
         )
         - manual_C_0
     )
@@ -589,15 +580,15 @@ def test_game_round_server(monkeypatch) -> None:
     assert torch.allclose(game.game_state.get_H_t(0), manual_H_0, rtol=0.0, atol=1e-5)
 
     # Checking D_i_0 for client 0 and client 1
-    manual_D_c0_0 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM)).double()
+    manual_D_c0_0 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM))
 
     for client in clients:
-        e_i = client.get_e(NUM_CLIENTS).double()
-        Z_i = client.state.get_hidden_state_t(0).double()
-        first_term = torch.matmul(torch.matmul(e_i, Z_i).T, clients[0].P[1].double())
+        e_i = client.get_e(NUM_CLIENTS)
+        Z_i = client.state.get_hidden_state_t(0)
+        first_term = torch.matmul(torch.matmul(e_i, Z_i).T, clients[0].P[1])
         for client_j in clients:
-            e_j = client_j.get_e(NUM_CLIENTS).double()
-            Z_j = client_j.state.get_hidden_state_t(0).double()
+            e_j = client_j.get_e(NUM_CLIENTS)
+            Z_j = client_j.state.get_hidden_state_t(0)
             item = torch.matmul(first_term, torch.matmul(e_j, Z_j))
             manual_D_c0_0[client.id][client_j.id] = item
 
@@ -606,14 +597,14 @@ def test_game_round_server(monkeypatch) -> None:
     assert torch.allclose(clients[0].D[0], manual_D_c0_0, rtol=0.0, atol=1e-5)
 
     # D_0 for client 1
-    manual_D_c1_0 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM)).double()
+    manual_D_c1_0 = torch.zeros((NUM_CLIENTS, NUM_CLIENTS, Z_DIM, Z_DIM))
     for client in clients:
-        e_i = client.get_e(NUM_CLIENTS).double()
-        Z_i = client.state.get_hidden_state_t(0).double()
-        first_term = torch.matmul(torch.matmul(e_i, Z_i).T, clients[1].P[1].double())
+        e_i = client.get_e(NUM_CLIENTS)
+        Z_i = client.state.get_hidden_state_t(0)
+        first_term = torch.matmul(torch.matmul(e_i, Z_i).T, clients[1].P[1])
         for client_j in clients:
-            e_j = client_j.get_e(NUM_CLIENTS).double()
-            Z_j = client_j.state.get_hidden_state_t(0).double()
+            e_j = client_j.get_e(NUM_CLIENTS)
+            Z_j = client_j.state.get_hidden_state_t(0)
             item = torch.matmul(first_term, torch.matmul(e_j, Z_j))
             manual_D_c1_0[client.id][client_j.id] = item
 
@@ -699,7 +690,7 @@ def test_game_round_server(monkeypatch) -> None:
 
     # ##### now that we have all the matrices for the first round of the game, we can compute optimal betas.
 
-    Y_0 = torch.cat([torch.Tensor(TARGET_SEQUENCE[0].reshape(-1, 1).double()) for client in clients], dim=0)
+    Y_0 = torch.cat([torch.Tensor(TARGET_SEQUENCE[0].reshape(-1, 1)) for client in clients], dim=0)
     assert Y_0.shape == (NUM_CLIENTS * Y_DIM, 1)
 
     # Second for loop in game (forward loop) for 0 to T-1

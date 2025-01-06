@@ -3,6 +3,8 @@ from typing import List
 
 import torch
 
+torch.set_default_dtype(torch.float64)
+
 
 @dataclass
 class ClientState:

@@ -12,6 +12,8 @@ from fedmoe.datasets.periodic_dataset import TimeInputPeriodic, TimeSeriesPeriod
 from fedmoe.datasets.simple_datasets import TimeSeriesLinearLine, TimeSeriesQuadratic, TimeSeriesSineSignal
 from fedmoe.datasets.time_series_data import TimeSeries2DXY, TimeSeriesData
 
+torch.set_default_dtype(torch.float64)
+
 
 class DataOptions(Enum):
     PERIODIC_SIGNAL: str = "periodic_signal"

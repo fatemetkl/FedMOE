@@ -13,6 +13,8 @@ from fedmoe.tests.utils import (
     setup_transformer_structure_patch,
 )
 
+torch.set_default_dtype(torch.float64)
+
 Z_DIM = 3
 T = 3
 
@@ -43,13 +45,11 @@ def test_transformer_loss(monkeypatch) -> None:
     for time in range(num_rounds + 1):
         loss_value = torch.sum(
             torch.pow(
-                torch.subtract(
-                    server.server_outputs[time].squeeze(-1).detach(), torch.Tensor(target_sequence[time]).double()
-                ),
+                torch.subtract(server.server_outputs[time].squeeze(-1).detach(), torch.Tensor(target_sequence[time])),
                 2,
             )
         )
         loss += loss_value
-    sqrt_loss = torch.sqrt(torch.div(loss, (num_rounds + 1)).double())
+    sqrt_loss = torch.sqrt(torch.div(loss, (num_rounds + 1)))
     metric_pow_2 = metric_value["server - server_predictions - RMSE"] ** 2
     assert math.isclose(sqrt_loss, metric_pow_2, rel_tol=0.0, abs_tol=0.3)

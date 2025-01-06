@@ -5,6 +5,8 @@ from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
 
+torch.set_default_dtype(torch.float64)
+
 TOTAL_ROUNDS = 10
 data_object = load_data("periodic_signal", TOTAL_ROUNDS + 1)
 Z_DIM = 4

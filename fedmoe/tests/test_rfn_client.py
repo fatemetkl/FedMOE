@@ -5,6 +5,8 @@ import torch
 from fedmoe.clients.client import Client
 from fedmoe.tests.utils import get_data_and_target_sequences, get_rfn_client_manager
 
+torch.set_default_dtype(torch.float64)
+
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 
 
@@ -52,9 +54,9 @@ def test_client_side_optimization() -> None:
     assert torch.allclose(client_0_y_t, y_t_target, rtol=0.0, atol=1e-5)
 
     # Manually perform ridge regression solution
-    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(z_dim, dtype=torch.double)
+    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(z_dim)
     b = torch.matmul(X_t_target.T, y_t_target)
-    client_0_beta_target = torch.linalg.solve(A.double(), b.double())
+    client_0_beta_target = torch.linalg.solve(A, b)
     client_0_beta = client_0.optimize_beta(t)
     assert torch.allclose(client_0_beta, client_0_beta_target, rtol=0.0, atol=1e-5)
 
@@ -82,7 +84,7 @@ def test_client_side_optimization() -> None:
     # Resetting client 0's current time to -1 because it will be increased to 1 in fit_clients
     client_0.state._current_time = -1
     predictions = client_manager.fit_clients(t)
-    assert torch.allclose(predictions[:, 0], client_0_preds_target_t1.squeeze())
+    assert torch.allclose(predictions[0, :], client_0_preds_target_t1.squeeze())
 
     # Making prediction for t=2
     t = 1
@@ -106,9 +108,9 @@ def test_client_side_optimization() -> None:
     assert torch.allclose(client_0_y_t, y_t_target, rtol=0.0, atol=1e-5)
 
     # Manually perform ridge regression solution
-    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(z_dim, dtype=torch.double)
-    b = torch.matmul(X_t_target.T.double(), y_t_target.double())
-    client_0_beta_target = torch.linalg.solve(A.double(), b.double())
+    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(z_dim)
+    b = torch.matmul(X_t_target.T, y_t_target)
+    client_0_beta_target = torch.linalg.solve(A, b)
     client_0_beta = client_0.optimize_beta(t)
     assert torch.allclose(client_0_beta, client_0_beta_target, rtol=0.0, atol=1e-5)
 
@@ -137,7 +139,7 @@ def test_client_side_optimization() -> None:
     # Resetting client 0's current time to 0 because it will be increased to 1 in fit_clients.
     client_0.state._current_time = 0
     predictions = client_manager.fit_clients(t)
-    assert torch.allclose(predictions[:, 0], client_0_preds_target_t2.squeeze())
+    assert torch.allclose(predictions[0, :], client_0_preds_target_t2.squeeze())
 
     # t = 5 (We want to make sure we're looking back the way we should )
     for t in [2, 3]:
@@ -175,9 +177,9 @@ def test_client_side_optimization() -> None:
     assert torch.allclose(client_0_y_t, y_t_target, rtol=0.0, atol=1e-5)
 
     # Manually perform ridge regression solution
-    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(z_dim, dtype=torch.double)
-    b = torch.matmul(X_t_target.T.double(), y_t_target.double())
-    client_0_beta_target = torch.linalg.solve(A.double(), b.double())
+    A = torch.matmul(X_t_target.T, X_t_target) + gamma * torch.eye(z_dim)
+    b = torch.matmul(X_t_target.T, y_t_target)
+    client_0_beta_target = torch.linalg.solve(A, b)
     client_0_beta = client_0.optimize_beta(t)
     assert torch.allclose(client_0_beta, client_0_beta_target, rtol=0.0, atol=1e-5)
 
@@ -208,12 +210,12 @@ def test_client_side_optimization() -> None:
     # Resetting client 0's current time to 3 because it will be increased to 4 in fit_clients.
     client_0.state._current_time = 3
     predictions = client_manager.fit_clients(t)
-    assert torch.allclose(predictions[:, 0], client_0_preds_target_t5.squeeze())
+    assert torch.allclose(predictions[0, :], client_0_preds_target_t5.squeeze())
 
     # Ensure that beta is minimal for objective function
     opt_sum = compute_objective(client_0, client_0_beta, alpha, gamma, t)
     # test whether any randomly drawn betas are better
     for i in range(100000):
-        test_beta = torch.randn((z_dim, 1)).double()
+        test_beta = torch.randn((z_dim, 1))
         test_sum = compute_objective(client_0, test_beta, alpha, gamma, t)
         assert test_sum > opt_sum, f"opt sum: {opt_sum}, test_sum: {test_sum}, test_beta: {test_beta}"

@@ -10,6 +10,8 @@ from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_transformer_client_manager, setup_transformer_structure_patch
 
+torch.set_default_dtype(torch.float64)
+
 
 def do_not_test_input_output_shapes_rfn() -> None:
     brownian_data_obj = TimeSeriesBrownianTarget(
@@ -19,7 +21,7 @@ def do_not_test_input_output_shapes_rfn() -> None:
     input_sequence = brownian_data_obj.target_matrix
     assert input_sequence.shape == (100, 50)
     # Test the initial values to be set to our specified offset.
-    assert torch.allclose(0.1 * torch.ones((50)).double(), input_sequence[0, :], rtol=0.0, atol=1e-5)
+    assert torch.allclose(0.1 * torch.ones((50)), input_sequence[0, :], rtol=0.0, atol=1e-5)
 
     num_clients = 3
     T = 10

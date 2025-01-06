@@ -52,24 +52,24 @@ class Server:
         predictions = predictions.reshape(self.y_dim, self.num_clients)
         assert y_t.shape == (self.y_dim, 1)
 
-        one_N = torch.ones(self.num_clients, 1).double()
+        one_N = torch.ones(self.num_clients, 1)
 
         A = 2 * (torch.matmul(predictions.transpose(0, 1), predictions) + self.kappa * torch.eye(self.num_clients))
-        b = 2 * torch.transpose(torch.matmul(y_t.transpose(0, 1).double(), predictions.double()), 0, 1)
+        b = 2 * torch.transpose(torch.matmul(y_t.transpose(0, 1), predictions), 0, 1)
 
         numerator = (
             torch.matmul(
-                torch.matmul(one_N.transpose(0, 1).double(), torch.inverse(A).double()),
-                b.double(),
+                torch.matmul(one_N.transpose(0, 1), torch.inverse(A)),
+                b,
             )
             - self.eta
         )
         denominator = torch.matmul(
-            torch.matmul(one_N.transpose(0, 1).double(), torch.inverse(A).double()),
-            one_N.double(),
+            torch.matmul(one_N.transpose(0, 1), torch.inverse(A)),
+            one_N,
         )
-        division = numerator.double() / denominator.double()
-        w_t = torch.matmul(torch.inverse(A).double(), (b.double() - (division.double() * one_N.double())))
+        division = numerator / denominator
+        w_t = torch.matmul(torch.inverse(A), (b - (division * one_N)))
         assert w_t.shape == (self.num_clients, 1)
         return w_t
 
@@ -113,7 +113,7 @@ class Server:
 
             # Parallel
             w_tw_tT = torch.matmul(bold_w_t, bold_w_t.T)
-            wty_next_t = torch.matmul(bold_w_t, past_observed_values[game_t + 1].double())
+            wty_next_t = torch.matmul(bold_w_t, past_observed_values[game_t + 1])
             for client_id in range(0, self.num_clients):
                 client_Dt = self.game.calculate_Dt_client(game_t, client_id)
                 self.game.set_client_Dt(game_t, client_id, dt_value=client_Dt)
@@ -161,13 +161,13 @@ class Server:
         # Initialize w_neg1 randomly satisfying the constraint that the elements sum to eta.
         # We don't explicitly keep track of w_neg1,
         # but we use it to initialize first server prediction \hat{y}_0
-        w_neg1 = torch.randn((self.num_clients, 1)).double()
+        w_neg1 = torch.randn((self.num_clients, 1))
         w_neg1 = self.eta * w_neg1 / torch.sum(w_neg1)
         # self.mixture_weights.append(w_neg1)
         # We don't need to calculate w_0 because it is computed in the first round.
 
         # Mixture weights produce our "server prediction" here: \hat{y}_0 = hat_Y_0 * w_neg1
-        self.server_outputs.append(torch.matmul(w_neg1.T, hat_Y_0.double()).T)
+        self.server_outputs.append(torch.matmul(w_neg1.T, hat_Y_0).T)
         for t in range(0, num_rounds):
             # At step t, target is to predict t+1
             # last_observed_value = y_{t} since we're predicting for t+1.
@@ -180,7 +180,7 @@ class Server:
             new_predictions = self.client_manager.fit_clients(t)
             #  Now optimize mixture weights based on clients' previous time-step predictions (Y_{t}).
             #  We use t predictions because we also need ground truth (y_{t}).
-            w_t = self.compute_mixture_weights(self.clients_predictions[t].double(), last_observed_value.double())
+            w_t = self.compute_mixture_weights(self.clients_predictions[t], last_observed_value)
             self.mixture_weights.append(w_t)
 
             # if t%T == 0, we update predictions based on Nash game.
@@ -219,7 +219,7 @@ class Server:
 
             # Shape of W^T\hat{Y} would be 1 x d_y, but we transpose it to get dy x 1
 
-            server_output = torch.matmul(w_t.double().T, new_predictions.double()).T
+            server_output = torch.matmul(w_t.T, new_predictions).T
 
             self.server_outputs.append(server_output)
 

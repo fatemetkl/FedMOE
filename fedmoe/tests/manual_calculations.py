@@ -6,6 +6,8 @@ import torch
 
 from fedmoe.clients.client import Client
 
+torch.set_default_dtype(torch.float64)
+
 
 def manual_block_1() -> Tuple[torch.Tensor, torch.Tensor]:
     input_w_2 = [[0.5000], [0.5000]]

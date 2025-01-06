@@ -79,7 +79,7 @@ class Game(ABC):
         """
         Calculates e^{- bold_alpha * (T- 1 - t)}
         """
-        Iz = torch.eye(self.z_dim).double()
+        Iz = torch.eye(self.z_dim)
         alpha_tensor = torch.exp(
             torch.Tensor([-1 * client.alpha * (self.sync_freq - 1 - t) for client in self.clients])
         )
@@ -92,7 +92,7 @@ class Game(ABC):
         Calculates e^{- bold_alpha * (T- 1 - t)} * bold_gamma
         """
         e_alpha = self.get_e_alpha(t)
-        Iz = torch.eye(self.z_dim).double()
+        Iz = torch.eye(self.z_dim)
         bold_gamma = torch.block_diag(*[client.gamma * Iz for client in self.clients])
         # Output shape: Nd_z x Nd_z
         assert bold_gamma.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
@@ -103,8 +103,8 @@ class Game(ABC):
     def create_bold_w_t(self, latest_mixture_weights: torch.Tensor) -> torch.Tensor:
         W_list = []
         for w_Tn in latest_mixture_weights:
-            W_list.append(w_Tn.double() * torch.eye(self.y_dim).double())
-        W_t = torch.cat(W_list, dim=1).T.double()
+            W_list.append(w_Tn * torch.eye(self.y_dim))
+        W_t = torch.cat(W_list, dim=1).T
         assert W_t.shape == (self.num_clients * self.y_dim, self.y_dim)
         return W_t
 
@@ -134,7 +134,7 @@ class Game(ABC):
         self.e_alpha_gamma_A_inv = None
 
     def calculate_a(self, game_time: int) -> torch.Tensor:
-        At = torch.zeros(self.num_clients, self.num_clients, self.z_dim, self.z_dim, dtype=torch.float64)
+        At = torch.zeros(self.num_clients, self.num_clients, self.z_dim, self.z_dim)
         for i in range(self.num_clients):
             for j in range(self.num_clients):
                 item = self.get_A_ij_t(game_time, i, j)
@@ -144,7 +144,7 @@ class Game(ABC):
 
     def calculate_a_hat(self, game_time: int, bold_w_t: torch.Tensor) -> torch.Tensor:
         assert bold_w_t.shape == (self.num_clients * self.y_dim, self.y_dim)
-        A_hat_t = torch.zeros(self.num_clients, self.num_clients, self.z_dim, self.z_dim, dtype=torch.float64)
+        A_hat_t = torch.zeros(self.num_clients, self.num_clients, self.z_dim, self.z_dim)
         for i in range(self.num_clients):
             for j in range(self.num_clients):
                 item = self.get_A_hat_ij_t(game_time, i, j, bold_w_t)
@@ -158,7 +158,7 @@ class Game(ABC):
             expected_e_Z = self.get_expectation_e_zt(t, client)
             # e is Ny_dim x y_dim and Z is y_dim x z_dim -> E[eZ]'s shape is Ny_dim x z_dim
             # P is Ny_dim x Ny_dim
-            client_B = torch.matmul(client.P[t + 1].double(), expected_e_Z.double()).T
+            client_B = torch.matmul(client.P[t + 1], expected_e_Z).T
             assert client_B.shape == (self.z_dim, self.num_clients * self.y_dim)
             B_list.append(client_B)
         B = torch.cat(B_list, dim=0)
@@ -171,7 +171,7 @@ class Game(ABC):
             expected_e_Z = self.get_expectation_e_zt(t, client)
             # E[eZ]'s shape is Ny_dim x z_dim
             # S_t's shape is Ny_dim x 1
-            C_list.append(torch.matmul(expected_e_Z.T.double(), client.S[t + 1].double()))
+            C_list.append(torch.matmul(expected_e_Z.T, client.S[t + 1]))
         C = torch.cat(C_list, dim=0)
         assert C.shape == (self.num_clients * self.z_dim, 1)
         return C
@@ -206,21 +206,20 @@ class Game(ABC):
     def calculate_h(self, t: int, bold_w_t: torch.Tensor, next_y: torch.Tensor) -> torch.Tensor:
 
         e_neg_alpha_t = self.get_e_alpha(t)
-        e_neg_alpha_t_gamma = self.get_e_alpha_gamma(t).double()
+        e_neg_alpha_t_gamma = self.get_e_alpha_gamma(t)
         first_term = torch.add(
-            torch.add(e_neg_alpha_t_gamma.double(), self.game_state.get_A_t(t).double()),
-            torch.matmul(e_neg_alpha_t.double(), self.game_state.get_A_hat_t(t).double()),
+            torch.add(e_neg_alpha_t_gamma, self.game_state.get_A_t(t)),
+            torch.matmul(e_neg_alpha_t, self.game_state.get_A_hat_t(t)),
         )
 
         assert first_term.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
 
-        bold_w_t_next_y = torch.matmul(bold_w_t.double(), next_y.double())
+        bold_w_t_next_y = torch.matmul(bold_w_t, next_y)
         assert next_y.shape == (self.y_dim, 1), f"Error in shape of next_y: {next_y.shape}"
 
-        second_term = (
-            torch.matmul(torch.matmul(e_neg_alpha_t, self.game_state.get_D_t(t).T.double()), bold_w_t_next_y.double())
-            - self.game_state.get_C_t(t).double()
-        )
+        second_term = torch.matmul(
+            torch.matmul(e_neg_alpha_t, self.game_state.get_D_t(t).T), bold_w_t_next_y
+        ) - self.game_state.get_C_t(t)
         assert second_term.shape == (self.num_clients * self.z_dim, 1), f"shape is {second_term.shape}"
         inv_matrix = torch.linalg.inv(first_term)
         h_t = torch.matmul(inv_matrix, second_term.to(torch.float64))
@@ -234,10 +233,10 @@ class Game(ABC):
         # output shape: N*d_z*N*d_z
         e_alpha_gamma_A = torch.add(e_alpha_gamma_t, A_t)
         assert e_alpha_gamma_A.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
-        return torch.linalg.inv(e_alpha_gamma_A).double()
+        return torch.linalg.inv(e_alpha_gamma_A)
 
     def calculate_Dt_client(self, game_time: int, client_id: int) -> torch.Tensor:
-        Dt_client = torch.zeros(self.num_clients, self.num_clients, self.z_dim, self.z_dim, dtype=torch.float64)
+        Dt_client = torch.zeros(self.num_clients, self.num_clients, self.z_dim, self.z_dim)
         P_t_plus_1_client = self.get_client_pt(t=(game_time + 1), client_id=client_id)
         for i in range(self.num_clients):
             for j in range(self.num_clients):
