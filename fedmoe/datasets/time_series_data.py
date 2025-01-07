@@ -115,7 +115,7 @@ class TimeSeriesData:
                 added to the plot.
         """
         for i in range(self.input_matrix.shape[1]):
-            plt.plot(self.time_axis, self.input_matrix[:, i], label=f"Input: x{i+1}", linestyle="--")
+            plt.plot(self.time_axis, self.input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="-", linewidth=2.5)
 
         if plot_info is not None:
             text_content = ""
@@ -125,14 +125,20 @@ class TimeSeriesData:
                 num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
             plt.subplots_adjust(bottom=0.2)
 
-        plt.xlabel("Time Steps")
-        plt.ylabel("Input Value")
-        plt.title("Input")
+        title_font = {"family": "helvetica", "weight": "bold", "size": 20}
+        axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
+        plt.xticks(ticks=self.time_axis.flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xlabel("Time Step", fontdict=title_font)
+        plt.ylabel("Input", fontdict=axis_font)
+        plt.title("Input Features", fontdict=title_font)
 
-        plt.legend()
+        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 14}, labelspacing=0)
+        plt.tight_layout(pad=0.5)
+
         plt.savefig(plot_path)
 
         plt.close()
@@ -172,29 +178,45 @@ class TimeSeriesData:
         }
         # Plot target y
         for i in range(self.target_matrix.shape[1]):
-            plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i}", linestyle=":")
+            plt.plot(
+                self.time_axis, self.target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5
+            )
 
         # Plot server's prediction
         for i in range(server_matrix.shape[1]):
             plt.plot(
-                self.time_axis, server_matrix[:, i].detach().numpy(), label=f"Server prediction Y{i}", linestyle="-"
+                self.time_axis,
+                server_matrix[:, i].detach().numpy(),
+                label=f"Prediction: Server $\\hat{{Y}}_{i+1}$",
+                linestyle=":",
+                linewidth=2.5,
             )
-            # Display synchronization steps as points
-            if game_played and show_points:
-                T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
-                T_values = [server_matrix[j, i].detach().numpy() for j in T_indices]
-                plt.scatter(T_indices, T_values, marker="o", label=f"T step for prediction Y{i}")
-
-        # Display synchronization steps as vertical lines
-        if game_played and not show_points:
-            for j in range(1, int(self.total_time_steps / T)):
-                label = "T time steps" if j == 1 else None
-                plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
 
         if game_played:
-            game_status = "with"
+            if show_points:
+                # Display synchronization steps as points
+                for i in range(server_matrix.shape[1]):
+                    T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
+                    T_values = [server_matrix[j, i].detach().numpy().item() for j in T_indices]
+                    plt.scatter(
+                        T_indices,
+                        T_values,
+                        s=75,
+                        marker="o",
+                        facecolors="r",
+                        edgecolors="r",
+                        zorder=3,
+                    )
+            else:
+                # Display synchronization steps as vertical lines instead
+                for j in range(1, int(self.total_time_steps / T)):
+                    label = "Nash Game Played" if j == 1 else None
+                    plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
+
+        if game_played:
+            game_status = ""
         else:
-            game_status = "without"
+            game_status = "No "
 
         if plot_info is not None:
             text_content = ""
@@ -204,14 +226,20 @@ class TimeSeriesData:
                 num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
             plt.subplots_adjust(bottom=0.2)
 
-        plt.xlabel("Time Steps")
-        plt.ylabel("Value")
-        plt.title(f"Target and Server predicted time-series, {game_status} the game ")
+        title_font = {"family": "helvetica", "weight": "bold", "size": 20}
+        axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
+        plt.xticks(ticks=self.time_axis.flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xlabel("Time Step", fontdict=axis_font)
+        plt.ylabel("Time-Series Values", fontdict=axis_font)
+        plt.title(f"Server Predictions ({game_status}Nash Game)", fontdict=title_font)
 
-        plt.legend()
+        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
+        plt.tight_layout(pad=0.5)
+
         plt.savefig(plot_path)
 
         plt.close()
@@ -256,8 +284,9 @@ class TimeSeriesData:
                 plt.plot(
                     self.time_axis,
                     server_matrix[:, i].detach().numpy(),
-                    label=f"Server prediction Y{i+1}",
-                    linestyle="-",
+                    label=f"Prediction: Server $\\hat{{Y}}_{i+1}$",
+                    linestyle="dashdot",
+                    linewidth=2.5,
                 )
 
         # Shape of client prediction tensor should be time x num_clients x y_dim
@@ -270,20 +299,27 @@ class TimeSeriesData:
             f"Error: client prediction matrix shape is {clients_pred_matrix.shape},\
             but it should be {(self.total_time_steps, plot_info['num_clients'], self.target_matrix.shape[1])}"
         }
+
         if show_target:
             for i in range(self.target_matrix.shape[1]):
-                plt.plot(self.time_axis, self.target_matrix[:, i], label=f"Target: y{i+1}", linestyle=":")
+                plt.plot(
+                    self.time_axis, self.target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5
+                )
+
         if show_input:
             for i in range(self.input_matrix.shape[1]):
-                plt.plot(self.time_axis, self.input_matrix[:, i], label=f"Input: x{i+1}", linestyle="--")
+                plt.plot(
+                    self.time_axis, self.input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="--", linewidth=2.5
+                )
 
         for client in range(int(plot_info["num_clients"])):
             for dim in range(clients_pred_matrix.shape[2]):
                 plt.plot(
                     self.time_axis,
                     clients_pred_matrix[:, client, dim],
-                    label=f"Prediction: client {client}_Y{i+1}",
-                    linestyle="dashdot",
+                    label=f"Prediction: $\\mathregular{{Client}}_{client}$ $\\hat{{Y}}_{dim+1}$",
+                    linestyle=":",
+                    linewidth=2.5,
                 )
 
         if plot_info is not None:
@@ -294,14 +330,20 @@ class TimeSeriesData:
                 num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
             plt.subplots_adjust(bottom=0.2)
 
-        plt.xlabel("Time Steps")
-        plt.ylabel("Prediction Value")
-        plt.title("Individual client predictions")
+        title_font = {"family": "helvetica", "weight": "bold", "size": 20}
+        axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
+        plt.xticks(ticks=self.time_axis.flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xlabel("Time Step", fontdict=axis_font)
+        plt.ylabel("Time-Series Values", fontdict=axis_font)
+        plt.title("Individual Client Predictions", fontdict=title_font)
 
-        plt.legend()
+        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
+        plt.tight_layout(pad=0.5)
+
         plt.savefig(plot_path)
 
         plt.close()
@@ -346,26 +388,37 @@ class TimeSeriesData:
             plt.plot(
                 self.time_axis[:-1],
                 mixture_weights[:, client, 0],
-                label=f"Weight: client{client}",
-                linestyle="dashdot",
+                label=f"Weight: $\\mathregular{{Client}}_{client}$",
+                linestyle="-",
+                linewidth=2.5,
             )
 
-            if game_played and show_points:
-                # Highlight synchronization steps with points
-                T_indices = [i * T for i in range(1, int((self.total_time_steps - 1) / T) + 1)]
-                T_values = [mixture_weights[j, client] for j in T_indices]
-                plt.scatter(T_indices, T_values, marker="o", label="T step")
+        if game_played:
+            if show_lines:
+                # Highlight synchronization time steps with vertical lines
+                for j in range(1, int((self.total_time_steps) / T)):
+                    label = "Nash Game Played" if j == 1 else None
+                    plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
 
-        if game_played and show_lines:
-            # Highlight synchronization time steps with vertical lines
-            for j in range(1, int((self.total_time_steps - 1) / T) + 1):
-                label = "T time steps" if j == 1 else None
-                plt.axvline(x=j * T, color="red", linestyle="--", linewidth=0.5, label=label)
+            if show_points:
+                # Highlight synchronization steps with points
+                for client in range(int(plot_info["num_clients"])):
+                    T_indices = [i * T for i in range(1, int((self.total_time_steps) / T))]
+                    T_values = [mixture_weights[j, client] for j in T_indices]
+                    plt.scatter(
+                        T_indices,
+                        T_values,
+                        marker="o",
+                        s=75,
+                        facecolors="r",
+                        edgecolors="r",
+                        zorder=3,
+                    )
 
         if game_played:
-            game_status = "with"
+            game_status = ""
         else:
-            game_status = "without"
+            game_status = "No "
 
         if plot_info is not None:
             text_content = ""
@@ -375,14 +428,19 @@ class TimeSeriesData:
                 num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
             plt.subplots_adjust(bottom=0.2)
 
-        plt.xlabel("Time Steps")
-        plt.ylabel("Mixture weight values")
-        plt.title(f"Client mixture weights, {game_status} the game ")
+        title_font = {"family": "helvetica", "weight": "bold", "size": 20}
+        axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
+        plt.xticks(ticks=self.time_axis[:-1].flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xlabel("Time Step", fontdict=axis_font)
+        plt.ylabel("Mixture Weight", fontdict=axis_font)
+        plt.title(f"Mixture Weights ({game_status}Nash Game)", fontdict=title_font)
 
-        plt.legend()
+        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 14}, labelspacing=0)
+        plt.tight_layout(pad=0.55)
         plt.savefig(plot_path)
 
         plt.close()

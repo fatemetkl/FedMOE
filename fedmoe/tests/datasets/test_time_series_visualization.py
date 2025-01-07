@@ -36,6 +36,14 @@ def test_time_series_2d_xy(tmp_path: Path) -> None:
     two_d_data_obj.visualize_server_prediction(
         manual_server_prediction, f"{save_dir}/test_plot_server_2.png", T=2, show_points=True, plot_info=plot_info
     )
+    two_d_data_obj.visualize_server_prediction(
+        manual_server_prediction,
+        f"{save_dir}/test_plot_server_3.png",
+        T=2,
+        game_played=True,
+        show_points=True,
+        plot_info=plot_info,
+    )
     two_d_data_obj.visualize_input(f"{save_dir}/test_plot_input.png", plot_info=plot_info)
 
 
@@ -93,3 +101,12 @@ def test_visualize_mixture_weights(tmp_path: Path) -> None:
         "num_clients": num_clients,
     }
     two_d_data_obj.visualize_mixture_weights(manual_mixture_weights, f"{save_dir}/mixture_weights_plot.png", plot_info)
+    two_d_data_obj.visualize_mixture_weights(
+        manual_mixture_weights,
+        f"{save_dir}/mixture_weights_plot_2.png",
+        plot_info,
+        game_played=True,
+        show_points=True,
+        show_lines=True,
+        T=2,
+    )
