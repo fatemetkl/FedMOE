@@ -460,6 +460,7 @@ class TimeSeriesData:
             f"Error:server output matrix has a shape {server_matrix.shape},\
                 but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
         }
+
         squared_error = (server_matrix - self.target_matrix) ** 2
         squared_error = squared_error.flatten()
         plt.hist(squared_error, bins=10)
@@ -472,16 +473,189 @@ class TimeSeriesData:
                 num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content, ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
             plt.subplots_adjust(bottom=0.2)
 
-        game_status = "with" if game_played else "without"
+        game_status = "" if game_played else "No "
 
-        plt.xlabel("Squared Error values")
-        plt.ylabel("Count of Squared Error values")
-        plt.title(f"Histogram of Squared Error {game_status} the game ")
+        title_font = {"family": "helvetica", "weight": "bold", "size": 20}
+        axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
+        plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xlabel("Squared Error Bins", fontdict=axis_font)
+        plt.ylabel("Squared Error Counts", fontdict=axis_font)
+        plt.title(f"Histogram of Squared Errors ({game_status}Nash Game)", fontdict=title_font)
 
-        plt.legend()
+        plt.tight_layout(pad=0.5)
+
+        plt.savefig(plot_path)
+
+        plt.close()
+
+    def visualize_server_squared_errors(
+        self,
+        server_prediction: List[torch.Tensor],
+        plot_path: str,
+        game_played: bool = False,
+        T: int = 0,
+        show_points: Optional[bool] = False,
+        plot_info: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """
+        Saves a time series plot showing the server prediction squared errors
+        """
+
+        if game_played:
+            assert T > 0, "Error: if the game is played, T should be greater than zero."
+
+        server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
+        assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1]), {
+            f"Error:server output matrix has a shape {server_matrix.shape},\
+                but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
+        }
+
+        squared_error = (server_matrix - self.target_matrix) ** 2
+
+        # Plot server's prediction squared errors
+        for i in range(server_matrix.shape[1]):
+            plt.plot(
+                self.time_axis,
+                squared_error[:, i].detach().numpy(),
+                label=f"$(\\hat{{Y}}_{i+1} - y_{i+1})^2$",
+                linestyle="-",
+                linewidth=2.5,
+            )
+
+        if game_played:
+            if show_points:
+                # Display synchronization steps as points
+                for i in range(server_matrix.shape[1]):
+                    T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
+                    T_values = [squared_error[j, i].detach().numpy().item() for j in T_indices]
+                    plt.scatter(
+                        T_indices,
+                        T_values,
+                        s=75,
+                        marker="o",
+                        facecolors="r",
+                        edgecolors="r",
+                        zorder=3,
+                    )
+            else:
+                # Display synchronization steps as vertical lines instead
+                for j in range(1, int(self.total_time_steps / T)):
+                    label = "Nash Game Played" if j == 1 else None
+                    plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
+
+        if plot_info is not None:
+            text_content = ""
+            num_items = 0
+            for key, value in plot_info.items():
+                text_content += f"{key}: {value},"
+                num_items += 1
+                if num_items % 6 == 0:
+                    text_content += "\n"
+            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+            plt.subplots_adjust(bottom=0.2)
+
+        game_status = "" if game_played else "No "
+
+        title_font = {"family": "helvetica", "weight": "bold", "size": 20}
+        axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
+        plt.xticks(ticks=self.time_axis.flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xlabel("Time Step", fontdict=axis_font)
+        plt.ylabel("Squared Error Values", fontdict=axis_font)
+        plt.title(f"Server Squared Errors ({game_status}Nash Game)", fontdict=title_font)
+
+        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
+        plt.tight_layout(pad=0.5)
+
+        plt.savefig(plot_path)
+
+        plt.close()
+
+    def visualize_client_squared_errors(
+        self,
+        client_predictions: List[torch.Tensor],
+        plot_path: str,
+        plot_info: Dict[str, Any],
+        game_played: bool = False,
+        T: int = 0,
+        show_points: Optional[bool] = False,
+    ) -> None:
+        """
+        Saves a time series plot showing the client prediction squared errors
+        """
+
+        if game_played:
+            assert T > 0, "Error: if the game is played, T should be greater than zero."
+
+        clients_pred_matrix = torch.stack(client_predictions, dim=0)
+        assert clients_pred_matrix.shape == (
+            self.total_time_steps,
+            plot_info["num_clients"],
+            self.target_matrix.shape[1],
+        ), {
+            f"Error: client prediction matrix shape is {clients_pred_matrix.shape},\
+            but it should be {(self.total_time_steps, plot_info['num_clients'], self.target_matrix.shape[1])}"
+        }
+
+        for client in range(int(plot_info["num_clients"])):
+            for dim in range(clients_pred_matrix.shape[2]):
+                squared_error = (clients_pred_matrix[:, client, dim] - self.target_matrix[:, dim]) ** 2
+                plt.plot(
+                    self.time_axis,
+                    squared_error,
+                    label=f"$\\mathregular{{Client}}_{client}$: $(\\hat{{Y}}_{dim+1} - y_{dim+1})^2$",
+                    linestyle="-",
+                    linewidth=2.5,
+                )
+
+                if game_played and show_points:
+                    # Display synchronization steps as points
+                    T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
+                    T_values = [squared_error[j].detach().numpy().item() for j in T_indices]
+                    plt.scatter(
+                        T_indices,
+                        T_values,
+                        s=75,
+                        marker="o",
+                        facecolors="r",
+                        edgecolors="r",
+                        zorder=3,
+                    )
+
+        if game_played and not show_points:
+            # Display synchronization steps as vertical lines instead
+            for j in range(1, int(self.total_time_steps / T)):
+                label = "Nash Game Played" if j == 1 else None
+                plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
+
+        if plot_info is not None:
+            text_content = ""
+            num_items = 0
+            for key, value in plot_info.items():
+                text_content += f"{key}: {value},"
+                num_items += 1
+                if num_items % 6 == 0:
+                    text_content += "\n"
+            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+            plt.subplots_adjust(bottom=0.2)
+
+        game_status = "" if game_played else "No "
+
+        title_font = {"family": "helvetica", "weight": "bold", "size": 20}
+        axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
+        plt.xticks(ticks=self.time_axis.flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xlabel("Time Step", fontdict=axis_font)
+        plt.ylabel("Squared Error Values", fontdict=axis_font)
+        plt.title(f"Client Squared Errors ({game_status}Nash Game)", fontdict=title_font)
+
+        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
+        plt.tight_layout(pad=0.5)
+
         plt.savefig(plot_path)
 
         plt.close()
