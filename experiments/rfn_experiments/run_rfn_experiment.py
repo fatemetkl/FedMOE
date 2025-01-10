@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 import torch
 
-from experiments.utils import load_config, load_data, save_to_json
+from experiments.utils import load_config, load_data, save_output_json
 from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
 from fedmoe.game.rfn_game import RfnGame
@@ -130,7 +130,7 @@ def main(
     if config["dump_json"]:
         # Dump results and data in JSON
         tensors_to_save["target"] = [row for row in data_object.target_matrix]
-        save_to_json(tensors_to_save, path=f"{results_dir}")
+        save_output_json(tensors_to_save, path=f"{results_dir}", dict_to_save=plot_info)
 
 
 if __name__ == "__main__":

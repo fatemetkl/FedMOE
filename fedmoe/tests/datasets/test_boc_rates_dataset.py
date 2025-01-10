@@ -397,3 +397,74 @@ def test_various_dataset_assertions() -> None:
         )
 
     assert str(assertion_error.value) == "Inputs and targets should not overlap"
+
+
+def test_cutting_and_dataloader_functionalities() -> None:
+    # Recreating the dataset from the documentation of the boc_rates dataset. USD target, AUD input
+    inputs = [ExchangeRates.AUD_CLOSE]
+    targets = [ExchangeRates.USD_CLOSE]
+    input_lag = [0, 1]
+    target_lag = [0, 1]
+    start_date = datetime(2007, 5, 10)
+    end_date = datetime(2007, 5, 20)
+    dataset = BankOfCanadaExchangeRates(
+        inputs=inputs,
+        targets=targets,
+        input_lags=input_lag,
+        target_lags=target_lag,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    # One target with 2 lags, one input with two lags
+    assert dataset.input_matrix.shape == (11, 4)
+    assert dataset.target_matrix.shape == (11, 1)
+
+    target_input_tensor = torch.tensor(
+        [
+            [0.9200, 0.9200, 1.1112, 1.1055],
+            [0.9200, 0.9200, 1.1122, 1.1112],
+            [0.9200, 0.9200, 1.1122, 1.1122],
+            [0.9200, 0.9200, 1.1122, 1.1122],
+            [0.9200, 0.9200, 1.1070, 1.1122],
+            [0.9200, 0.9200, 1.0988, 1.1070],
+            [0.9100, 0.9200, 1.1039, 1.0988],
+            [0.9100, 0.9100, 1.0987, 1.1039],
+            [0.9000, 0.9100, 1.0895, 1.0987],
+            [0.9000, 0.9000, 1.0895, 1.0895],
+            [0.9000, 0.9000, 1.0895, 1.0895],
+        ]
+    )
+    target_target_tensor = torch.tensor(
+        [[1.1112], [1.1122], [1.1122], [1.1122], [1.1070], [1.0988], [1.1039], [1.0987], [1.0895], [1.0895], [1.0895]]
+    )
+    assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
+    assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
+
+    # Now let's take the first n (n==5) elements of the data sample.
+    dataset.cut_time_steps(5)
+    assert dataset.input_matrix.shape == (5, 4)
+    assert dataset.target_matrix.shape == (5, 1)
+    # Make sure this is the first 5 elements of the original dataset.
+    assert torch.allclose(dataset.input_matrix, target_input_tensor[:5, :], rtol=0.0, atol=1e-6)
+    assert torch.allclose(dataset.target_matrix, target_target_tensor[:5, :], rtol=0.0, atol=1e-6)
+
+    # Now let's see if we can generate a dataloader from this dataset.
+    dataloader = dataset.get_dataloader(num_samples=4, batch_size=2, shuffle=True)
+    for input, target in dataloader:
+        assert input.shape == (2, 5, 4)
+        assert target.shape == (2, 5, 1)
+
+    # Test maybe_random_cut_time_steps function
+    non_random_input, non_random_output = dataset.maybe_random_cut_time_steps(data_sequence_length=4, start_index=3)
+    target_non_random_input = torch.tensor(
+        [
+            [0.9200, 0.9200, 1.1122, 1.1122],
+            [0.9200, 0.9200, 1.1070, 1.1122],
+            [0.9200, 0.9200, 1.0988, 1.1070],
+            [0.9100, 0.9200, 1.1039, 1.0988],
+        ]
+    )
+    target_non_random_target = torch.tensor([[1.1122], [1.1070], [1.0988], [1.1039]])
+    assert torch.allclose(non_random_input, target_non_random_input, rtol=0.0, atol=1e-6)
+    assert torch.allclose(non_random_output, target_non_random_target, rtol=0.0, atol=1e-6)

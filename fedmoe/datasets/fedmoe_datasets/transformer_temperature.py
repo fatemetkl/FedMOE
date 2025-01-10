@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Tuple
@@ -5,8 +6,10 @@ from typing import List, Optional, Tuple
 import matplotlib.pyplot as plt
 import pandas as pd
 import torch
+from fl4health.utils.dataset import BaseDataset
+from torch.utils.data import DataLoader
 
-from fedmoe.datasets.time_series_data import TimeSeriesData
+from fedmoe.datasets.time_series_data import TimeSeriesData, TimeSeriesTorchDataset
 
 torch.set_default_dtype(torch.float64)
 
@@ -197,3 +200,57 @@ class TransformerTemperature(TimeSeriesData):
         ax.set_xlabel("Time")
         ax.set_ylabel("Value")
         plt.show()
+
+    def cut_time_steps(self, data_sequence_length: int) -> None:
+        """
+        Shortens the time series data to the specified length.
+        Keeps from the beginning of the time series.
+
+        Args:
+            data_sequence_length (int): the desired length of the sequence (total_time_steps).
+        """
+        self.original_total_time_steps = self.total_time_steps
+        self.total_time_steps = data_sequence_length
+        self.time_axis = torch.arange(0, self.total_time_steps)
+        self.original_input_matrix = self.input_matrix
+        self.original_target_matrix = self.target_matrix
+        self.input_matrix = self.input_matrix[:data_sequence_length, :]
+        self.target_matrix = self.target_matrix[:data_sequence_length, :]
+
+    def maybe_random_cut_time_steps(
+        self, data_sequence_length: int, start_index: int | None = None
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Randomly cuts the original time series data to the specified length.
+        If start_index is given start from that index and get the sequence.
+        The main usage of this function is for generating samples for dataloader.
+        See self.get_dataloader
+        """
+        if start_index is None:
+            # Generate a random number between 0 and self.original_total_time_steps - data_sequence_length - 1.
+            start_index = random.randint(0, self.original_total_time_steps - data_sequence_length - 1)
+        selected_input_matrix = self.original_input_matrix[start_index : start_index + data_sequence_length, :]
+        selected_target_matrix = self.original_target_matrix[start_index : start_index + data_sequence_length, :]
+        return selected_input_matrix, selected_target_matrix
+
+    def get_dataloader(self, num_samples: int, batch_size: int, shuffle: bool = False) -> DataLoader:
+        """
+        This function can be used to generate data loaders for train or validation, which are mainly
+        used to pre-train the transformer model.
+        Set the shuffle variable to True for validation data loader.
+        """
+        # Generate new data samples
+        data: List[torch.Tensor] = []
+        targets: List[torch.Tensor] = []
+        # Unlike other datasets in TimeSeriesData, boc_exchange dataset does not need the post processing step.
+        # In other words, we don't need to trim the first x and the last y here.
+        for _ in range(num_samples):
+            sample_input, sample_target = self.maybe_random_cut_time_steps(self.total_time_steps)
+            data.append(sample_input)
+            targets.append(sample_target)
+        # every input and output in our dataloader has the shape (self.total_time_steps, x_dim/y_dim)
+        dataset: BaseDataset = TimeSeriesTorchDataset(data, targets)
+
+        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
+        # Each item (input or output) in the data_loader will have a shape of (batch_size, time_steps, dim)
+        return data_loader

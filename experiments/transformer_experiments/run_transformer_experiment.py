@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 import torch
 
 from experiments.transformer_experiments.pre_train_transformer import setup_transformer_structure
-from experiments.utils import load_config, load_data, save_to_json
+from experiments.utils import load_config, load_data, save_output_json
 from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.metrics import MSEMetric
@@ -155,7 +155,7 @@ def main(
     if config["dump_json"]:
         # Dump results and data in JSON
         tensors_to_save["target"] = [row for row in data_object.target_matrix]
-        save_to_json(tensors_to_save, path=f"{results_dir}")
+        save_output_json(tensors_to_save, path=f"{results_dir}", dict_to_save=plot_info)
 
 
 if __name__ == "__main__":
