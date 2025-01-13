@@ -154,6 +154,7 @@ class TimeSeriesData:
         T: int = 0,
         show_points: Optional[bool] = False,
         plot_info: Optional[Dict[str, Any]] = None,
+        dont_show_sync_points: Optional[bool] = False,
     ) -> None:
         """
         Saves plots of target_matrix and prediction_matrix.
@@ -198,25 +199,26 @@ class TimeSeriesData:
             )
 
         if game_played:
-            if show_points:
-                # Display synchronization steps as points
-                for i in range(server_matrix.shape[1]):
-                    T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
-                    T_values = [server_matrix[j, i].detach().numpy().item() for j in T_indices]
-                    plt.scatter(
-                        T_indices,
-                        T_values,
-                        s=75,
-                        marker="o",
-                        facecolors="r",
-                        edgecolors="r",
-                        zorder=3,
-                    )
-            else:
-                # Display synchronization steps as vertical lines instead
-                for j in range(1, int(self.total_time_steps / T)):
-                    label = "Nash Game Played" if j == 1 else None
-                    plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
+            if not dont_show_sync_points:
+                if show_points:
+                    # Display synchronization steps as points
+                    for i in range(server_matrix.shape[1]):
+                        T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
+                        T_values = [server_matrix[j, i].detach().numpy().item() for j in T_indices]
+                        plt.scatter(
+                            T_indices,
+                            T_values,
+                            s=75,
+                            marker="o",
+                            facecolors="r",
+                            edgecolors="r",
+                            zorder=3,
+                        )
+                else:
+                    # Display synchronization steps as vertical lines instead
+                    for j in range(1, int(self.total_time_steps / T)):
+                        label = "Nash Game Played" if j == 1 else None
+                        plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
 
         if game_played:
             game_status = ""
