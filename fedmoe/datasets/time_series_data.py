@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import matplotlib.pyplot as plt
 import torch
 from fl4health.utils.dataset import BaseDataset
+from matplotlib.ticker import MaxNLocator
 from torch.utils.data import DataLoader
 
 from fedmoe.datasets.data_matrix_generator import (
@@ -114,6 +115,8 @@ class TimeSeriesData:
                 plot_info: (Optional[Dict[str, Any]]): additional information of the experiment setting to be
                 added to the plot.
         """
+        ax = plt.figure().gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         for i in range(self.input_matrix.shape[1]):
             plt.plot(self.time_axis, self.input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="-", linewidth=2.5)
 
@@ -130,7 +133,7 @@ class TimeSeriesData:
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
-        plt.xticks(ticks=self.time_axis.flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.xlabel("Time Step", fontdict=title_font)
         plt.ylabel("Input", fontdict=axis_font)
@@ -176,6 +179,8 @@ class TimeSeriesData:
             f"Error:server output matrix has a shape {server_matrix.shape},\
                 but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
         }
+        ax = plt.figure().gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         # Plot target y
         for i in range(self.target_matrix.shape[1]):
             plt.plot(
@@ -231,7 +236,7 @@ class TimeSeriesData:
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
-        plt.xticks(ticks=self.time_axis.flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.xlabel("Time Step", fontdict=axis_font)
         plt.ylabel("Time-Series Values", fontdict=axis_font)
@@ -271,6 +276,8 @@ class TimeSeriesData:
 
         """
         assert plot_info["num_clients"] is not None
+        ax = plt.figure().gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
         # Optional server prediction visualization
         if server_prediction is not None:
@@ -335,7 +342,7 @@ class TimeSeriesData:
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
-        plt.xticks(ticks=self.time_axis.flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.xlabel("Time Step", fontdict=axis_font)
         plt.ylabel("Time-Series Values", fontdict=axis_font)
@@ -375,6 +382,9 @@ class TimeSeriesData:
         assert plot_info["num_clients"] is not None
         if game_played:
             assert T > 0, "Error: if the game is played, T should be greater than zero."
+
+        ax = plt.figure().gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
         # Shape of client prediction tensor should be time x num_clients x 1
         mixture_weights = torch.stack(clients_mixture_weights, dim=0)
@@ -433,7 +443,7 @@ class TimeSeriesData:
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
-        plt.xticks(ticks=self.time_axis[:-1].flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.xlabel("Time Step", fontdict=axis_font)
         plt.ylabel("Mixture Weight", fontdict=axis_font)
@@ -508,6 +518,9 @@ class TimeSeriesData:
         if game_played:
             assert T > 0, "Error: if the game is played, T should be greater than zero."
 
+        ax = plt.figure().gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
         server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
         assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1]), {
             f"Error:server output matrix has a shape {server_matrix.shape},\
@@ -562,7 +575,7 @@ class TimeSeriesData:
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
-        plt.xticks(ticks=self.time_axis.flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.xlabel("Time Step", fontdict=axis_font)
         plt.ylabel("Squared Error Values", fontdict=axis_font)
@@ -600,6 +613,9 @@ class TimeSeriesData:
             f"Error: client prediction matrix shape is {clients_pred_matrix.shape},\
             but it should be {(self.total_time_steps, plot_info['num_clients'], self.target_matrix.shape[1])}"
         }
+
+        ax = plt.figure().gca()
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
         for client in range(int(plot_info["num_clients"])):
             for dim in range(clients_pred_matrix.shape[2]):
@@ -647,7 +663,7 @@ class TimeSeriesData:
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
-        plt.xticks(ticks=self.time_axis.flatten(), fontname="helvetica", fontsize=14, fontweight="bold")
+        plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.xlabel("Time Step", fontdict=axis_font)
         plt.ylabel("Squared Error Values", fontdict=axis_font)
