@@ -442,13 +442,14 @@ def test_cutting_and_dataloader_functionalities() -> None:
     assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
 
     # Now let's take the first n (n==5) elements of the data sample.
-    dataset.cut_time_steps(5)
+    dataset.cut_first_time_steps(5)
     assert dataset.input_matrix.shape == (5, 4)
     assert dataset.target_matrix.shape == (5, 1)
     # Make sure this is the first 5 elements of the original dataset.
     assert torch.allclose(dataset.input_matrix, target_input_tensor[:5, :], rtol=0.0, atol=1e-6)
     assert torch.allclose(dataset.target_matrix, target_target_tensor[:5, :], rtol=0.0, atol=1e-6)
-
+    # cut_first_time_steps will set the new self.total_time_steps to the specified length (here n=5).
+    assert dataset.total_time_steps == 5
     # Now let's see if we can generate a dataloader from this dataset.
     dataloader = dataset.get_dataloader(num_samples=4, batch_size=2, shuffle=True)
     for input, target in dataloader:

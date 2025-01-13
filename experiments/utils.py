@@ -83,7 +83,7 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
             input_lags=input_lag,
             target_lags=target_lag,
         )
-        dataset.cut_time_steps(data_sequence_length=total_rounds)
+        dataset.cut_first_time_steps(data_sequence_length=total_rounds)
         return dataset
     elif dataset_option == DataOptions.ETT:
         ett_inputs = [InputFeatures.MUFL]
@@ -94,7 +94,7 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
             input_lags=input_lag,
             target_lags=target_lag,
         )
-        ett_dataset.cut_time_steps(data_sequence_length=total_rounds)
+        ett_dataset.cut_first_time_steps(data_sequence_length=total_rounds)
         return ett_dataset
     elif dataset_option == DataOptions.COVARIATE_SHIFT:
         return CovariateShiftDataset(total_time_steps=total_rounds)

@@ -201,10 +201,10 @@ class TransformerTemperature(TimeSeriesData):
         ax.set_ylabel("Value")
         plt.show()
 
-    def cut_time_steps(self, data_sequence_length: int) -> None:
+    def cut_first_time_steps(self, data_sequence_length: int) -> None:
         """
         Shortens the time series data to the specified length.
-        Keeps from the beginning of the time series.
+        Keeps from the start of the time series.
 
         Args:
             data_sequence_length (int): the desired length of the sequence (total_time_steps).
@@ -242,10 +242,17 @@ class TransformerTemperature(TimeSeriesData):
         # Generate new data samples
         data: List[torch.Tensor] = []
         targets: List[torch.Tensor] = []
-        # Unlike other datasets in TimeSeriesData, boc_exchange dataset does not need the post processing step.
-        # In other words, we don't need to trim the first x and the last y here.
+        # Since the sampled sequence will be trimmed by one step later, we generate a longer sequence.
         for _ in range(num_samples):
-            sample_input, sample_target = self.maybe_random_cut_time_steps(self.total_time_steps)
+            sample_input, sample_target = self.maybe_random_cut_time_steps(self.total_time_steps + 1)
+            # for transformer training, we are interested to predict Y_{t+1} with input x_t, but transformer
+            # datasets align input to desired output i.e.
+            # y_1   y_2     y_3     y_4
+            # x_0   x_1     x_2     x_3
+            # Therefore, we should shift the target matrix by one time step to bigger ts and we need to trim the final
+            # x to make them the same size
+            sample_input = sample_input[:-1, :]
+            sample_target = sample_target[1:, :]
             data.append(sample_input)
             targets.append(sample_target)
         # every input and output in our dataloader has the shape (self.total_time_steps, x_dim/y_dim)
