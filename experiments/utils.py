@@ -73,10 +73,10 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
     elif dataset_option == DataOptions.TIME_INPUT_PERIODIC:
         return TimeInputPeriodic(total_time_steps=total_rounds)
     elif dataset_option == DataOptions.BOC_EXCHANGE:
-        inputs = [ExchangeRates.AUD_CLOSE]
+        inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.EUR_CLOSE, ExchangeRates.GBP_CLOSE, ExchangeRates.JPY_CLOSE]
         targets = [ExchangeRates.USD_CLOSE]
-        input_lag = [0]
-        target_lag = None
+        input_lag = [0, 1]
+        target_lag = [0, 1]
         dataset = BankOfCanadaExchangeRates(
             inputs=inputs,
             targets=targets,
@@ -86,9 +86,16 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         dataset.cut_first_time_steps(data_sequence_length=total_rounds)
         return dataset
     elif dataset_option == DataOptions.ETT:
-        ett_inputs = [InputFeatures.MUFL]
-        input_lag = [0]
-        target_lag = None
+        ett_inputs = [
+            InputFeatures.HUFL,
+            InputFeatures.HULL,
+            InputFeatures.MUFL,
+            InputFeatures.MULL,
+            InputFeatures.LUFL,
+            InputFeatures.LULL,
+        ]
+        input_lag = [0, 1, 2]
+        target_lag = [0, 1]
         ett_dataset = TransformerTemperature(
             inputs=ett_inputs,
             input_lags=input_lag,
