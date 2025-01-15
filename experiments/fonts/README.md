@@ -1,4 +1,4 @@
-If you are running the experiments on Ubuntu, the font may not be recognized by matplotlib's fontManager. To resolve this, place the font file in the directory containing matplotlib's fonts and restart your virtual environment.
+If you are running the experiments on Ubuntu, the font may not be recognized by matplotlib's fontmanager. To resolve this, place the font file in the directory containing matplotlib's fonts and restart your virtual environment.
 
 The directory can be found within the virtual environment path. For example:
 `fedmoe_env/lib/python3.10/site-packages/matplotlib/mpl-data/fonts/ttf`.
