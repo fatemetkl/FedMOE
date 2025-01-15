@@ -93,7 +93,16 @@ def main(
             plot_info=plot_info,
             game_played=config["have_sync"],
             T=server.game_freq,
-            show_points=True,
+            show_points=False,
+        )
+        # Also visualize server error
+        data_object.visualize_server_squared_errors(
+            server.server_outputs,
+            f"{results_dir}/squared_errors.png",
+            game_played = config["have_sync"],
+            plot_info=plot_info,
+            T=server.game_freq,
+            show_points=True
         )
         tensors_to_save["server_prediction"] = server.server_outputs
 
@@ -105,6 +114,14 @@ def main(
     if config["save_clients_predictions"]:
         data_object.visualize_clients_predictions(
             server.clients_predictions, plot_path=f"{results_dir}/client_predictions.png", plot_info=plot_info
+        )
+        # Also visualize clients' errors
+        data_object.visualize_client_squared_errors(
+            server.clients_predictions,
+            f"{results_dir}/clients_squared_errors.png",
+            plot_info,
+            game_played=config["have_sync"],
+            T=server.game_freq,
         )
         tensors_to_save["clients_predictions"] = server.clients_predictions
 

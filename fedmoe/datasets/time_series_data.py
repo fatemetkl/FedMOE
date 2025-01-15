@@ -153,8 +153,8 @@ class TimeSeriesData:
         game_played: bool = False,
         T: int = 0,
         show_points: Optional[bool] = False,
+        show_lines: bool = False,
         plot_info: Optional[Dict[str, Any]] = None,
-        dont_show_sync_points: Optional[bool] = False,
     ) -> None:
         """
         Saves plots of target_matrix and prediction_matrix.
@@ -168,7 +168,7 @@ class TimeSeriesData:
                 T (int): the value of synchronization frequency. If T > 0 and game_played is true,
                    plot will highlight the synchronization points.
                 show_points (Optional[bool]): if True, the plot will show the synchronization points as points.
-                   Otherwise, it will show as vertical lines.
+                show_lines (bool): if True, the plot will show the synchronization steps as vertical lines.
                 plot_info: (Optional[Dict[str, Any]]): additional information of the experiment setting to be
                     added to the plot.
         """
@@ -199,26 +199,24 @@ class TimeSeriesData:
             )
 
         if game_played:
-            if not dont_show_sync_points:
-                if show_points:
-                    # Display synchronization steps as points
-                    for i in range(server_matrix.shape[1]):
-                        T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
-                        T_values = [server_matrix[j, i].detach().numpy().item() for j in T_indices]
-                        plt.scatter(
-                            T_indices,
-                            T_values,
-                            s=75,
-                            marker="o",
-                            facecolors="r",
-                            edgecolors="r",
-                            zorder=3,
-                        )
-                else:
-                    # Display synchronization steps as vertical lines instead
-                    for j in range(1, int(self.total_time_steps / T)):
-                        label = "Nash Game Played" if j == 1 else None
-                        plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
+            if show_points:
+                # Display synchronization steps as points
+                for i in range(server_matrix.shape[1]):
+                    T_indices = [i * T for i in range(1, int(self.total_time_steps / T))]
+                    T_values = [server_matrix[j, i].detach().numpy().item() for j in T_indices]
+                    plt.scatter(
+                        T_indices,
+                        T_values,
+                        marker="o",
+                        facecolors="r",
+                        edgecolors="r",
+                        zorder=3,
+                    )
+            elif show_lines:
+                # Display synchronization steps as vertical lines instead
+                for j in range(1, int(self.total_time_steps / T)):
+                    label = "Nash Game Played" if j == 1 else None
+                    plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
 
         if game_played:
             game_status = ""
@@ -490,7 +488,7 @@ class TimeSeriesData:
 
         game_status = "" if game_played else "No "
 
-        title_font = {"family": "helvetica", "weight": "bold", "size": 20}
+        title_font = {"family": "helvetica", "weight": "bold", "size": 19}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
         plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
         plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
@@ -511,6 +509,7 @@ class TimeSeriesData:
         game_played: bool = False,
         T: int = 0,
         show_points: Optional[bool] = False,
+        show_lines: bool = False,
         plot_info: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
@@ -550,13 +549,12 @@ class TimeSeriesData:
                     plt.scatter(
                         T_indices,
                         T_values,
-                        s=75,
                         marker="o",
                         facecolors="r",
                         edgecolors="r",
                         zorder=3,
                     )
-            else:
+            elif show_lines:
                 # Display synchronization steps as vertical lines instead
                 for j in range(1, int(self.total_time_steps / T)):
                     label = "Nash Game Played" if j == 1 else None
@@ -598,6 +596,7 @@ class TimeSeriesData:
         game_played: bool = False,
         T: int = 0,
         show_points: Optional[bool] = False,
+        show_lines: bool = False,
     ) -> None:
         """
         Saves a time series plot showing the client prediction squared errors
@@ -637,14 +636,13 @@ class TimeSeriesData:
                     plt.scatter(
                         T_indices,
                         T_values,
-                        s=75,
                         marker="o",
                         facecolors="r",
                         edgecolors="r",
                         zorder=3,
                     )
 
-        if game_played and not show_points:
+        if game_played and show_lines:
             # Display synchronization steps as vertical lines instead
             for j in range(1, int(self.total_time_steps / T)):
                 label = "Nash Game Played" if j == 1 else None
@@ -662,7 +660,6 @@ class TimeSeriesData:
             plt.subplots_adjust(bottom=0.2)
 
         game_status = "" if game_played else "No "
-
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
         plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")

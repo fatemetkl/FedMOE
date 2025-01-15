@@ -112,7 +112,15 @@ def main(
             plot_info=plot_info,
             game_played=config["have_sync"],
             T=server.game_freq,
-            show_points=True,
+            show_points=False,
+        )
+        # Also visualize server error
+        data_object.visualize_server_squared_errors(
+            server.server_outputs,
+            f"{results_dir}/squared_errors.png",
+            game_played=config["have_sync"],
+            plot_info=plot_info,
+            T=server.game_freq,
         )
         tensors_to_save["server_prediction"] = server.server_outputs
 
@@ -122,36 +130,36 @@ def main(
         tensors_to_save["input"] = [row for row in data_object.input_matrix]
 
     if config["save_clients_predictions"]:
-        # In transformer example, because of the pre-training step, we need to detach predictions before plotting.
-        detached_clients_predictions = [client_prediction.detach() for client_prediction in server.clients_predictions]
         data_object.visualize_clients_predictions(
-            client_predictions=detached_clients_predictions,
-            plot_path=f"{results_dir}/client_predictions.png",
-            plot_info=plot_info,
-            show_input=True,
+            server.clients_predictions, plot_path=f"{results_dir}/client_predictions.png", plot_info=plot_info
         )
-        tensors_to_save["clients_predictions"] = detached_clients_predictions
-
-    if config["save_mixture_weights"]:
-        detached_mixture_weights = [mixture_weight.detach() for mixture_weight in server.mixture_weights]
-        data_object.visualize_mixture_weights(
-            detached_mixture_weights,
-            f"{results_dir}/mixture_weights.png",
+        # Also visualize clients' errors
+        data_object.visualize_client_squared_errors(
+            server.clients_predictions,
+            f"{results_dir}/clients_squared_errors.png",
             plot_info,
             game_played=config["have_sync"],
             T=server.game_freq,
         )
-        tensors_to_save["mixture_weights"] = detached_mixture_weights
+        tensors_to_save["clients_predictions"] = server.clients_predictions
+
+    if config["save_mixture_weights"]:
+        data_object.visualize_mixture_weights(
+            server.mixture_weights,
+            plot_path=f"{results_dir}/mixture_weights.png",
+            plot_info=plot_info,
+            game_played=config["have_sync"],
+            T=server.game_freq,
+        )
+        tensors_to_save["mixture_weights"] = server.mixture_weights
 
     if config["save_error_histogram"]:
-        detached_server_predictions = [server_prediction.detach() for server_prediction in server.server_outputs]
         data_object.visualize_squared_error_histogram(
-            detached_server_predictions,
+            server.server_outputs,
             f"{results_dir}/error_histogram.png",
             plot_info,
             game_played=config["have_sync"],
         )
-
     if config["dump_json"]:
         # Dump results and data in JSON
         tensors_to_save["target"] = [row for row in data_object.target_matrix]
