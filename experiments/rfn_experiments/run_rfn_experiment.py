@@ -95,13 +95,13 @@ def main(
             T=server.game_freq,
             show_points=False,
         )
-        # Also visualize server error
         data_object.visualize_server_squared_errors(
             server.server_outputs,
-            f"{results_dir}/squared_errors.png",
+            f"{results_dir}/server_squared_errors.png",
             game_played=config["have_sync"],
             plot_info=plot_info,
             T=server.game_freq,
+            show_points=True,
         )
         tensors_to_save["server_prediction"] = server.server_outputs
 
@@ -125,14 +125,15 @@ def main(
         tensors_to_save["clients_predictions"] = server.clients_predictions
 
     if config["save_mixture_weights"]:
+        detached_mixture_weights = [mixture_weight.detach() for mixture_weight in server.mixture_weights]
         data_object.visualize_mixture_weights(
-            server.mixture_weights,
-            plot_path=f"{results_dir}/mixture_weights.png",
-            plot_info=plot_info,
+            detached_mixture_weights,
+            f"{results_dir}/mixture_weights.png",
+            plot_info,
             game_played=config["have_sync"],
             T=server.game_freq,
         )
-        tensors_to_save["mixture_weights"] = server.mixture_weights
+        tensors_to_save["mixture_weights"] = detached_mixture_weights
 
     if config["save_error_histogram"]:
         data_object.visualize_squared_error_histogram(
@@ -141,6 +142,7 @@ def main(
             plot_info,
             game_played=config["have_sync"],
         )
+
     if config["dump_json"]:
         # Dump results and data in JSON
         tensors_to_save["target"] = [row for row in data_object.target_matrix]
