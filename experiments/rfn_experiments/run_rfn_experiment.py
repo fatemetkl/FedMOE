@@ -49,6 +49,7 @@ def main(
         gamma,
         sigma,
         target_sequence=data_object.target_matrix,
+        game_T = game_T,
     )
 
     game = RfnGame(

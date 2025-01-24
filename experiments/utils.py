@@ -4,6 +4,7 @@ from typing import Any, Dict, List
 
 import torch
 import yaml
+import logging
 
 from fedmoe.datasets.brownian_motion_dataset import BrownianSequenceAddition, TimeSeriesBrownianTarget
 from fedmoe.datasets.fedmoe_datasets.boc_rates import BankOfCanadaExchangeRates, ExchangeRates
@@ -120,3 +121,4 @@ def save_output_json(
         lists_to_save.update(dict_to_save)
     with open(f"{path}/data.json", "w") as f:
         json.dump(lists_to_save, f)
+

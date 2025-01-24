@@ -5,13 +5,25 @@
 
 To run the random feature network experiment on cluster, first specify the experiment setup in the `config.yaml` file, then, set the hyper-parameter search space in the `run_hp_sweep.sh` script file. Then, run it with the following command.
 Change the last argument to the path of your own virtual environment.
+
+**Experiment with the game**:
+Config is specific to game.
+
 ```
-bash experiments/rfn_experiments/boc_exchange/run_hp_sweep.sh \
-experiments/rfn_experiments/boc_exchange/config.yaml \
+bash experiments/rfn_experiments/boc_exchange/game_run_hp_sweep.sh \
+experiments/rfn_experiments/boc_exchange/game_config.yaml \
 experiments/rfn_experiments/boc_exchange/results/ \
 ~/venv/fedmoe_env/
 ```
 
+**Experiment with No game**:
+
+```
+bash experiments/rfn_experiments/boc_exchange/game_run_hp_sweep.sh \
+experiments/rfn_experiments/boc_exchange/non_game_config.yaml \
+experiments/rfn_experiments/boc_exchange/results/ \
+~/venv/fedmoe_env/
+```
 
 Results of the experiment including plots will be saved at: (EXPERIMENT_NAME is set in config file)
 ```
@@ -24,6 +36,29 @@ Don't forget to complete the path to the experiment directory by changing the ex
 ```
 python -m experiments.find_best_hp --hp_sweep_dir experiments/rfn_experiments/boc_exchange/results/experiment_name
 ```
+
+
+### Run the experiment with the best hyper-parameters
+Make sure to set visualization variables to `True` in `config.yaml`.
+
+*** With GAME ***
+```
+bash experiments/rfn_experiments/boc_exchange/game_best_hp.sh \
+experiments/rfn_experiments/boc_exchange/game_config.yaml \
+experiments/rfn_experiments/boc_exchange/best_results/ \
+~/venv/fedmoe_env/
+```
+*** No GAME ***
+
+
+```
+bash experiments/rfn_experiments/boc_exchange/non_game_best_hp.sh \
+experiments/rfn_experiments/boc_exchange/non_game_config.yaml \
+experiments/rfn_experiments/boc_exchange/best_results/ \
+~/venv/fedmoe_env/
+```
+
+
 
 # Run on your local machine
 

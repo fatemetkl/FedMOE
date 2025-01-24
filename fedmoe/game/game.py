@@ -14,6 +14,7 @@ class Game(ABC):
         super().__init__()
         self.clients = clients
         self.num_clients = len(clients)
+        # Sync frequency here is in fact the T used in the game
         self.sync_freq = sync_freq
         self.z_dim = z_dim
         self.y_dim = self.clients[0].y_dim
@@ -130,7 +131,7 @@ class Game(ABC):
         self.game_state.init_state(self.sync_freq, self.num_clients, self.z_dim, self.y_dim)
 
         for client in self.clients:
-            client.init_p_s(self.num_clients)
+            client.init_p_s(self.num_clients, self.sync_freq)
         self.e_alpha_gamma_A_inv = None
 
     def calculate_a(self, game_time: int) -> torch.Tensor:

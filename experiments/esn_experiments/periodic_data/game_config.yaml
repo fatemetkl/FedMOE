@@ -1,9 +1,7 @@
 # Experiment variables
-experiment_name: "experiment_1"
-num_clients : 2 # The number of experts or clients
-total_rounds : 100 # The number of total rounds (data sequence will be created to be one time-step longer)
-have_sync: True # Do we want to have Nash game and synchronization steps or not
-update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t
+experiment_name: "experiment_5c"
+num_clients : 5 # The number of experts or clients
+total_rounds : 200 # The number of total rounds (data sequence will be created to be one time-step longer)
 
 # Options for saving the plots, and dumping tensors in JSON
 save_server_prediction: True # Set to True if you want to save the plot that shows server prediction.
@@ -17,3 +15,5 @@ save_error_histogram: True # Set to True if you want to save the histogram of th
 # Fixed for this experiment. DO NOT CHANGE.
 client_type : 2 # 2: EchoState networks (fixed for this experiment)
 data: "periodic_signal"  # Dataset options are saved in utils.DataOptions.
+have_sync: True # Do we want to have Nash game and synchronization steps or not
+update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t

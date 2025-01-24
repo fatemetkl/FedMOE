@@ -23,13 +23,21 @@ class ClientManager:
         gamma: float,
         sigma: Union[float, torch.Tensor],
         target_sequence: Optional[torch.Tensor] = None,
+        game_T: Optional[int] = None,
     ) -> None:
         self.client_type = client_type
         self.num_clients = num_clients
         self.z_dim = z_dim
         self.alpha = alpha
         self.gamma = gamma
-
+        # game_T in client manager is only used to initiate P and S matrix sizes.
+        # If we don't provide game_T, then it is set to sync_freq (client T).
+        # Initiating P and S with client T rather than game T won't be problematic, but
+        # in that case P and S will overflow if game_T is larger than client T.
+        if game_T is None:
+            self.game_T = sync_freq
+        else:
+            self.game_T = game_T
         # Shape is time x x_dim
         self.data = data_sequence
         assert len(data_sequence.shape) == 2
@@ -85,7 +93,7 @@ class ClientManager:
             else:
                 raise TypeError
             client.set_next_data_sequence(self.data, self.common_target_sequence)
-            client.init_p_s(self.num_clients)
+            client.init_p_s(self.num_clients, self.game_T)
             clients.append(client)
         return clients
 
@@ -203,6 +211,6 @@ class PreTrainingClientManager(ClientManager):
                 pre_training_dataloader=self.pre_training_dataloader,
             )
             client.set_next_data_sequence(self.data, self.common_target_sequence)
-            client.init_p_s(self.num_clients)
+            client.init_p_s(self.num_clients, self.game_T)
             clients.append(client)
         return clients

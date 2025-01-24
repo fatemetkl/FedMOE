@@ -50,5 +50,5 @@ class Esn(nn.Module):
         Z = nn.Hardsigmoid()(AX + BZ + self.b + random_state)
         # Latent space size should be y_dim x z_dim
         assert Z.shape == (self.y_dim, self.z_dim)
-
+        
         return Z

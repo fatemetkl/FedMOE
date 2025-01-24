@@ -6,12 +6,22 @@
 To run the random Echo State experiment on cluster, first specify the experiment setup in the `config.yaml` file, then, set the hyper-parameter search space in the `run_hp_sweep.sh` script file. Then, run it with the following command:
 Change the last argument to the path of your own virtual environment.
 
+*** With Game ***
 ```
-bash experiments/esn_experiments/ett_data/run_hp_sweep.sh \
-experiments/esn_experiments/ett_data/config.yaml \
+bash experiments/esn_experiments/ett_data/game_run_hp_sweep.sh \
+experiments/esn_experiments/ett_data/game_config.yaml \
 experiments/esn_experiments/ett_data/results/ \
 ~/venv/fedmoe_env/
 ```
+
+*** No Game ***
+```
+bash experiments/esn_experiments/ett_data/non_game_run_hp_sweep.sh \
+experiments/esn_experiments/ett_data/non_game_config.yaml \
+experiments/esn_experiments/ett_data/results/ \
+~/venv/fedmoe_env/
+```
+
 
 Results of the experiment including plots will be saved at: (EXPERIMENT_NAME is set in config file)
 ```
@@ -25,6 +35,27 @@ Don't forget to complete the path to the experiment directory by changing the ex
 ```
 python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/ett_data/results/experiment_name
 ```
+
+
+### Run the experiment with the best hyper-parameters
+Make sure to set visualization variables to `True` in `config.yaml`.
+
+*** With Game ***
+```
+bash experiments/esn_experiments/ett_data/game_two_clients_best_hp.sh \
+experiments/esn_experiments/ett_data/game_config.yaml \
+experiments/esn_experiments/ett_data/best_results/ \
+~/venv/fedmoe_env/
+```
+
+*** No Game ***
+```
+bash experiments/esn_experiments/ett_data/non_game_two_clients_best_hp.sh \
+experiments/esn_experiments/ett_data/non_game_config.yaml \
+experiments/esn_experiments/ett_data/best_results/ \
+~/venv/fedmoe_env/
+```
+
 
 # Run on your local machine
 ### Activate your environment

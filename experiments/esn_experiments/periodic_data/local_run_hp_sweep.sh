@@ -17,13 +17,13 @@ HIDDENDIM_VALUES=( 3 )
 # Client T value is the T used in individual client optimization (equation 4).
 CLIENT_T_VALUES=( 5 )
 # Game T values is the T used in equation 9.
-# TODO: Right now Game T values should be equal to or smaller than client T values because of the way S and P are initiated in clients.
-# This should be later fixed by passing total_game_steps to client creation step as well (through client_manager).
 GAME_T_VALUES=( 2 )
 # Game synchronization value is the frequency at which the game is played.
 GAME_SYNC_VALUES=( 2 )
 K_VALUES=( 3 )
 ETA_VALUES=( 1 )
+
+
 
 
 RUN_NAMES=( "Run1" "Run2" "Run3" )

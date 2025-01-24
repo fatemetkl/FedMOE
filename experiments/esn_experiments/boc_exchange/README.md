@@ -6,9 +6,20 @@
 To run the random Echo State experiment on cluster, first specify the experiment setup in the `config.yaml` file, then, set the hyper-parameter search space in the `run_hp_sweep.sh` script file. Then, run it with the following command:
 Change the last argument to the path of your own virtual environment.
 
+**Experiment with the game**:
+Config is specific to game.
 ```
-bash experiments/esn_experiments/boc_exchange/run_hp_sweep.sh \
-experiments/esn_experiments/boc_exchange/config.yaml \
+bash experiments/esn_experiments/boc_exchange/game_run_hp_sweep.sh \
+experiments/esn_experiments/boc_exchange/game_config.yaml \
+experiments/esn_experiments/boc_exchange/results/ \
+~/venv/fedmoe_env/
+```
+
+**Experiment with NO game**:
+Config is specific to non-game.
+```
+bash experiments/esn_experiments/boc_exchange/non_game_run_hp_sweep.sh \
+experiments/esn_experiments/boc_exchange/non_game_config.yaml \
 experiments/esn_experiments/boc_exchange/results/ \
 ~/venv/fedmoe_env/
 ```
@@ -24,6 +35,25 @@ Don't forget to complete the path to the experiment directory by changing the ex
 
 ```
 python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/boc_exchange/results/experiment_name
+```
+
+### Run the experiment with the best hyper-parameters
+Make sure to set visualization variables to `True` in `config.yaml`.
+
+*** With GAME ***
+```
+bash experiments/esn_experiments/boc_exchange/game_two_clients_best_hp.sh \
+experiments/esn_experiments/boc_exchange/game_config.yaml \
+experiments/esn_experiments/boc_exchange/best_results/ \
+~/venv/fedmoe_env/
+```
+*** No GAME ***
+
+```
+bash experiments/esn_experiments/boc_exchange/non_game_two_clients_best_hp.sh \
+experiments/esn_experiments/boc_exchange/non_game_config.yaml \
+experiments/esn_experiments/boc_exchange/best_results/ \
+~/venv/fedmoe_env/
 ```
 
 # Run on your local machine

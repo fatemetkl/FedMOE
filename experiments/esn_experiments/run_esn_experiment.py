@@ -29,8 +29,6 @@ def main(
     K: float,
     eta: float,
 ) -> None:
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger(__name__)
 
     logger.info("Configuration loaded")
 
@@ -49,6 +47,7 @@ def main(
         gamma,
         sigma,
         data_object.target_matrix,
+        game_T = game_T,
     )
 
     game = EchoStateGame(
@@ -102,7 +101,7 @@ def main(
             game_played=config["have_sync"],
             plot_info=plot_info,
             T=server.game_freq,
-            show_points=True,
+            show_points=False,
         )
         tensors_to_save["server_prediction"] = server.server_outputs
 
@@ -241,6 +240,21 @@ if __name__ == "__main__":
     random.seed(args.random_seed)
     torch.manual_seed(args.random_seed)
 
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    logger.info("Configuration: %s", config)
+    logger.info("Results directory: %s", args.result_dir)
+    logger.info("Hidden dimension: %d", args.hidden_dim)
+    logger.info("Client T: %d", args.client_T)
+    logger.info("Game sync frequency: %d", args.game_sync_freq)
+    logger.info("Game T: %d", args.game_T)
+    logger.info("Alpha: %f", args.alpha)
+    logger.info("Gamma: %f", args.gamma)
+    logger.info("Sigma: %f", args.sigma)
+    logger.info("Kappa: %f", args.K)
+    logger.info("Eta: %f", args.eta)
+    logger.info("Arguments: %s", vars(args))
+    
     main(
         config,
         args.result_dir,
@@ -252,5 +266,5 @@ if __name__ == "__main__":
         args.gamma,
         args.sigma,
         args.K,
-        args.eta,
+        args.eta,        
     )

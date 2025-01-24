@@ -82,15 +82,15 @@ class Client(ABC):
 
         self.state.init_state(self.z_dim, self.y_dim, init_hidden_state_neg1, init_prediction_0, init_prediction_neg1)
 
-    def init_p_s(self, num_clients: int) -> None:
+    def init_p_s(self, num_clients: int, game_T: int) -> None:
         self.P = torch.zeros(
-            self.sync_steps + 1,  # Game records P values for 0 to T inclusive.
+            game_T + 1,  # Game records P values for 0 to T inclusive.
             num_clients * self.y_dim,
             num_clients * self.y_dim,
         )
-        self.S = torch.zeros(self.sync_steps + 1, num_clients * self.y_dim, 1)
+        self.S = torch.zeros(game_T + 1, num_clients * self.y_dim, 1)
         self.D = torch.zeros(
-            self.sync_steps,  # D_i is only calculated from T-1 to 0
+            game_T,  # D_i is only calculated from T-1 to 0
             num_clients * self.z_dim,
             num_clients * self.z_dim,
         )
