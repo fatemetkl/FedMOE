@@ -3,21 +3,34 @@
 Change the last argument to the path of your own virtual environment.
 
 ```
-sbatch experiments/transformer_experiments/run_pre_train.sh
+sbatch experiments/transformer_experiments/run_pre_train.sh \
 experiments/transformer_experiments/covariate_shift/2_clients/pre_train_config.yaml \
 experiments/transformer_experiments/covariate_shift/2_clients/models/ \
 ~/venv/fedmoe_env/
 
 ```
 
+
 ### Step 2: Run the main algorithm
 Change the last argument to the path of your own virtual environment.
 
+***GAME***
 ```
-bash experiments/transformer_experiments/covariate_shift/run_hp_sweep.sh \
-experiments/transformer_experiments/covariate_shift/2_clients/config.yaml \
+bash experiments/transformer_experiments/covariate_shift/game_run_hp_sweep.sh \
+experiments/transformer_experiments/covariate_shift/2_clients/game_config.yaml \
+experiments/transformer_experiments/covariate_shift/2_clients/results/ \
 ~/venv/fedmoe_env/
 ```
+
+
+***Non-GAME***
+```
+bash experiments/transformer_experiments/covariate_shift/non_game_run_hp_sweep.sh \
+experiments/transformer_experiments/covariate_shift/2_clients/non_game_config.yaml \
+experiments/transformer_experiments/covariate_shift/2_clients/results/ \
+~/venv/fedmoe_env/
+```
+
 
 ### Step 3: Find the best hyper-parameters
 Make sure your environment is activated.

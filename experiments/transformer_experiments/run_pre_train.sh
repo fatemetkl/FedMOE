@@ -3,15 +3,16 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=8
 #SBATCH --gres=gpu:0
-#SBATCH --mem=6G
+#SBATCH --mem=4G
 #SBATCH --partition=cpu
-#SBATCH --qos=m
-#SBATCH --job-name=fedmoe_transformer_train
+#SBATCH --qos=cpu_qos
+#SBATCH --job-name=5ett_pre_train
 #SBATCH --output=%j_%x.out
 #SBATCH --error=%j_%x.err
-#SBATCH --time=00:20:00
+#SBATCH --time=10:00:00
+
 
 
 CONFIG_PATH=$1

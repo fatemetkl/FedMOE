@@ -1,0 +1,20 @@
+# Experiment variables
+experiment_name: "experiment_5c_n1"
+total_rounds : 200 # The number of total rounds (data sequence will be created to be one time-step longer)
+
+# Options for saving the plots, and dumping tensors in JSON
+save_server_prediction: False # Set to True if you want to save the plot that shows server prediction.
+save_input: False # Set to True if you want to save the plot that shows input.
+save_clients_predictions: False # Set to True if you want to save the plot that shows individual clients predictions.
+save_mixture_weights: False # Set to True if you want to save the plot that shows the mixture weights.
+dump_json: False #If True, dumps the above plotted tensors in JSON
+save_error_histogram: False # Set to True if you want to save the histogram of the errors.
+
+# Fixed variables for this experiment. DO NOT CHANGE.
+client_type : 1 # 1: Pre-trained transformer model
+num_clients : 5 # The number of experts or clients
+data: "brownian_addition"  # Dataset options are saved in utils.DataOptions.
+models_dir: "experiments/transformer_experiments/brownian_addition/5_clients/models/" # The directory of saved the models
+have_sync: True # Do we want to have Nash game and synchronization steps or not
+update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t
+

@@ -1,11 +1,11 @@
 # Training variables
-total_rounds : 500 # The number of total rounds (data sequence will be created to be one time-step longer)
+total_rounds : 1000 # The number of total rounds (data sequence will be created to be one time-step longer)
 models_dir: "experiments/transformer_experiments/boc_exchange/2_clients/models/" # The directory of saved the models
-data_loader_num_samples: 10
+data_loader_num_samples: 100
 data_loader_batch_size: 10
-pre_training_epochs: 100
+pre_training_epochs: 400
 pre_training_learning_rate: 0.001
-hidden_dim: 8 # should be multiple of 4
+hidden_dim: 2 # should be multiple of 2
 
 # Fixed config variables. DO NOT CHANGE.
 data: "boc_exchange"  # Dataset options are saved in utils.DataOptions.

@@ -28,6 +28,7 @@ class DataOptions(Enum):
     HORIZONTAL_LINE = "horizontal_line"
     SIMPLE_BROWNIAN = "simple_brownian"
     BROWNIAN_ADDITION = "brownian_addition"
+    ONE_D_BROWNIAN_ADD = "one_d_brownian_add"
     XY_2D = "2dxy"
     BOC_EXCHANGE = "boc_exchange"
     ETT = "ett_data"
@@ -69,7 +70,16 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         )
     elif dataset_option == DataOptions.BROWNIAN_ADDITION:
         return BrownianSequenceAddition(
-            total_time_steps=total_rounds, n_brownian_trajectories=3, mu=1.0, sigma=1.0, offset=0.0
+            total_time_steps=total_rounds,
+            n_brownian_trajectories=3,
+            mu=1.0,
+            sigma=1.0,
+            offset=0.0,
+            normalize=True,
+        )
+    elif dataset_option == DataOptions.ONE_D_BROWNIAN_ADD:
+        return BrownianSequenceAddition(
+            total_time_steps=total_rounds, n_brownian_trajectories=1, mu=1.0, sigma=1.0, offset=0.0
         )
     elif dataset_option == DataOptions.TIME_INPUT_PERIODIC:
         return TimeInputPeriodic(total_time_steps=total_rounds)
@@ -102,7 +112,7 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
             input_lags=input_lag,
             target_lags=target_lag,
         )
-        ett_dataset.cut_first_time_steps(data_sequence_length=total_rounds)
+        ett_dataset.cut_first_time_steps(data_sequence_length=total_rounds, normalize=True)
         return ett_dataset
     elif dataset_option == DataOptions.COVARIATE_SHIFT:
         return CovariateShiftDataset(total_time_steps=total_rounds)
@@ -121,4 +131,3 @@ def save_output_json(
         lists_to_save.update(dict_to_save)
     with open(f"{path}/data.json", "w") as f:
         json.dump(lists_to_save, f)
-

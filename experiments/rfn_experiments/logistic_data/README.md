@@ -5,13 +5,23 @@
 
 To run the random feature network experiment on cluster, first specify the experiment setup in the `config.yaml` file, then, set the hyper-parameter search space in the `run_hp_sweep.sh` script file. Then, run it with the following command.
 Change the last argument to the path of your own virtual environment.
+
+**GAME**
+
 ```
-bash experiments/rfn_experiments/logistic_data/run_hp_sweep.sh \
-experiments/rfn_experiments/logistic_data/config.yaml \
+bash experiments/rfn_experiments/logistic_data/game_run_hp_sweep.sh \
+experiments/rfn_experiments/logistic_data/game_config.yaml \
 experiments/rfn_experiments/logistic_data/results/ \
 ~/venv/fedmoe_env/
 ```
+**Non GAME**
 
+```
+bash experiments/rfn_experiments/logistic_data/non_game_run_hp_sweep.sh \
+experiments/rfn_experiments/logistic_data/non_game_config.yaml \
+experiments/rfn_experiments/logistic_data/results/ \
+~/venv/fedmoe_env/
+```
 
 Results of the experiment including plots will be saved at: (EXPERIMENT_NAME is set in config file)
 ```

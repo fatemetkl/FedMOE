@@ -3,7 +3,7 @@
 Change the last argument to the path of your own virtual environment.
 
 ```
-sbatch experiments/transformer_experiments/run_pre_train.sh
+sbatch experiments/transformer_experiments/run_pre_train.sh \
 experiments/transformer_experiments/ett_data/5_clients/pre_train_config.yaml \
 experiments/transformer_experiments/ett_data/5_clients/models/ \
 ~/venv/fedmoe_env/

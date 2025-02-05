@@ -1,6 +1,6 @@
 # Experiment variables
-experiment_name: "experiment_1"
-num_clients : 2 # The number of experts or clients
+experiment_name: "experiment_5c_non"
+num_clients : 5 # The number of experts or clients
 total_rounds : 1000 # The number of total rounds (data sequence will be created to be one time-step longer)
 
 # Options for saving the plots, and dumping tensors in JSON

@@ -3,21 +3,31 @@
 Change the last argument to the path of your own virtual environment.
 
 ```
-sbatch experiments/transformer_experiments/run_pre_train.sh
-experiments/transformer_experiments/logistic_data/5_clients/logistic_pre_train_config.yaml \
+sbatch experiments/transformer_experiments/run_pre_train.sh \
+experiments/transformer_experiments/logistic_data/5_clients/pre_train_config.yaml \
 experiments/transformer_experiments/logistic_data/5_clients/models/ \
 ~/venv/fedmoe_env/
-
 ```
 
 ### Step 2: Run the main algorithm
 Change the last argument to the path of your own virtual environment.
 
+***GAME***
 ```
-bash experiments/transformer_experiments/logistic_data/run_hp_sweep.sh \
-experiments/transformer_experiments/logistic_data/5_clients/config.yaml \
+bash experiments/transformer_experiments/logistic_data/game_run_hp_sweep.sh \
+experiments/transformer_experiments/logistic_data/5_clients/game_config.yaml \
+experiments/transformer_experiments/logistic_data/5_clients/results/ \
 ~/venv/fedmoe_env/
 ```
+
+***Non-GAME***
+```
+bash experiments/transformer_experiments/logistic_data/non_game_run_hp_sweep.sh \
+experiments/transformer_experiments/logistic_data/5_clients/non_game_config.yaml \
+experiments/transformer_experiments/logistic_data/5_clients/results/ \
+~/venv/fedmoe_env/
+```
+
 
 ### Step 3: Find the best hyper-parameters
 Make sure your environment is activated.

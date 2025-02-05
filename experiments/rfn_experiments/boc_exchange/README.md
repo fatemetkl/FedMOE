@@ -19,7 +19,7 @@ experiments/rfn_experiments/boc_exchange/results/ \
 **Experiment with No game**:
 
 ```
-bash experiments/rfn_experiments/boc_exchange/game_run_hp_sweep.sh \
+bash experiments/rfn_experiments/boc_exchange/non_game_run_hp_sweep.sh \
 experiments/rfn_experiments/boc_exchange/non_game_config.yaml \
 experiments/rfn_experiments/boc_exchange/results/ \
 ~/venv/fedmoe_env/
@@ -47,9 +47,10 @@ bash experiments/rfn_experiments/boc_exchange/game_best_hp.sh \
 experiments/rfn_experiments/boc_exchange/game_config.yaml \
 experiments/rfn_experiments/boc_exchange/best_results/ \
 ~/venv/fedmoe_env/
-```
-*** No GAME ***
 
+```
+
+*** No GAME ***
 
 ```
 bash experiments/rfn_experiments/boc_exchange/non_game_best_hp.sh \

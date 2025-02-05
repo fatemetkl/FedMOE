@@ -3,7 +3,7 @@
 Change the last argument to the path of your own virtual environment.
 
 ```
-sbatch experiments/transformer_experiments/run_pre_train.sh
+sbatch experiments/transformer_experiments/run_pre_train.sh \
 experiments/transformer_experiments/periodic_data/2_clients/periodic_pre_train_config.yaml \
 experiments/transformer_experiments/periodic_data/2_clients/models/ \
 ~/venv/fedmoe_env/
@@ -13,9 +13,19 @@ experiments/transformer_experiments/periodic_data/2_clients/models/ \
 ### Step 2: Run the main algorithm
 Change the last argument to the path of your own virtual environment.
 
+***GAME***
 ```
-bash experiments/transformer_experiments/periodic_data/run_hp_sweep.sh \
-experiments/transformer_experiments/periodic_data/2_clients/config.yaml \
+bash experiments/transformer_experiments/periodic_data/game_run_hp_sweep.sh \
+experiments/transformer_experiments/periodic_data/2_clients/game_config.yaml \
+experiments/transformer_experiments/periodic_data/2_clients/results/ \
+~/venv/fedmoe_env/
+```
+
+***Non-GAME***
+```
+bash experiments/transformer_experiments/periodic_data/non_game_run_hp_sweep.sh \
+experiments/transformer_experiments/periodic_data/2_clients/non_game_config.yaml \
+experiments/transformer_experiments/periodic_data/2_clients/results/ \
 ~/venv/fedmoe_env/
 ```
 

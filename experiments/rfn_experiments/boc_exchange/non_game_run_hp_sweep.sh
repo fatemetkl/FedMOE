@@ -15,13 +15,12 @@ echo "CONFIG_PATH"${CONFIG_PATH}
 echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
 
-
-ALPHA_VALUES=( 0.01 )
-GAMMA_VALUES=( 10 )
+ALPHA_VALUES=( 0.01 0.1 1.0 )
+GAMMA_VALUES=( 0.1 1.0 10 )
 SIGMA_VALUES=( 1.0 )
-HIDDENDIM_VALUES=( 3 )
+HIDDENDIM_VALUES=( 3 6 )
 # Client T value is the T used in individual client optimization (equation 4).
-CLIENT_T_VALUES=( 2 )
+CLIENT_T_VALUES=( 2 5 )
 # Remember to set this for the game and set to 0 for non-game settings.
 # Game T value is the T used in equation 9.
 GAME_T_VALUES=( 0 )

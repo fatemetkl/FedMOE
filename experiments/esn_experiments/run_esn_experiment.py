@@ -47,7 +47,7 @@ def main(
         gamma,
         sigma,
         data_object.target_matrix,
-        game_T = game_T,
+        game_T=game_T,
     )
 
     game = EchoStateGame(
@@ -254,7 +254,7 @@ if __name__ == "__main__":
     logger.info("Kappa: %f", args.K)
     logger.info("Eta: %f", args.eta)
     logger.info("Arguments: %s", vars(args))
-    
+
     main(
         config,
         args.result_dir,
@@ -266,5 +266,5 @@ if __name__ == "__main__":
         args.gamma,
         args.sigma,
         args.K,
-        args.eta,        
+        args.eta,
     )

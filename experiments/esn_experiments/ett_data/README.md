@@ -42,7 +42,7 @@ Make sure to set visualization variables to `True` in `config.yaml`.
 
 *** With Game ***
 ```
-bash experiments/esn_experiments/ett_data/game_two_clients_best_hp.sh \
+bash experiments/esn_experiments/ett_data/game_best_hp.sh \
 experiments/esn_experiments/ett_data/game_config.yaml \
 experiments/esn_experiments/ett_data/best_results/ \
 ~/venv/fedmoe_env/
@@ -50,7 +50,7 @@ experiments/esn_experiments/ett_data/best_results/ \
 
 *** No Game ***
 ```
-bash experiments/esn_experiments/ett_data/non_game_two_clients_best_hp.sh \
+bash experiments/esn_experiments/ett_data/non_game_best_hp.sh \
 experiments/esn_experiments/ett_data/non_game_config.yaml \
 experiments/esn_experiments/ett_data/best_results/ \
 ~/venv/fedmoe_env/

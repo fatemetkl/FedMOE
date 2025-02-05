@@ -17,7 +17,7 @@ def setup_transformer_structure(x_dim: int, y_dim: int, z_dim: int) -> nn.Module
     # Hyperparameters
     input_dim = x_dim
     hidden_dim = z_dim
-    nhead = 4  # Number of heads in multihead attention
+    nhead = 2  # Number of heads in multihead attention
     num_encoder_layers = 2  # Number of encoder layers
     dim_feedforward = 16  # Dimension of the feedforward network model
     output_dim = y_dim

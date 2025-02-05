@@ -16,12 +16,12 @@ echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
 
 # Game parameters
-ALPHA_VALUES=( 0.0001 0.001 )
+ALPHA_VALUES=( 0.01 0.1 1.0 5.0 )
 GAMMA_VALUES=( 1.0 10.0 )
 SIGMA_VALUES=( 1.0 )
-HIDDENDIM_VALUES=( 6 8 )
+HIDDENDIM_VALUES=( 1 2 3 )
 # Client T value is the T used in individual client optimization (equation 4).
-CLIENT_T_VALUES=( 5 8 )
+CLIENT_T_VALUES=( 2 3 4 5 )
 # Remember to set this for the game and set to 0 for non-game settings.
 # Game T value is the T used in equation 9.
 GAME_T_VALUES=( 2 3 )

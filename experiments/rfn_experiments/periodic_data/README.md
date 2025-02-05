@@ -5,9 +5,21 @@
 
 To run the random feature network experiment on cluster, first specify the experiment setup in the `config.yaml` file, then, set the hyper-parameter search space in the `run_hp_sweep.sh` script file. Then, run it with the following command.
 Change the last argument to the path of your own virtual environment.
+
+**Experiment with the game**:
+Config is specific to game.
+
 ```
-bash experiments/rfn_experiments/periodic_data/run_hp_sweep.sh \
-experiments/rfn_experiments/periodic_data/config.yaml \
+bash experiments/rfn_experiments/periodic_data/game_run_hp_sweep.sh \
+experiments/rfn_experiments/periodic_data/game_config.yaml \
+experiments/rfn_experiments/periodic_data/results/ \
+~/venv/fedmoe_env/
+```
+**Experiment with NO game**:
+
+```
+bash experiments/rfn_experiments/periodic_data/non_game_run_hp_sweep.sh \
+experiments/rfn_experiments/periodic_data/non_game_config.yaml \
 experiments/rfn_experiments/periodic_data/results/ \
 ~/venv/fedmoe_env/
 ```
@@ -23,6 +35,27 @@ To find the best hp based on the server loss, run `find_best_hp.py` with the pat
 Don't forget to complete the path to the experiment directory by changing the experiment name.
 ```
 python -m experiments.find_best_hp --hp_sweep_dir experiments/rfn_experiments/periodic_data/results/experiment_name
+```
+
+
+### Run the experiment with the best hyper-parameters
+Make sure to set visualization variables to `True` in `config.yaml`.
+
+**With game**
+
+```
+bash experiments/rfn_experiments/periodic_data/game_best_hp.sh \
+experiments/rfn_experiments/periodic_data/game_config.yaml \
+experiments/rfn_experiments/periodic_data/best_results/ \
+~/venv/fedmoe_env/
+```
+**NO game**:
+
+```
+bash experiments/rfn_experiments/periodic_data/non_game_best_hp.sh \
+experiments/rfn_experiments/periodic_data/non_game_config.yaml \
+experiments/rfn_experiments/periodic_data/best_results/ \
+~/venv/fedmoe_env/
 ```
 
 # Run on your local machine

@@ -43,7 +43,7 @@ Make sure to set visualization variables to `True` in `config.yaml`.
 
 *** With Game ***
 ```
-bash experiments/esn_experiments/brownian_addition/game_two_clients_best_hp.sh \
+bash experiments/esn_experiments/brownian_addition/game_best_hp.sh \
 experiments/esn_experiments/brownian_addition/game_config.yaml \
 experiments/esn_experiments/brownian_addition/best_results/ \
 ~/venv/fedmoe_env/
@@ -52,7 +52,7 @@ experiments/esn_experiments/brownian_addition/best_results/ \
 
 *** No Game ***
 ```
-bash experiments/esn_experiments/brownian_addition/non_game_two_clients_best_hp.sh \
+bash experiments/esn_experiments/brownian_addition/non_game_best_hp.sh \
 experiments/esn_experiments/brownian_addition/non_game_config.yaml \
 experiments/esn_experiments/brownian_addition/best_results/ \
 ~/venv/fedmoe_env/

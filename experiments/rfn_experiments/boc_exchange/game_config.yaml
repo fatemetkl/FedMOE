@@ -1,5 +1,5 @@
 # Experiment variables
-experiment_name: "experiment_1"
+experiment_name: "experiment_2c"
 num_clients : 2 # The number of experts or clients
 total_rounds : 2000 # The number of total rounds (data sequence will be created to be one time-step longer)
 
