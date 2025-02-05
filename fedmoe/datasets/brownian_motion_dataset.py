@@ -121,6 +121,7 @@ class BrownianSequenceAddition(TimeSeriesData):
         mu: float,
         sigma: float,
         offset: float,
+        normalize: bool = False,
     ) -> None:
         """
         In a time-series dataset, we always have time steps that start from 0 to total_time_steps. These time-steps
@@ -141,12 +142,14 @@ class BrownianSequenceAddition(TimeSeriesData):
             sigma (float): standard deviation of the distribution to create Brownian trajectories.
             offset (float): the initial value of Brownian trajectories at time t=0,
                             this is where the trajectories start from.
+            normalize (bool): If True, the Brownian trajectories are normalized to the maximum value of the trajectory.
         """
         self.total_time_steps = total_time_steps
         self.n_brownian_trajectories = n_brownian_trajectories
         self.mu = mu
         self.sigma = sigma
         self.offset = offset
+        self.normalize = normalize
         super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
@@ -156,15 +159,22 @@ class BrownianSequenceAddition(TimeSeriesData):
         brownian_matrix = get_brownian_sequences_fixed_mu_sigma(
             self.total_time_steps + 1, self.n_brownian_trajectories, self.mu, self.sigma, self.offset
         )
+        # find max value of the brownian motion to normalize it.
+        max_brownian = torch.max(brownian_matrix)
 
         # Example: x1: [0.0, 0.1, 0.2, ....]
         def x1_func(t_axis: torch.Tensor) -> torch.Tensor:
-            return 0.1 * t_axis
+            output = 0.1 * t_axis
+            if self.normalize:
+                output = output / max_brownian
+            return output
 
         function_list.append(x1_func)
 
         for trajectory_idx in range(self.n_brownian_trajectories):
             trajectory = brownian_matrix[:, trajectory_idx]
+            if self.normalize:
+                trajectory = trajectory / max_brownian
 
             def f(additional_input: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
                 return additional_input
@@ -180,7 +190,8 @@ class BrownianSequenceAddition(TimeSeriesData):
             def yn_func(idx: int, input_matrix: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
                 # Add the first dimension (x1) to the other ones (x2, x3, ...x{num_trajectories})
                 x1 = input_matrix[:, 0]
-                return input_matrix[:, idx] + x1
+                output = input_matrix[:, idx] + x1
+                return output
 
             function_list.append(partial(yn_func, trajectory_idx))
         return MultiDimensionalTargetGenerator(function_list, y_dim=self.n_brownian_trajectories)

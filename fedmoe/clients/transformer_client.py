@@ -122,14 +122,14 @@ class TransformerClient(Client):
         # Hyperparameters
         input_dim = x_dim
         hidden_dim = z_dim
-        nhead = 4  # Number of heads in multihead attention
+        nhead = 2  # Number of heads in multihead attention
         num_encoder_layers = 2  # Number of encoder layers
         dim_feedforward = 16  # Dimension of the feedforward network model
         output_dim = y_dim
         # In this model setup, hidden_dim has the shape d_y times d_z.
         assert (
             self.y_dim * hidden_dim % nhead == 0
-        ), "Error: embed_dim (self.y_dim*hidden_dim) must be divisible by num_heads"
+        ), f"Error: embed_dim (self.y_dim*hidden_dim) must be divisible by num_heads, now it is {self.y_dim*hidden_dim} % {nhead}"
         # Create the model
         model = TransformerTimeSeriesModel(
             input_dim,

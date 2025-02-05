@@ -173,6 +173,7 @@ class PreTrainingClientManager(ClientManager):
         pre_training_epochs: int = 3,
         pre_training_learning_rate: float = 0.01,
         target_sequence: Optional[torch.Tensor] = None,
+        game_T: Optional[int] = None,
     ) -> None:
         self.pre_training_epochs = pre_training_epochs
         self.pre_training_learning_rate = pre_training_learning_rate
@@ -191,6 +192,7 @@ class PreTrainingClientManager(ClientManager):
             # The pre-trained transformer does not have a sigma parameter, so it is initialized to 0.0.
             sigma=0.0,
             target_sequence=target_sequence,
+            game_T=game_T,
         )
 
     def initiate_clients(self) -> List[Client]:

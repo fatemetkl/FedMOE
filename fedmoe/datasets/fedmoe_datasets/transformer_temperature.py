@@ -201,7 +201,7 @@ class TransformerTemperature(TimeSeriesData):
         ax.set_ylabel("Value")
         plt.show()
 
-    def cut_first_time_steps(self, data_sequence_length: int) -> None:
+    def cut_first_time_steps(self, data_sequence_length: int, normalize: bool = False) -> None:
         """
         Shortens the time series data to the specified length.
         Keeps from the start of the time series.
@@ -216,9 +216,12 @@ class TransformerTemperature(TimeSeriesData):
         self.original_target_matrix = self.target_matrix
         self.input_matrix = self.input_matrix[:data_sequence_length, :]
         self.target_matrix = self.target_matrix[:data_sequence_length, :]
+        if normalize:
+            self.input_matrix = self.input_matrix[:data_sequence_length, :] / torch.max(self.input_matrix)
+            self.target_matrix = self.target_matrix[:data_sequence_length, :] / torch.max(self.target_matrix)
 
     def maybe_random_cut_time_steps(
-        self, data_sequence_length: int, start_index: int | None = None
+        self, data_sequence_length: int, start_index: int | None = None, normalize: bool = True
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Randomly cuts the original time series data to the specified length.
@@ -231,6 +234,10 @@ class TransformerTemperature(TimeSeriesData):
             start_index = random.randint(0, self.original_total_time_steps - data_sequence_length - 1)
         selected_input_matrix = self.original_input_matrix[start_index : start_index + data_sequence_length, :]
         selected_target_matrix = self.original_target_matrix[start_index : start_index + data_sequence_length, :]
+        # Normalize the data
+        if normalize:
+            selected_input_matrix = selected_input_matrix / torch.max(selected_input_matrix)
+            selected_target_matrix = selected_target_matrix / torch.max(selected_target_matrix)
         return selected_input_matrix, selected_target_matrix
 
     def get_dataloader(self, num_samples: int, batch_size: int, shuffle: bool = False) -> DataLoader:
