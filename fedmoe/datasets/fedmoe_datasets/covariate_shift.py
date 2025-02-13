@@ -92,21 +92,31 @@ class CovariateShiftDataset(TimeSeriesData):
     def visualize(self) -> None:
         n_targets = self.target_matrix.shape[1]
 
-        _, ax = plt.subplots(1, 1, figsize=(12, 8))
+        _, ax = plt.subplots(1, 1, figsize=(20, 8))
         for target_path in range(n_targets):
             ax.plot(
                 self.input_matrix[:, 0].squeeze(),
                 self.target_matrix[:, target_path],
-                linestyle="dotted",
-                linewidth=1.5,
+                label=f"$y_{target_path+1}$",
+                linestyle="-",
+                linewidth=2.5,
             )
-        ax.set_title("Values of Y")
-        ax.set_xlabel("x_1")
-        ax.set_ylabel("Value")
+
+        title_font = {"family": "helvetica", "weight": "bold", "size": 35}
+        axis_font = {"family": "helvetica", "weight": "bold", "size": 35}
+        plt.xticks(fontname="helvetica", fontsize=30, fontweight="bold")
+        plt.yticks(fontname="helvetica", fontsize=30, fontweight="bold")
+        plt.xlabel("$x_1$", fontdict=axis_font)
+        plt.ylabel("Time-Series Values", fontdict=axis_font)
+        plt.title("Concept Drift of $\\mathbf{{y}}$", fontdict=title_font)
+
+        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 30}, loc="upper left", labelspacing=0)
+        plt.tight_layout(pad=0.5)
+
         plt.show()
 
         mixing_weights = self._get_mixing_weight(self.input_matrix[:, 0])
-        _, ax = plt.subplots(1, 1, figsize=(12, 8))
+        _, ax = plt.subplots(1, 1, figsize=(24, 8))
         ax.plot(self.input_matrix[:, 0].squeeze(), mixing_weights.squeeze(), linestyle="dotted", linewidth=1.5)
         ax.set_title("Values of Mixture Weight")
         ax.set_xlabel("x_1")

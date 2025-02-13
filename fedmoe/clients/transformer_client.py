@@ -127,9 +127,10 @@ class TransformerClient(Client):
         dim_feedforward = 16  # Dimension of the feedforward network model
         output_dim = y_dim
         # In this model setup, hidden_dim has the shape d_y times d_z.
-        assert (
-            self.y_dim * hidden_dim % nhead == 0
-        ), f"Error: embed_dim (self.y_dim*hidden_dim) must be divisible by num_heads, now it is {self.y_dim*hidden_dim} % {nhead}"
+        assert self.y_dim * hidden_dim % nhead == 0, (
+            "Error: embed_dim (self.y_dim*hidden_dim) must be divisible by num_heads, now it is "
+            f"{self.y_dim*hidden_dim} % {nhead}"
+        )
         # Create the model
         model = TransformerTimeSeriesModel(
             input_dim,
