@@ -191,14 +191,25 @@ class TransformerTemperature(TimeSeriesData):
         n_inputs = self.input_matrix.shape[1]
         n_targets = self.target_matrix.shape[1]
 
-        _, ax = plt.subplots(1, 1, figsize=(12, 8))
+        _, ax = plt.subplots(1, 1, figsize=(20, 8))
         for input_path in range(n_inputs):
-            ax.plot(self.time_axis, self.input_matrix[:, input_path], linestyle="solid", linewidth=1.5)
+            ax.plot(self.time_axis, self.input_matrix[:, input_path], linestyle="solid", linewidth=3.0)
         for target_path in range(n_targets):
-            ax.plot(self.time_axis, self.target_matrix[:, target_path], linestyle="dotted", linewidth=1.5)
-        ax.set_title("Features and Oil Temperature")
-        ax.set_xlabel("Time")
-        ax.set_ylabel("Value")
+            ax.plot(self.time_axis, self.target_matrix[:, target_path], label="OT", linestyle="dotted", linewidth=3)
+        ax.set_title("ETT-Small-h1 Dataset")
+        ax.set_xlabel("Time Step")
+        ax.set_ylabel("Features and Oil Temperature")
+
+        title_font = {"family": "helvetica", "weight": "bold", "size": 35}
+        axis_font = {"family": "helvetica", "weight": "bold", "size": 35}
+        plt.xticks(fontname="helvetica", fontsize=30, fontweight="bold")
+        plt.yticks(fontname="helvetica", fontsize=30, fontweight="bold")
+        plt.xlabel("Time Step", fontdict=axis_font)
+        plt.ylabel("Features and Oil Temperature", fontdict=axis_font)
+        plt.title("ETT-Small-h1 Dataset", fontdict=title_font)
+
+        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 30}, loc="upper right", labelspacing=0)
+        plt.tight_layout(pad=0.5)
         plt.show()
 
     def cut_first_time_steps(self, data_sequence_length: int, normalize: bool = False) -> None:
