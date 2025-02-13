@@ -1,6 +1,7 @@
 from functools import partial
 from typing import Tuple
 
+import matplotlib.pyplot as plt
 import torch
 
 from fedmoe.datasets.data_matrix_generator import (
@@ -59,3 +60,21 @@ class TimeSeriesLogisticMap(TimeSeriesData):
             return additional_tensor
 
         return MultiDimensionalTargetGenerator([partial(y_func, output_sequence)], y_dim=1)
+
+    def visualize(self) -> None:
+        n_targets = self.target_matrix.shape[1]
+
+        _, ax = plt.subplots(1, 1, figsize=(20, 8))
+        for target_path in range(n_targets):
+            ax.plot(self.time_axis, self.target_matrix[:, target_path], linestyle="solid", linewidth=3)
+
+        title_font = {"family": "helvetica", "weight": "bold", "size": 35}
+        axis_font = {"family": "helvetica", "weight": "bold", "size": 35}
+        plt.xticks(fontname="helvetica", fontsize=30, fontweight="bold")
+        plt.yticks(fontname="helvetica", fontsize=30, fontweight="bold")
+        plt.xlabel("Time Step", fontdict=axis_font)
+        plt.ylabel("Logistic Map Value", fontdict=axis_font)
+        plt.title("Logistic Map Timeseries", fontdict=title_font)
+
+        plt.tight_layout(pad=0.5)
+        plt.show()
