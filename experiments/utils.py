@@ -32,6 +32,7 @@ class DataOptions(Enum):
     BOC_EXCHANGE = "boc_exchange"
     BOC_EXCHANGE_VALIDATION = "boc_exchange_validation"
     ETT = "ett_data"
+    ETT_VALIDATION = "ett_data_validation"
     COVARIATE_SHIFT = "covariate_shift"
 
 
@@ -107,7 +108,7 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
             input_lags=input_lag,
             target_lags=target_lag,
         )
-        dataset.maybe_random_cut_time_steps(data_sequence_length=total_rounds, start_index=1500)
+        dataset.maybe_random_cut_time_steps(data_sequence_length=total_rounds, start_index=1600)
         return dataset
     elif dataset_option == DataOptions.ETT:
         ett_inputs = [
@@ -126,6 +127,24 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
             target_lags=target_lag,
         )
         ett_dataset.cut_first_time_steps(data_sequence_length=total_rounds, normalize=True)
+        return ett_dataset
+    elif dataset_option == DataOptions.ETT_VALIDATION:
+        ett_inputs = [
+            InputFeatures.HUFL,
+            InputFeatures.HULL,
+            InputFeatures.MUFL,
+            InputFeatures.MULL,
+            InputFeatures.LUFL,
+            InputFeatures.LULL,
+        ]
+        input_lag = [0, 1, 2]
+        target_lag = [0, 1]
+        ett_dataset = TransformerTemperature(
+            inputs=ett_inputs,
+            input_lags=input_lag,
+            target_lags=target_lag,
+        )
+        ett_dataset.maybe_random_cut_time_steps(data_sequence_length=total_rounds, start_index=3500, normalize=True)
         return ett_dataset
     elif dataset_option == DataOptions.COVARIATE_SHIFT:
         return CovariateShiftDataset(total_time_steps=total_rounds)
