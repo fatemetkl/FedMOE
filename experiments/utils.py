@@ -108,7 +108,7 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
             input_lags=input_lag,
             target_lags=target_lag,
         )
-        dataset.maybe_random_cut_time_steps(data_sequence_length=total_rounds, start_index=1600)
+        dataset.cut_at_start_index(data_sequence_length=total_rounds, start_index=1600)
         return dataset
     elif dataset_option == DataOptions.ETT:
         ett_inputs = [
@@ -144,7 +144,7 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
             input_lags=input_lag,
             target_lags=target_lag,
         )
-        ett_dataset.maybe_random_cut_time_steps(data_sequence_length=total_rounds, start_index=3500, normalize=True)
+        ett_dataset.cut_at_start_index(data_sequence_length=total_rounds, start_index=3500, normalize=True)
         return ett_dataset
     elif dataset_option == DataOptions.COVARIATE_SHIFT:
         return CovariateShiftDataset(total_time_steps=total_rounds)

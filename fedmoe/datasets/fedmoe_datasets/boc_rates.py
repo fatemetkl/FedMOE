@@ -228,6 +228,16 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         self.input_matrix = self.input_matrix[:data_sequence_length, :]
         self.target_matrix = self.target_matrix[:data_sequence_length, :]
 
+    def cut_at_start_index(self, data_sequence_length: int, start_index: int) -> None:
+        self.original_total_time_steps = self.total_time_steps
+        self.total_time_steps = data_sequence_length
+        self.time_axis = torch.arange(0, self.total_time_steps)
+        self.original_input_matrix = self.input_matrix
+        self.original_target_matrix = self.target_matrix
+        self.input_matrix = self.input_matrix[start_index : start_index + data_sequence_length, :]
+        self.target_matrix = self.target_matrix[start_index : start_index + data_sequence_length, :]
+
+
     def maybe_random_cut_time_steps(
         self, data_sequence_length: int, start_index: int | None = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
