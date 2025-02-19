@@ -44,7 +44,7 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
             for CLIENT_T_VALUE in "${CLIENT_T_VALUES[@]}"; do
               for GAME_T_VALUE in "${GAME_T_VALUES[@]}"; do
                 for GAME_SYNC in "${GAME_SYNC_VALUES[@]}"; do
-                  EXPERIMENT_SETUP="T${Client_T_Value}_sync${game_sync}_gameT${GAME_T_Value}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_sigma${SIGMA_VALUE}_DZ${HIDDEN_DIM}"
+                  EXPERIMENT_SETUP="T${CLIENT_T_VALUE}_sync${GAME_SYNC}_gameT${GAME_T_VALUE}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_sigma${SIGMA_VALUE}_DZ${HIDDEN_DIM}"
                   EXPERIMENT_DIRECTORY="${RESULTS_DIR}/${EXPERIMENT_SETUP}/"
                   mkdir -p $EXPERIMENT_DIRECTORY
                   echo "Beginning Experiment ${EXPERIMENT_NAME} with hyper-parameters ${EXPERIMENT_SETUP}"

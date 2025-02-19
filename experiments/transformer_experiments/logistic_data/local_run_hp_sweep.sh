@@ -13,14 +13,14 @@ echo "CONFIG_PATH"${CONFIG_PATH}
 echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
 # Game bests
-ALPHA_VALUES=( 0.002)
-GAMMA_VALUES=( 20 )
+ALPHA_VALUES=( 1.0 )
+GAMMA_VALUES=( 10 )
 SIGMA_VALUES=( 0.1 )
-HIDDENDIM_VALUES=( 8 )
+HIDDENDIM_VALUES=( 2 )
 # Client T value is the T used in individual client optimization (equation 4).
-CLIENT_T_VALUES=( 5 )
+CLIENT_T_VALUES=( 4 )
 # Game T value is the T used in equation 9.
-GAME_T_VALUES=( 3 )
+GAME_T_VALUES=( 1 )
 # Game synchronization value is the frequency at which the game is played.
 GAME_SYNC_VALUES=( 1 )
 K_VALUES=( 1.0 )
@@ -44,7 +44,7 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
             for CLIENT_T_VALUE in "${CLIENT_T_VALUES[@]}"; do
               for GAME_T_VALUE in "${GAME_T_VALUES[@]}"; do
                 for GAME_SYNC in "${GAME_SYNC_VALUES[@]}"; do
-                  EXPERIMENT_SETUP="T${Client_T_Value}_sync${game_sync}_gameT${GAME_T_Value}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_sigma${SIGMA_VALUE}_DZ${HIDDEN_DIM}"
+                  EXPERIMENT_SETUP="T${CLIENT_T_VALUE}_sync${GAME_SYNC}_gameT${GAME_T_VALUE}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_sigma${SIGMA_VALUE}_DZ${HIDDEN_DIM}"
                   EXPERIMENT_DIRECTORY="${RESULTS_DIR}/${EXPERIMENT_SETUP}/"
                   mkdir -p $EXPERIMENT_DIRECTORY
                   echo "Beginning Experiment ${EXPERIMENT_NAME} with hyper-parameters ${EXPERIMENT_SETUP}"
