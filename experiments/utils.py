@@ -30,6 +30,7 @@ class DataOptions(Enum):
     ONE_D_BROWNIAN_ADD = "one_d_brownian_add"
     XY_2D = "2dxy"
     BOC_EXCHANGE = "boc_exchange"
+    BOC_EXCHANGE_VALIDATION = "boc_exchange_validation"
     ETT = "ett_data"
     COVARIATE_SHIFT = "covariate_shift"
 
@@ -94,6 +95,19 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
             target_lags=target_lag,
         )
         dataset.cut_first_time_steps(data_sequence_length=total_rounds)
+        return dataset
+    elif dataset_option == DataOptions.BOC_EXCHANGE_VALIDATION:
+        inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.EUR_CLOSE, ExchangeRates.GBP_CLOSE, ExchangeRates.JPY_CLOSE]
+        targets = [ExchangeRates.USD_CLOSE]
+        input_lag = [0, 1]
+        target_lag = [0, 1]
+        dataset = BankOfCanadaExchangeRates(
+            inputs=inputs,
+            targets=targets,
+            input_lags=input_lag,
+            target_lags=target_lag,
+        )
+        dataset.maybe_random_cut_time_steps(data_sequence_length=total_rounds, start_index=1500)
         return dataset
     elif dataset_option == DataOptions.ETT:
         ett_inputs = [
