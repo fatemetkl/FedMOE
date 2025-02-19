@@ -13,9 +13,19 @@ experiments/transformer_experiments/ett_data/5_clients/models/ \
 ### Step 2: Run the main algorithm
 Change the last argument to the path of your own virtual environment.
 
+***GAME***
 ```
-bash experiments/transformer_experiments/ett_data/run_hp_sweep.sh \
-experiments/transformer_experiments/ett_data/5_clients/config.yaml \
+bash experiments/transformer_experiments/ett_data/game_run_hp_sweep.sh \
+experiments/transformer_experiments/ett_data/5_clients/game_config.yaml \
+experiments/transformer_experiments/ett_data/5_clients/results/ \
+~/venv/fedmoe_env/
+```
+
+***Non-GAME***
+```
+bash experiments/transformer_experiments/ett_data/non_game_run_hp_sweep.sh \
+experiments/transformer_experiments/ett_data/5_clients/non_game_config.yaml \
+experiments/transformer_experiments/ett_data/5_clients/results/ \
 ~/venv/fedmoe_env/
 ```
 
@@ -24,6 +34,24 @@ Make sure your environment is activated.
 Don't forget to complete the path to the experiment directory by changing the experiment name.
 ```
 python -m experiments.find_best_hp --hp_sweep_dir experiments/transformer_experiments/ett_data/5_clients/results/experiment_name
+```
+### Run the experiment with the best hyper-parameters
+Make sure to set visualization variables to `True` in `config.yaml`. Also adjust the `game_best_hp.sh` and `non_game_best_hp.sh` files based on the best hyper-parameters.
+
+***GAME***
+```
+bash experiments/transformer_experiments/ett_data/5_clients/game_best_hps.sh \
+experiments/transformer_experiments/ett_data/5_clients/game_config.yaml \
+experiments/transformer_experiments/ett_data/5_clients/best_results/ \
+~/venv/fedmoe_env/
+```
+
+***Non-GAME***
+```
+bash experiments/transformer_experiments/ett_data/5_clients/non_game_best_hps.sh \
+experiments/transformer_experiments/ett_data/5_clients/non_game_config.yaml \
+experiments/transformer_experiments/ett_data/5_clients/best_results/ \
+~/venv/fedmoe_env/
 ```
 
 # Run on your local machine

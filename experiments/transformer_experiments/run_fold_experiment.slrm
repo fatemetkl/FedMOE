@@ -5,13 +5,13 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=2
 #SBATCH --gres=gpu:0
-#SBATCH --mem=4G
+#SBATCH --mem=6G
 #SBATCH --partition=cpu
 #SBATCH --qos=cpu_qos
-#SBATCH --job-name=tf_N2ett
+#SBATCH --job-name=tf_visual
 #SBATCH --output=%j_%x.out
 #SBATCH --error=%j_%x.err
-#SBATCH --time=03:00:00
+#SBATCH --time=01:00:00
 
 
 CONFIG_PATH=$1

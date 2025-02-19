@@ -113,7 +113,7 @@ def main(
             plot_info=plot_info,
             game_played=config["have_sync"],
             T=server.game_freq,
-            show_points=True,
+            show_points=False,
         )
         # Also visualize server error
         data_object.visualize_server_squared_errors(
@@ -122,7 +122,7 @@ def main(
             game_played=config["have_sync"],
             plot_info=plot_info,
             T=server.game_freq,
-            show_points=True,
+            show_points=False,
         )
         tensors_to_save["server_prediction"] = server.server_outputs
 

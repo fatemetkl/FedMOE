@@ -39,7 +39,7 @@ python -m experiments.find_best_hp --hp_sweep_dir experiments/rfn_experiments/bo
 
 
 ### Run the experiment with the best hyper-parameters
-Make sure to set visualization variables to `True` in `config.yaml`.
+Make sure to set visualization variables to `True` in `config.yaml`. Set the best hyper-parameters in `game_best_hp.sh` and `non_game_best_hp.sh` files.
 
 *** With GAME ***
 ```

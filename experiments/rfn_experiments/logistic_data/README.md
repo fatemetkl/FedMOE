@@ -35,6 +35,28 @@ Don't forget to complete the path to the experiment directory by changing the ex
 python -m experiments.find_best_hp --hp_sweep_dir experiments/rfn_experiments/logistic_data/results/experiment_name
 ```
 
+### Run the experiment with the best hyper-parameters
+Make sure to set visualization variables to `True` in `config.yaml`. Set the best hyper-parameters in `game_best_hp.sh` and `non_game_best_hp.sh` files.
+
+*** With GAME ***
+```
+bash experiments/rfn_experiments/logistic_data/game_best_hp.sh \
+experiments/rfn_experiments/logistic_data/game_config.yaml \
+experiments/rfn_experiments/logistic_data/best_results/ \
+~/venv/fedmoe_env/
+
+```
+
+*** No GAME ***
+
+```
+bash experiments/rfn_experiments/logistic_data/non_game_best_hp.sh \
+experiments/rfn_experiments/logistic_data/non_game_config.yaml \
+experiments/rfn_experiments/logistic_data/best_results/ \
+~/venv/fedmoe_env/
+```
+
+
 # Run on your local machine
 
 ### Activate your environment

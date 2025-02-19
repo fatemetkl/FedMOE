@@ -34,6 +34,24 @@ Don't forget to complete the path to the experiment directory by changing the ex
 ```
 python -m experiments.find_best_hp --hp_sweep_dir experiments/transformer_experiments/ett_data/2_clients/results/experiment_name
 ```
+### Run the experiment with the best hyper-parameters
+Make sure to set visualization variables to `True` in `config.yaml`. Also adjust the `game_best_hp.sh` and `non_game_best_hp.sh` files based on the best hyper-parameters.
+
+***GAME***
+```
+bash experiments/transformer_experiments/ett_data/2_clients/game_best_hps.sh \
+experiments/transformer_experiments/ett_data/2_clients/game_config.yaml \
+experiments/transformer_experiments/ett_data/2_clients/best_results/ \
+~/venv/fedmoe_env/
+```
+
+***Non-GAME***
+```
+bash experiments/transformer_experiments/ett_data/2_clients/non_game_best_hps.sh \
+experiments/transformer_experiments/ett_data/2_clients/non_game_config.yaml \
+experiments/transformer_experiments/ett_data/2_clients/best_results/ \
+~/venv/fedmoe_env/
+```
 
 # Run on your local machine
 

@@ -100,7 +100,7 @@ def main(
             game_played=config["have_sync"],
             plot_info=plot_info,
             T=server.game_freq,
-            show_points=True,
+            show_points=False,
         )
         tensors_to_save["server_prediction"] = server.server_outputs
 

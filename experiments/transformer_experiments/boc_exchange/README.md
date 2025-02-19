@@ -1,4 +1,6 @@
 
+Pre-trained transformers for this dataset have a `max_seq_len` of 1001 and are trained on data sequences of size 1000. You can choose to train them with other `max_seq_len` values.
+
 ## Run the experiments
 `run_hp_sweep.sh` schedules each experiment through slurm with specific CPU allocation.
 
