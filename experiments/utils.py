@@ -4,7 +4,6 @@ from typing import Any, Dict, List
 
 import torch
 import yaml
-import logging
 
 from fedmoe.datasets.brownian_motion_dataset import BrownianSequenceAddition, TimeSeriesBrownianTarget
 from fedmoe.datasets.fedmoe_datasets.boc_rates import BankOfCanadaExchangeRates, ExchangeRates
