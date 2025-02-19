@@ -49,7 +49,7 @@ def visualize_relative_server_squared_errors(
     plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
     plt.xlabel("Time Step", fontdict=axis_font)
     plt.ylabel("Time-Series Values", fontdict=axis_font)
-    plt.title(f"Server Predictions vs. Target", fontdict=title_font)
+    plt.title("Server Predictions vs. Target", fontdict=title_font)
 
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
     plt.tight_layout(pad=1)
