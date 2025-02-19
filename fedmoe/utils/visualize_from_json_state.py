@@ -93,7 +93,7 @@ def visualize_server_prediction(
             server_matrix[:, i].detach().numpy(),
             label=f"Prediction: Server $\\hat{{Y}}_{i+1}$",
             linestyle=":",
-            linewidth=2.5,
+            linewidth=3.5,
         )
 
     if game_played:
@@ -141,7 +141,7 @@ def visualize_server_prediction(
     plt.ylabel("Time-Series Values", fontdict=axis_font)
     plt.title(f"Server Predictions ({game_status}Nash Game)", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
+    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, loc="upper left", labelspacing=0)
     plt.tight_layout(pad=0.5)
 
     plt.savefig(plot_path)
@@ -174,7 +174,7 @@ def visualize_clients_predictions(
         but it should be {(total_time_steps, plot_info['num_clients'], target_matrix.shape[1])}"
     }
 
-    plt.rcParams["figure.figsize"] = [10, 5]
+    plt.rcParams["figure.figsize"] = [10, 4]
     ax = plt.figure().gca()
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
@@ -193,7 +193,7 @@ def visualize_clients_predictions(
                 clients_pred_matrix[:, client, dim],
                 label=f"Prediction: $\\mathregular{{Client}}_{client}$ $\\hat{{Y}}_{dim+1}$",
                 linestyle=":",
-                linewidth=2.5,
+                linewidth=3.5,
             )
 
     if plot_info is not None and show_plot_info:
@@ -215,7 +215,7 @@ def visualize_clients_predictions(
     plt.ylabel("Time-Series Values", fontdict=axis_font)
     plt.title("Individual Client Predictions", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
+    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, loc="upper left", labelspacing=0)
     plt.tight_layout(pad=0.5)
 
     plt.savefig(plot_path)
@@ -600,7 +600,7 @@ if __name__ == "__main__":
         target,
         server_predictions,
         os.path.join(output_dir, "server_predictions_plot.png"),
-        game_played=True,
+        game_played=False,
         T=10,
         plot_info=plot_info,
         show_points=False,
