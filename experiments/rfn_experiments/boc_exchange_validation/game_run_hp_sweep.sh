@@ -13,8 +13,7 @@ mkdir -p $RESULTS_DIR
 echo "CONFIG_PATH"${CONFIG_PATH}
 echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
-# # Game parameters
-ALPHA_VALUES=( 0.001 )
+ALPHA_VALUES=( 0.01 )
 GAMMA_VALUES=( 10.0 )
 SIGMA_VALUES=( 1.0 )
 HIDDENDIM_VALUES=( 6 )
@@ -42,7 +41,7 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                     mkdir -p $EXPERIMENT_DIRECTORY
                     echo "Beginning Experiment ${EXPERIMENT_NAME} with hyper-parameters ${EXPERIMENT_SETUP}"
 
-                    SBATCH_COMMAND="experiments/esn_experiments/run_fold_experiment.slrm \
+                    SBATCH_COMMAND="experiments/rfn_experiments/run_fold_experiment.slrm \
                         ${CONFIG_PATH} \
                         ${EXPERIMENT_DIRECTORY} \
                         ${HIDDEN_DIM} \

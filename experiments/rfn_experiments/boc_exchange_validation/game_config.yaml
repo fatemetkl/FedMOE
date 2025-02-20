@@ -8,12 +8,11 @@ save_server_prediction: True # Set to True if you want to save the plot that sho
 save_input: True # Set to True if you want to save the plot that shows input.
 save_clients_predictions: True # Set to True if you want to save the plot that shows individual clients predictions.
 save_mixture_weights: True # Set to True if you want to save the plot that shows the mixture weights.
-dump_json: True # If True, dumps the above plotted tensors in JSON
+dump_json: True #If True, dumps the above plotted tensors in JSON
 save_error_histogram: True # Set to True if you want to save the histogram of the errors.
 
-
-# Fixed for this experiment. DO NOT CHANGE.
-client_type : 2 # 2: EchoState networks (fixed for this experiment)
-data: "ett_data_validation"  # Dataset options are saved in utils.DataOptions.
+# Fixed
+client_type : 0 # 0: Random feature networks (fixed for this experiment)
+data: "boc_exchange_validation"  # Dataset options are saved in utils.DataOptions.
 have_sync: True # Do we want to have Nash game and synchronization steps or not
 update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t

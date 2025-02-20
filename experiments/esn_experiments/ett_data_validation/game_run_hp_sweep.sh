@@ -10,10 +10,8 @@ RESULTS_DIR="${ARTIFACTS_DIR}${EXPERIMENT_NAME}"
 # Create the results directory if it doesn't exist
 mkdir -p $RESULTS_DIR
 
-
 echo "CONFIG_PATH"${CONFIG_PATH}
 echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
-
 
 # Game parameters
 ALPHA_VALUES=( 5.0 )
@@ -29,10 +27,6 @@ GAME_T_VALUES=( 2 )
 GAME_SYNC_VALUES=( 1 )
 K_VALUES=( 1.0 )
 ETA_VALUES=( 1.0 )
-
-
-
-
 
 for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
   for ALPHA_VALUE in "${ALPHA_VALUES[@]}"; do

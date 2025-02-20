@@ -13,18 +13,17 @@ mkdir -p $RESULTS_DIR
 echo "CONFIG_PATH"${CONFIG_PATH}
 echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
-# # Game parameters
-ALPHA_VALUES=( 0.001 )
+ALPHA_VALUES=( 0.1 )
 GAMMA_VALUES=( 10.0 )
 SIGMA_VALUES=( 1.0 )
-HIDDENDIM_VALUES=( 6 )
+HIDDENDIM_VALUES=( 2 )
 # Client T value is the T used in individual client optimization (equation 4).
-CLIENT_T_VALUES=( 5 )
+CLIENT_T_VALUES=( 3 )
 # Remember to set this for the game and set to 0 for non-game settings.
 # Game T value is the T used in equation 9.
-GAME_T_VALUES=( 2 )
+GAME_T_VALUES=( 0 )
 # Game synchronization value is the frequency at which the game is played.
-GAME_SYNC_VALUES=( 1 )
+GAME_SYNC_VALUES=( 0 )
 K_VALUES=( 1.0 )
 ETA_VALUES=( 1.0 )
 
@@ -42,7 +41,7 @@ for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
                     mkdir -p $EXPERIMENT_DIRECTORY
                     echo "Beginning Experiment ${EXPERIMENT_NAME} with hyper-parameters ${EXPERIMENT_SETUP}"
 
-                    SBATCH_COMMAND="experiments/esn_experiments/run_fold_experiment.slrm \
+                    SBATCH_COMMAND="experiments/rfn_experiments/run_fold_experiment.slrm \
                         ${CONFIG_PATH} \
                         ${EXPERIMENT_DIRECTORY} \
                         ${HIDDEN_DIM} \
