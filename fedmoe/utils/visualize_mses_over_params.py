@@ -74,7 +74,7 @@ if __name__ == "__main__":
     two_client_average_mses = []
     for experiment in two_client_experiments:
         m = re.search(parse_parameter_re, str(experiment))
-        average_mse = None
+        average_mse = 0.0
         for index in range(3):
             run_folder = os.path.join(experiment, f"Run{index+1}")
             average_mse += get_loss_from_log(run_folder)
