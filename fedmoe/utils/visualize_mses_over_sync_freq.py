@@ -99,18 +99,18 @@ if __name__ == "__main__":
     plt.rcParams["figure.figsize"] = [10, 6]
     ax = plt.figure().gca()
 
-    plt.scatter(parameter_values, two_client_mses, label="2 Clients")
-    # plt.scatter(parameter_values, five_client_mses, label="5 Clients")
+    plt.scatter(parameter_values, two_client_mses, label="2 Clients", s=80)
+    plt.scatter(parameter_values, five_client_mses, label="5 Clients", s=80)
 
-    title_font = {"family": "helvetica", "weight": "bold", "size": 20}
-    axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
-    plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
-    plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
-    plt.xlabel("Nash Game Lookback Length", fontdict=axis_font)
+    title_font = {"family": "helvetica", "weight": "bold", "size": 30}
+    axis_font = {"family": "helvetica", "weight": "bold", "size": 24}
+    plt.xticks(fontname="helvetica", fontsize=20, fontweight="bold")
+    plt.yticks(fontname="helvetica", fontsize=20, fontweight="bold")
+    plt.xlabel("Nash Game Synchronization Frequency", fontdict=axis_font)
     plt.ylabel("Mean MSE", fontdict=axis_font)
     plt.title("Average MSE for BoC Exchange Rate Series", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 18}, labelspacing=0)
+    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 24}, labelspacing=0)
     plt.tight_layout(pad=1)
 
     plt.savefig(os.path.join(output_dir, "mses_over_sync_frequency.png"))

@@ -115,18 +115,20 @@ if __name__ == "__main__":
     ax = plt.figure().gca()
     ax.set_yscale("log")
 
-    plt.scatter(two_client_parameter_values, two_client_mses, label="2 Clients")
-    plt.scatter(five_client_parameter_values, five_client_mses, label="5 Clients")
+    plt.scatter(two_client_parameter_values, two_client_mses, label="2 Clients", s=80)
+    plt.scatter(five_client_parameter_values, five_client_mses, label="5 Clients", s=80)
 
-    title_font = {"family": "helvetica", "weight": "bold", "size": 20}
-    axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
-    plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
-    plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
+    title_font = {"family": "helvetica", "weight": "bold", "size": 30}
+    axis_font = {"family": "helvetica", "weight": "bold", "size": 24}
+    plt.xticks(fontname="helvetica", fontsize=20, fontweight="bold")
+    plt.yticks(fontname="helvetica", fontsize=20, fontweight="bold")
+    plt.xticks(fontname="helvetica", fontsize=20, minor=True, fontweight="bold")
+    plt.yticks(fontname="helvetica", fontsize=20, minor=True, fontweight="bold")
     plt.xlabel("Nash Game Lookback Length", fontdict=axis_font)
     plt.ylabel("Minimum MSE", fontdict=axis_font)
     plt.title("Minimum MSE for BoC Exchange Rate Series", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 18}, loc="lower right", labelspacing=0)
+    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 24}, loc="lower right", labelspacing=0)
     plt.tight_layout(pad=1)
 
     plt.savefig(os.path.join(output_dir, "min_mses_over_lookback.png"))
