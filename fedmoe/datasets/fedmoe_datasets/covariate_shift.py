@@ -13,7 +13,7 @@ torch.set_default_dtype(torch.float64)
 
 
 class CovariateShiftDataset(TimeSeriesData):
-    def __init__(self, total_time_steps: int) -> None:
+    def __init__(self, total_time_steps: int, one_dim: bool = False) -> None:
         """
         In this dataset we simulate a continuous but fast covariate shift in the relationship of x_t to y_t+1
         NOTE: By convention, at time step t, we are making predictions for y_{t+1} using x_t.
@@ -44,6 +44,7 @@ class CovariateShiftDataset(TimeSeriesData):
             total_time_steps (int): Number of total steps to break the range of x_1, x_2, x_3 into. The larger this is
                 the smaller the steps between each input value (i.e. the interval 0 to 2pi is sliced more finely)
         """
+        self.one_dim = one_dim
         super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
@@ -87,7 +88,10 @@ class CovariateShiftDataset(TimeSeriesData):
             y_2_2 = torch.mul(torch.cos(x_1), torch.sin(x_2)) + torch.pow(x_3, 2) + 0.25 * torch.cos(10 * x_1)
             return torch.mul(mixing_weights, y_2_1) + torch.mul(1.0 - mixing_weights, y_2_2)
 
-        return MultiDimensionalTargetGenerator([func_y1, func_y2], y_dim=2)
+        if not self.one_dim:
+            return MultiDimensionalTargetGenerator([func_y1, func_y2], y_dim=2)
+        else:
+            return MultiDimensionalTargetGenerator([func_y2], y_dim=1)
 
     def visualize(self) -> None:
         n_targets = self.target_matrix.shape[1]
@@ -114,6 +118,7 @@ class CovariateShiftDataset(TimeSeriesData):
         plt.tight_layout(pad=0.5)
 
         plt.show()
+        plt.savefig("temp.png")
 
         mixing_weights = self._get_mixing_weight(self.input_matrix[:, 0])
         _, ax = plt.subplots(1, 1, figsize=(24, 8))

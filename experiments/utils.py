@@ -34,6 +34,7 @@ class DataOptions(Enum):
     ETT = "ett_data"
     ETT_VALIDATION = "ett_data_validation"
     COVARIATE_SHIFT = "covariate_shift"
+    COVARIATE_SHIFT_ONE_D = "covariate_shift_one_d"
 
 
 def load_config(config_path: str) -> Dict[str, Any]:
@@ -148,6 +149,8 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         return ett_dataset
     elif dataset_option == DataOptions.COVARIATE_SHIFT:
         return CovariateShiftDataset(total_time_steps=total_rounds)
+    elif dataset_option == DataOptions.COVARIATE_SHIFT_ONE_D:
+        return CovariateShiftDataset(total_time_steps=total_rounds, one_dim=True)
     else:
         raise ValueError(f"dataset name {dataset_name} is not valid. See DataOptions.")
 
