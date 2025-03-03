@@ -3,7 +3,7 @@ import logging
 import os
 import random
 from typing import Any, Dict, List
-
+import time
 import torch
 
 from experiments.transformer_experiments.pre_train_transformer import setup_transformer_structure
@@ -90,8 +90,11 @@ def main(
         eta=eta,
     )
     logger.info("Server initiated")
-
+    start_time = time.time()
     final_metric_value = server.fit(config["total_rounds"], config["have_sync"], config["update_last_Y_sync"])
+    end_time = time.time()
+    runtime = end_time - start_time
+    logger.info(" Recorded runtime: %f", runtime)
     print("Final metric value:", "\n", final_metric_value["server - server_predictions - MSE"])
     # Plot or save server predictions and the input data sequence
     plot_info = {
