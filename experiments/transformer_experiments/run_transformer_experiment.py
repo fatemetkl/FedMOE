@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 import torch
 
 from experiments.transformer_experiments.pre_train_transformer import setup_transformer_structure
-from experiments.utils import load_config, load_data, save_to_json
+from experiments.utils import load_config, load_data, save_output_json
 from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.metrics import MSEMetric
@@ -57,6 +57,7 @@ def main(
         pre_training_epochs=0,  # we don't train individual transformers
         pre_training_learning_rate=pre_training_learning_rate,
         target_sequence=data_object.target_matrix,
+        game_T=game_T,
     )
 
     # Load the saved models for each client
@@ -112,7 +113,16 @@ def main(
             plot_info=plot_info,
             game_played=config["have_sync"],
             T=server.game_freq,
-            show_points=True,
+            show_points=False,
+        )
+        # Also visualize server error
+        data_object.visualize_server_squared_errors(
+            server.server_outputs,
+            f"{results_dir}/server_squared_errors.png",
+            game_played=config["have_sync"],
+            plot_info=plot_info,
+            T=server.game_freq,
+            show_points=False,
         )
         tensors_to_save["server_prediction"] = server.server_outputs
 
@@ -129,6 +139,14 @@ def main(
             plot_path=f"{results_dir}/client_predictions.png",
             plot_info=plot_info,
             show_input=True,
+        )
+        # Also visualize clients' errors
+        data_object.visualize_client_squared_errors(
+            detached_clients_predictions,
+            f"{results_dir}/clients_squared_errors.png",
+            plot_info,
+            game_played=config["have_sync"],
+            T=server.game_freq,
         )
         tensors_to_save["clients_predictions"] = detached_clients_predictions
 
@@ -155,7 +173,7 @@ def main(
     if config["dump_json"]:
         # Dump results and data in JSON
         tensors_to_save["target"] = [row for row in data_object.target_matrix]
-        save_to_json(tensors_to_save, path=f"{results_dir}")
+        save_output_json(tensors_to_save, path=f"{results_dir}", dict_to_save=plot_info)
 
 
 if __name__ == "__main__":
@@ -277,6 +295,22 @@ if __name__ == "__main__":
     config = load_config(args.config_path)
     random.seed(args.random_seed)
     torch.manual_seed(args.random_seed)
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    logger.info("Configuration: %s", config)
+    logger.info("Results directory: %s", args.result_dir)
+    logger.info("Hidden dimension: %d", args.hidden_dim)
+    logger.info("Client T: %d", args.client_T)
+    logger.info("Game sync frequency: %d", args.game_sync_freq)
+    logger.info("Game T: %d", args.game_T)
+    logger.info("Alpha: %f", args.alpha)
+    logger.info("Gamma: %f", args.gamma)
+    logger.info("Sigma: %f", args.sigma)
+    logger.info("Kappa: %f", args.K)
+    logger.info("Eta: %f", args.eta)
+    logger.info("Arguments: %s", vars(args))
+
     main(
         config,
         args.result_dir,

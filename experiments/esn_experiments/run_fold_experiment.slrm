@@ -3,15 +3,15 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=2
 #SBATCH --gres=gpu:0
-#SBATCH --mem=6G
+#SBATCH --mem=4G
 #SBATCH --partition=cpu
-#SBATCH --qos=m
-#SBATCH --job-name=fedmoe_esn_fold_exp
+#SBATCH --qos=cpu_qos
+#SBATCH --job-name=esn_5eetV
 #SBATCH --output=%j_%x.out
 #SBATCH --error=%j_%x.err
-#SBATCH --time=00:20:00
+#SBATCH --time=08:00:00
 
 
 CONFIG_PATH=$1

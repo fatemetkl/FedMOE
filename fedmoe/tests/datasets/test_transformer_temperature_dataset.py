@@ -263,3 +263,91 @@ def test_various_dataset_assertions() -> None:
         )
 
     assert str(assertion_error.value) == "Start date occurs after end date. This is invalid"
+
+
+def test_cutting_and_dataloader_functionalities() -> None:
+    # Recreating the dataset from the documentation of the transformer temperature dataset. OT target, MUFL input
+    inputs = [InputFeatures.MUFL]
+    input_lag = [0, 1]
+    target_lag = [0, 1]
+    start_date = datetime(2016, 7, 1, 13)
+    end_date = datetime(2016, 7, 1, 23)
+    dataset = TransformerTemperature(
+        inputs=inputs,
+        input_lags=input_lag,
+        target_lags=target_lag,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    # One target with 2 lags, one input with two lags
+    assert dataset.input_matrix.shape == (11, 4)
+    assert dataset.target_matrix.shape == (11, 1)
+
+    target_input_tensor = torch.tensor(
+        [
+            [1.7770, 1.8120, 18.5720, 19.2050],
+            [2.4520, 1.7770, 19.5560, 18.5720],
+            [2.4870, 2.4520, 17.3050, 19.5560],
+            [1.7060, 2.4870, 19.4860, 17.3050],
+            [1.6350, 1.7060, 19.1340, 19.4860],
+            [2.5230, 1.6350, 20.6820, 19.1340],
+            [2.4520, 2.5230, 18.7120, 20.6820],
+            [2.4520, 2.4520, 17.8680, 18.7120],
+            [2.3810, 2.4520, 18.0090, 17.8680],
+            [2.2030, 2.3810, 18.0090, 18.0090],
+            [2.1320, 2.2030, 19.7680, 18.0090],
+        ]
+    )
+    target_target_tensor = torch.tensor(
+        [
+            [18.5720],
+            [19.5560],
+            [17.3050],
+            [19.4860],
+            [19.1340],
+            [20.6820],
+            [18.7120],
+            [17.8680],
+            [18.0090],
+            [18.0090],
+            [19.7680],
+        ]
+    )
+    assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
+    assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
+    # Now let's take the first n (n==5) elements of the data sample.
+    dataset.cut_first_time_steps(5)
+    assert dataset.input_matrix.shape == (5, 4)
+    assert dataset.target_matrix.shape == (5, 1)
+    # Make sure this is the first 5 elements of the original dataset.
+    assert torch.allclose(dataset.input_matrix, target_input_tensor[:5, :], rtol=0.0, atol=1e-6)
+    assert torch.allclose(dataset.target_matrix, target_target_tensor[:5, :], rtol=0.0, atol=1e-6)
+    # cut_first_time_steps will set the new self.total_time_steps to the specified length (here n=5).
+    assert dataset.total_time_steps == 5
+    # Now let's see if we can generate a dataloader from this dataset.
+    dataloader = dataset.get_dataloader(num_samples=4, batch_size=2, shuffle=True)
+    for input, target in dataloader:
+        assert input.shape == (2, 5, 4)
+        assert target.shape == (2, 5, 1)
+
+    # Test maybe_random_cut_time_steps function
+    non_random_input, non_random_output = dataset.maybe_random_cut_time_steps(data_sequence_length=4, start_index=3)
+    target_non_random_input = torch.tensor(
+        [
+            [1.7060, 2.4870, 19.4860, 17.3050],
+            [1.6350, 1.7060, 19.1340, 19.4860],
+            [2.5230, 1.6350, 20.6820, 19.1340],
+            [2.4520, 2.5230, 18.7120, 20.6820],
+        ]
+    )
+    target_non_random_target = torch.tensor(
+        [
+            [19.4860],
+            [19.1340],
+            [20.6820],
+            [18.7120],
+        ]
+    )
+    assert torch.allclose(non_random_input, target_non_random_input, rtol=0.0, atol=1e-6)
+    assert torch.allclose(non_random_output, target_non_random_target, rtol=0.0, atol=1e-6)

@@ -22,8 +22,12 @@ def get_run_folders(hp_dir: str) -> List[str]:
     return [os.path.join(hp_dir, run_folder_name) for run_folder_name in run_folder_names]
 
 
-def get_loss_from_log(run_folder_path: str) -> float:
+def get_loss_from_log(run_folder_path: str, delete_error_files: bool = False) -> float:
     server_log_path = os.path.join(run_folder_path, "log.out")
+    server_done_path = os.path.join(run_folder_path, "done.out")
+    if not os.path.exists(server_done_path):
+        logger.info(f"{run_folder_path} experiment is not completed, run again.")
+        return 200
     with open(server_log_path, "r") as handle:
         files_lines = handle.readlines()
         line_to_convert = files_lines[-1].strip()
@@ -33,18 +37,30 @@ def get_loss_from_log(run_folder_path: str) -> float:
         except Exception:
             logger.info(f"{run_folder_path} file did not run completely due to error, check log file.")
             # Returning max loss
+            if delete_error_files:
+                logger.info(f"Deleting the run log with error {server_done_path}.")
+                os.remove(server_done_path)
             return 100
 
 
-def main(hp_sweep_dir: str) -> None:
+def main(hp_sweep_dir: str, delete_error_files: bool = False) -> None:
     hp_folders = get_hp_folders(hp_sweep_dir)
     best_avg_loss: Optional[float] = None
     best_folder = ""
+    error_runs_count = 0
+    not_completed_runs_count = 0
+    completed_runs_count = 0
     for hp_folder in hp_folders:
         run_folders = get_run_folders(hp_folder)
         hp_losses = []
         for run_folder in run_folders:
-            run_loss = get_loss_from_log(run_folder)
+            run_loss = get_loss_from_log(run_folder, delete_error_files)
+            if run_loss == 100:
+                error_runs_count += 1
+            elif run_loss == 200:
+                not_completed_runs_count += 1
+            else:
+                completed_runs_count += 1
             hp_losses.append(run_loss)
         current_avg_loss = float(np.mean(hp_losses))
         if best_avg_loss is None or current_avg_loss <= best_avg_loss:
@@ -52,6 +68,9 @@ def main(hp_sweep_dir: str) -> None:
             logger.info(f"Best Folder: {hp_folder}, Previous Best: {best_folder}")
             best_avg_loss = current_avg_loss
             best_folder = hp_folder
+    logger.info(f"Completed runs count: {completed_runs_count}.")
+    logger.info(f"Error runs count: {error_runs_count}.")
+    logger.info(f"Not completed runs count (probably preempted)): {not_completed_runs_count}.")
     logger.info(f"Best Loss: {best_avg_loss}")
     logger.info(f"Best Folder: {best_folder}")
 
@@ -65,8 +84,15 @@ if __name__ == "__main__":
         help="Path to the artifacts of the hyper-parameter sweep script",
         required=True,
     )
+    parser.add_argument(
+        "--delete_error_files",
+        action="store",
+        type=bool,
+        help="Pass True if you want to delete the done.out of error runs to run them again.",
+        required=False,
+    )
 
     args = parser.parse_args()
 
     logger.info(f"Hyperparameter Sweep Directory: {args.hp_sweep_dir}")
-    main(args.hp_sweep_dir)
+    main(args.hp_sweep_dir, args.delete_error_files)

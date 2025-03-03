@@ -2,11 +2,13 @@ import json
 from enum import Enum
 from typing import Any, Dict, List
 
-import matplotlib.pyplot as plt
 import torch
 import yaml
 
 from fedmoe.datasets.brownian_motion_dataset import BrownianSequenceAddition, TimeSeriesBrownianTarget
+from fedmoe.datasets.fedmoe_datasets.boc_rates import BankOfCanadaExchangeRates, ExchangeRates
+from fedmoe.datasets.fedmoe_datasets.covariate_shift import CovariateShiftDataset
+from fedmoe.datasets.fedmoe_datasets.transformer_temperature import InputFeatures, TransformerTemperature
 from fedmoe.datasets.logistic_map_dataset import TimeSeriesLogisticMap
 from fedmoe.datasets.periodic_dataset import TimeInputPeriodic, TimeSeriesPeriodic
 from fedmoe.datasets.simple_datasets import TimeSeriesLinearLine, TimeSeriesQuadratic, TimeSeriesSineSignal
@@ -25,7 +27,14 @@ class DataOptions(Enum):
     HORIZONTAL_LINE = "horizontal_line"
     SIMPLE_BROWNIAN = "simple_brownian"
     BROWNIAN_ADDITION = "brownian_addition"
+    ONE_D_BROWNIAN_ADD = "one_d_brownian_add"
     XY_2D = "2dxy"
+    BOC_EXCHANGE = "boc_exchange"
+    BOC_EXCHANGE_VALIDATION = "boc_exchange_validation"
+    ETT = "ett_data"
+    ETT_VALIDATION = "ett_data_validation"
+    COVARIATE_SHIFT = "covariate_shift"
+    COVARIATE_SHIFT_ONE_D = "covariate_shift_one_d"
 
 
 def load_config(config_path: str) -> Dict[str, Any]:
@@ -63,112 +72,97 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         )
     elif dataset_option == DataOptions.BROWNIAN_ADDITION:
         return BrownianSequenceAddition(
-            total_time_steps=total_rounds, n_brownian_trajectories=3, mu=1.0, sigma=1.0, offset=0.0
+            total_time_steps=total_rounds,
+            n_brownian_trajectories=3,
+            mu=1.0,
+            sigma=1.0,
+            offset=0.0,
+            normalize=True,
+        )
+    elif dataset_option == DataOptions.ONE_D_BROWNIAN_ADD:
+        return BrownianSequenceAddition(
+            total_time_steps=total_rounds, n_brownian_trajectories=1, mu=1.0, sigma=1.0, offset=0.0
         )
     elif dataset_option == DataOptions.TIME_INPUT_PERIODIC:
         return TimeInputPeriodic(total_time_steps=total_rounds)
+    elif dataset_option == DataOptions.BOC_EXCHANGE:
+        inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.EUR_CLOSE, ExchangeRates.GBP_CLOSE, ExchangeRates.JPY_CLOSE]
+        targets = [ExchangeRates.USD_CLOSE]
+        input_lag = [0, 1]
+        target_lag = [0, 1]
+        dataset = BankOfCanadaExchangeRates(
+            inputs=inputs,
+            targets=targets,
+            input_lags=input_lag,
+            target_lags=target_lag,
+        )
+        dataset.cut_first_time_steps(data_sequence_length=total_rounds)
+        return dataset
+    elif dataset_option == DataOptions.BOC_EXCHANGE_VALIDATION:
+        inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.EUR_CLOSE, ExchangeRates.GBP_CLOSE, ExchangeRates.JPY_CLOSE]
+        targets = [ExchangeRates.USD_CLOSE]
+        input_lag = [0, 1]
+        target_lag = [0, 1]
+        dataset = BankOfCanadaExchangeRates(
+            inputs=inputs,
+            targets=targets,
+            input_lags=input_lag,
+            target_lags=target_lag,
+        )
+        dataset.cut_at_start_index(data_sequence_length=total_rounds, start_index=1600)
+        return dataset
+    elif dataset_option == DataOptions.ETT:
+        ett_inputs = [
+            InputFeatures.HUFL,
+            InputFeatures.HULL,
+            InputFeatures.MUFL,
+            InputFeatures.MULL,
+            InputFeatures.LUFL,
+            InputFeatures.LULL,
+        ]
+        input_lag = [0, 1, 2]
+        target_lag = [0, 1]
+        ett_dataset = TransformerTemperature(
+            inputs=ett_inputs,
+            input_lags=input_lag,
+            target_lags=target_lag,
+        )
+        ett_dataset.cut_first_time_steps(data_sequence_length=total_rounds, normalize=True)
+        return ett_dataset
+    elif dataset_option == DataOptions.ETT_VALIDATION:
+        ett_inputs = [
+            InputFeatures.HUFL,
+            InputFeatures.HULL,
+            InputFeatures.MUFL,
+            InputFeatures.MULL,
+            InputFeatures.LUFL,
+            InputFeatures.LULL,
+        ]
+        input_lag = [0, 1, 2]
+        target_lag = [0, 1]
+        ett_dataset = TransformerTemperature(
+            inputs=ett_inputs,
+            input_lags=input_lag,
+            target_lags=target_lag,
+        )
+        ett_dataset.cut_at_start_index(data_sequence_length=total_rounds, start_index=3500, normalize=True)
+        return ett_dataset
+    elif dataset_option == DataOptions.COVARIATE_SHIFT:
+        return CovariateShiftDataset(total_time_steps=total_rounds)
+    elif dataset_option == DataOptions.COVARIATE_SHIFT_ONE_D:
+        return CovariateShiftDataset(total_time_steps=total_rounds, one_dim=True)
     else:
         raise ValueError(f"dataset name {dataset_name} is not valid. See DataOptions.")
 
 
-def save_to_json(tensors_to_save: Dict[str, List[torch.Tensor]], path: str) -> None:
+def save_output_json(
+    tensors_to_save: Dict[str, List[torch.Tensor]], path: str, dict_to_save: Dict[str, Any] | None
+) -> None:
     # Creating a new dict to avoid mypy error.
     lists_to_save = {}
     for data_name, data_list in tensors_to_save.items():
         lists_to_save[data_name] = [torch_tensor.tolist() for torch_tensor in data_list]
-
+    if dict_to_save is not None:
+        lists_to_save.update(dict_to_save)
     with open(f"{path}/data.json", "w") as f:
         json.dump(lists_to_save, f)
-
-
-def plot_sequence(
-    input_sequence: torch.Tensor,
-    prediction_sequence: torch.Tensor,
-    T: int,
-    have_sync: bool,
-    plot_info: Dict[str, Any],
-    plot_path: str,
-    show: bool = False,
-    plot_name: str = "prediction_seq",
-) -> None:
-    plt.plot(input_sequence, label="input data", color="gray", alpha=0.5)
-    plt.plot(prediction_sequence, label="prediction", color="blue", alpha=0.5, linewidth=2)
-
-    if have_sync:
-        T_indices = [i * T for i in range(1, int((prediction_sequence.size(0) - 1) / T) + 1)]
-        T_values = [prediction_sequence[i] for i in T_indices]
-        plt.scatter(T_indices, T_values, color="r", marker="o", label="T")
-
-    text_content = "\n".join([f"{key}: {value}" for key, value in plot_info.items()])
-    plt.text(
-        0.05,
-        0.95,
-        text_content,
-        transform=plt.gca().transAxes,
-        fontsize=10,
-        verticalalignment="top",
-        bbox=dict(facecolor="white", alpha=0.5),
-    )
-
-    plt.xlabel("Time")
-    plt.ylabel("Value")
-    plt.title("Experiment data")
-    plt.ylim((torch.min(input_sequence) - 1, torch.max(input_sequence) + 1))
-    plt.legend()
-    if show:
-        plt.show()
-    else:
-        plt.savefig(plot_path + "/" + plot_name + ".png")
-
-
-def plot_results(
-    results: torch.Tensor,
-    average_metric_value: float,
-    T: int,
-    have_sync: bool,
-    plot_info: Dict[str, Any],
-    plot_path: str,
-    show: bool = False,
-    plot_name: str = "error_plot",
-) -> None:
-    """
-    This method can be used to plot a sequence of computed metrics or errors at each time-step.
-    The functionality of having such a results is not yet implemented because I am not sure if it is useful.
-    """
-    plt.plot(results, label="Results", color="gray", alpha=0.5)
-    # Add a dot on each data point
-    plt.scatter(range(results.size(0)), results, color="b", marker="o")
-    # Highlight synchronization steps in red
-    highlighted_indices = [i * T for i in range(int((results.size(0)) / T) + 1)]
-    highlighted_values = torch.Tensor([results[i] for i in highlighted_indices])
-    plt.scatter(highlighted_indices, highlighted_values, color="r", marker="o", label="Highlighted Points")
-
-    if have_sync:
-        T_indices = [i * T for i in range(1, int((results.size(0) - 1) / T) + 1)]
-        T_values = [results[i] for i in T_indices]
-        plt.scatter(T_indices, T_values, color="r", marker="o", label="T")
-
-    text_content = "\n".join([f"{key}: {value}" for key, value in plot_info.items()])
-    plt.text(
-        0.05,
-        0.95,
-        text_content,
-        transform=plt.gca().transAxes,
-        fontsize=10,
-        verticalalignment="top",
-        bbox=dict(facecolor="white", alpha=0.5),
-    )
-
-    plt.axhline(y=average_metric_value, color="r", linestyle="--", label="Average Metric line")
-
-    plt.xlabel("Time")
-    plt.ylabel("Metric (Error) Value")
-    plt.title("Experiment Results")
-    plt.xticks(highlighted_indices)
-    plt.grid(True, which="both", linestyle="--", linewidth=0.5, alpha=0.7)
-    plt.ylim((0, 2))
-    plt.legend()
-    if show:
-        plt.show()
-    else:
-        plt.savefig(plot_path + "/" + plot_name + ".png")

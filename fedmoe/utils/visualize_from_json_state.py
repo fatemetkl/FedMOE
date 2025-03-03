@@ -13,6 +13,7 @@ def visualize_input(
     input_matrix: torch.Tensor,
     plot_path: str,
     plot_info: Optional[Dict[str, Any]] = None,
+    show_plot_info: bool = False,
 ) -> None:
     """
     Saves a plot showing the input_matrix.
@@ -28,7 +29,7 @@ def visualize_input(
     for i in range(input_matrix.shape[1]):
         plt.plot(time_axis, input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="-", linewidth=2.5)
 
-    if plot_info is not None:
+    if plot_info is not None and show_plot_info:
         text_content = ""
         num_items = 0
         for key, value in plot_info.items():
@@ -63,7 +64,9 @@ def visualize_server_prediction(
     game_played: bool = False,
     T: int = 0,
     show_points: Optional[bool] = False,
+    show_lines: Optional[bool] = False,
     plot_info: Optional[Dict[str, Any]] = None,
+    show_plot_info: bool = False,
 ) -> None:
     if game_played:
         assert T > 0, "Error: if the game is played, T should be greater than zero."
@@ -75,7 +78,7 @@ def visualize_server_prediction(
             but it should be{(total_time_steps, target_matrix.shape[1])}"
     }
 
-    plt.rcParams["figure.figsize"] = [10, 5]
+    plt.rcParams["figure.figsize"] = [10, 4]
     ax = plt.figure().gca()
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
@@ -90,7 +93,7 @@ def visualize_server_prediction(
             server_matrix[:, i].detach().numpy(),
             label=f"Prediction: Server $\\hat{{Y}}_{i+1}$",
             linestyle=":",
-            linewidth=2.5,
+            linewidth=3.5,
         )
 
     if game_played:
@@ -108,7 +111,7 @@ def visualize_server_prediction(
                     edgecolors="r",
                     zorder=3,
                 )
-        else:
+        elif show_lines:
             # Display synchronization steps as vertical lines instead
             for j in range(1, int(total_time_steps / T)):
                 label = "Nash Game Played" if j == 1 else None
@@ -119,7 +122,7 @@ def visualize_server_prediction(
     else:
         game_status = "No "
 
-    if plot_info is not None:
+    if plot_info is not None and show_plot_info:
         text_content = ""
         num_items = 0
         for key, value in plot_info.items():
@@ -138,7 +141,7 @@ def visualize_server_prediction(
     plt.ylabel("Time-Series Values", fontdict=axis_font)
     plt.title(f"Server Predictions ({game_status}Nash Game)", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
+    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, loc="upper left", labelspacing=0)
     plt.tight_layout(pad=0.5)
 
     plt.savefig(plot_path)
@@ -155,6 +158,7 @@ def visualize_clients_predictions(
     plot_info: Dict[str, Any],
     show_target: bool = True,
     show_input: bool = False,
+    show_plot_info: bool = False,
 ) -> None:
     assert plot_info["num_clients"] is not None
 
@@ -170,7 +174,7 @@ def visualize_clients_predictions(
         but it should be {(total_time_steps, plot_info['num_clients'], target_matrix.shape[1])}"
     }
 
-    plt.rcParams["figure.figsize"] = [10, 5]
+    plt.rcParams["figure.figsize"] = [10, 4]
     ax = plt.figure().gca()
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
@@ -189,10 +193,10 @@ def visualize_clients_predictions(
                 clients_pred_matrix[:, client, dim],
                 label=f"Prediction: $\\mathregular{{Client}}_{client}$ $\\hat{{Y}}_{dim+1}$",
                 linestyle=":",
-                linewidth=2.5,
+                linewidth=3.5,
             )
 
-    if plot_info is not None:
+    if plot_info is not None and show_plot_info:
         text_content = ""
         num_items = 0
         for key, value in plot_info.items():
@@ -211,7 +215,7 @@ def visualize_clients_predictions(
     plt.ylabel("Time-Series Values", fontdict=axis_font)
     plt.title("Individual Client Predictions", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
+    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, loc="upper left", labelspacing=0)
     plt.tight_layout(pad=0.5)
 
     plt.savefig(plot_path)
@@ -228,6 +232,7 @@ def visualize_mixture_weights(
     T: int = 0,
     show_points: bool = False,
     show_lines: bool = False,
+    show_plot_info: bool = False,
 ) -> None:
     assert plot_info["num_clients"] is not None
     if game_played:
@@ -241,7 +246,7 @@ def visualize_mixture_weights(
         1,
     ), f"Error: mixture_weights.shape is {mixture_weights.shape}, but should be (time_steps - 1 , num_clients, 1)"
 
-    plt.rcParams["figure.figsize"] = [10, 5]
+    plt.rcParams["figure.figsize"] = [10, 6]
     ax = plt.figure().gca()
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
@@ -251,7 +256,7 @@ def visualize_mixture_weights(
             mixture_weights[:, client, 0],
             label=f"Weight: $\\mathregular{{Client}}_{client}$",
             linestyle="-",
-            linewidth=2.5,
+            linewidth=3,
         )
 
     if game_played:
@@ -281,7 +286,7 @@ def visualize_mixture_weights(
     else:
         game_status = "No "
 
-    if plot_info is not None:
+    if plot_info is not None and show_plot_info:
         text_content = ""
         num_items = 0
         for key, value in plot_info.items():
@@ -292,15 +297,15 @@ def visualize_mixture_weights(
         plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
         plt.subplots_adjust(bottom=0.2)
 
-    title_font = {"family": "helvetica", "weight": "bold", "size": 20}
-    axis_font = {"family": "helvetica", "weight": "bold", "size": 18}
-    plt.xticks(fontname="helvetica", fontsize=14, fontweight="bold")
-    plt.yticks(fontname="helvetica", fontsize=14, fontweight="bold")
+    title_font = {"family": "helvetica", "weight": "bold", "size": 40}
+    axis_font = {"family": "helvetica", "weight": "bold", "size": 36}
+    plt.xticks(fontname="helvetica", fontsize=28, fontweight="bold")
+    plt.yticks(fontname="helvetica", fontsize=28, fontweight="bold")
     plt.xlabel("Time Step", fontdict=axis_font)
     plt.ylabel("Mixture Weight", fontdict=axis_font)
     plt.title(f"Mixture Weights ({game_status}Nash Game)", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 14}, labelspacing=0)
+    # plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 28}, labelspacing=0)
     plt.tight_layout(pad=0.55)
     plt.savefig(plot_path)
 
@@ -313,6 +318,7 @@ def visualize_squared_error_histogram(
     plot_path: str,
     plot_info: Dict[str, Any],
     game_played: bool = False,
+    show_plot_info: bool = False,
 ) -> None:
     """
     Saves a histogram showing the error distribution of the predictions made by the server
@@ -328,7 +334,7 @@ def visualize_squared_error_histogram(
     squared_error = squared_error.flatten()
     plt.hist(squared_error, bins=10)
 
-    if plot_info is not None:
+    if plot_info is not None and show_plot_info:
         text_content = ""
         num_items = 0
         for key, value in plot_info.items():
@@ -364,7 +370,9 @@ def visualize_server_squared_errors(
     game_played: bool = False,
     T: int = 0,
     show_points: Optional[bool] = False,
+    show_lines: Optional[bool] = False,
     plot_info: Optional[Dict[str, Any]] = None,
+    show_plot_info: bool = False,
 ) -> None:
     """
     Saves a time series plot showing the server prediction squared errors
@@ -411,13 +419,13 @@ def visualize_server_squared_errors(
                     edgecolors="r",
                     zorder=3,
                 )
-        else:
+        elif show_lines:
             # Display synchronization steps as vertical lines instead
             for j in range(1, int(total_time_steps / T)):
                 label = "Nash Game Played" if j == 1 else None
                 plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
 
-    if plot_info is not None:
+    if plot_info is not None and show_plot_info:
         text_content = ""
         num_items = 0
         for key, value in plot_info.items():
@@ -455,6 +463,8 @@ def visualize_client_squared_errors(
     game_played: bool = False,
     T: int = 0,
     show_points: Optional[bool] = False,
+    show_lines: Optional[bool] = False,
+    show_plot_info: bool = False,
 ) -> None:
     """
     Saves a time series plot showing the client prediction squared errors
@@ -503,13 +513,13 @@ def visualize_client_squared_errors(
                     zorder=3,
                 )
 
-    if game_played and not show_points:
+    if game_played and not show_points and show_lines:
         # Display synchronization steps as vertical lines instead
         for j in range(1, int(total_time_steps / T)):
             label = "Nash Game Played" if j == 1 else None
             plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
 
-    if plot_info is not None:
+    if plot_info is not None and show_plot_info:
         text_content = ""
         num_items = 0
         for key, value in plot_info.items():
@@ -576,12 +586,13 @@ if __name__ == "__main__":
     # NOTE: These need to be manually entered along with some of the arguments below for visualizing the Nash
     # game synchronization information. The current components are just an example
     plot_info = {
-        "num_clients": 2,
-        "T": 10,
-        "d_z": 2,
-        "alpha": 1,
-        "gamma": 1,
-        "sigma": 1,
+        "num_clients": json_state["num_clients"],
+        "Client T": json_state["client T"],
+        "Game T": json_state["game T"],
+        "d_z": json_state["d_z"],
+        "alpha": json_state["alpha"],
+        "gamma": json_state["gamma"],
+        "sigma": json_state["sigma"],
     }
 
     visualize_server_prediction(
@@ -589,7 +600,7 @@ if __name__ == "__main__":
         target,
         server_predictions,
         os.path.join(output_dir, "server_predictions_plot.png"),
-        game_played=True,
+        game_played=False,
         T=10,
         plot_info=plot_info,
         show_points=False,
@@ -607,7 +618,7 @@ if __name__ == "__main__":
         time_axis,
         mixture_weights,
         os.path.join(output_dir, "mixture_weights_plot.png"),
-        game_played=True,
+        game_played=False,
         T=10,
         plot_info=plot_info,
         show_points=False,

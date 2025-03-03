@@ -31,7 +31,12 @@ def test_time_series_2d_xy(tmp_path: Path) -> None:
         "sigma": 1,
     }
     two_d_data_obj.visualize_server_prediction(
-        manual_server_prediction, f"{save_dir}/test_plot_server.png", game_played=True, T=2, plot_info=plot_info
+        manual_server_prediction,
+        f"{save_dir}/test_plot_server.png",
+        game_played=True,
+        T=2,
+        plot_info=plot_info,
+        show_lines=True,
     )
     two_d_data_obj.visualize_server_prediction(
         manual_server_prediction, f"{save_dir}/test_plot_server_2.png", T=2, show_points=True, plot_info=plot_info
@@ -159,7 +164,12 @@ def test_visualize_server_prediction_errors(tmp_path: Path) -> None:
         "sigma": 1,
     }
     two_d_data_obj.visualize_server_squared_errors(
-        manual_server_prediction, f"{save_dir}/test_plot_server_errors.png", game_played=True, T=2, plot_info=plot_info
+        manual_server_prediction,
+        f"{save_dir}/test_plot_server_errors.png",
+        game_played=True,
+        T=2,
+        plot_info=plot_info,
+        show_lines=True,
     )
     two_d_data_obj.visualize_server_squared_errors(
         manual_server_prediction,
@@ -208,4 +218,5 @@ def test_visualize_clients_errors(tmp_path: Path) -> None:
         game_played=True,
         T=2,
         show_points=False,
+        show_lines=True,
     )

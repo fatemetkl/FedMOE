@@ -3,15 +3,15 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=2
 #SBATCH --gres=gpu:0
-#SBATCH --mem=6G
+#SBATCH --mem=4G
 #SBATCH --partition=cpu
-#SBATCH --qos=m
-#SBATCH --job-name=fedmoe_fold_experiment
+#SBATCH --qos=cpu_qos
+#SBATCH --job-name=rfn_visual
 #SBATCH --output=%j_%x.out
 #SBATCH --error=%j_%x.err
-#SBATCH --time=00:10:00
+#SBATCH --time=01:30:00
 
 
 
@@ -95,3 +95,4 @@ do
         # Create a file that verifies that the Run concluded properly
         touch "${RUN_OUTPUT_DIR}done.out"
 done
+
