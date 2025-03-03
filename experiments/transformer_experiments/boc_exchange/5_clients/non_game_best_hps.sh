@@ -14,7 +14,7 @@ mkdir -p $RESULTS_DIR
 echo "CONFIG_PATH"${CONFIG_PATH}
 echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
-# best hps for non-game - 2 clients
+# best hps for non-game - 5 clients
 ALPHA_VALUES=( 5.0 )
 GAMMA_VALUES=( 1.0 )
 # Sigma is not used in transformer
