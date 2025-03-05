@@ -5,7 +5,9 @@ import os
 import matplotlib.pyplot as plt
 import torch
 from matplotlib.ticker import MaxNLocator
+import seaborn as sns
 
+sns.set_style("whitegrid")
 
 def visualize_relative_server_squared_errors(
     time_axis: torch.Tensor,
@@ -22,22 +24,22 @@ def visualize_relative_server_squared_errors(
 
     # Plot target y
     for i in range(target_matrix.shape[1]):
-        plt.plot(time_axis, target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5)
+        sns.lineplot(x=time_axis, y=target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5)
 
     # Plot server's prediction
     for i in range(game_server_predictions.shape[1]):
-        plt.plot(
-            time_axis,
-            game_server_predictions[:, i].detach().numpy(),
+        sns.lineplot(
+            x=time_axis,
+            y=game_server_predictions[:, i].detach().numpy(),
             label=f"Nash Server $\\hat{{Y}}_{i+1}$",
             linestyle=":",
             linewidth=2.5,
         )
 
     for i in range(non_game_server_predictions.shape[1]):
-        plt.plot(
-            time_axis,
-            non_game_server_predictions[:, i].detach().numpy(),
+        sns.lineplot(
+            x=time_axis,
+            y=non_game_server_predictions[:, i].detach().numpy(),
             label=f"Non-Nash Server $\\hat{{Y}}_{i+1}$",
             linestyle=":",
             linewidth=2.5,
@@ -54,7 +56,7 @@ def visualize_relative_server_squared_errors(
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
     plt.tight_layout(pad=1)
 
-    plt.savefig(plot_path)
+    plt.savefig(plot_path , format='pdf')
 
     plt.close()
 
@@ -112,6 +114,6 @@ if __name__ == "__main__":
         game_target,
         game_server_predictions,
         non_game_server_predictions,
-        os.path.join(output_dir, "overlaid_server_predictions.png"),
+        os.path.join(output_dir, "overlaid_server_predictions.pdf"),
         render_line=True,
     )
