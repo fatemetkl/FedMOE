@@ -50,7 +50,7 @@ experiments/transformer_experiments/logistic_data/5_clients/best_results/ \
 ***Non-GAME***
 ```
 bash experiments/transformer_experiments/logistic_data/5_clients/non_game_best_hps.sh \
-experiments/transformer_experiments/periodic_data/5_clients/non_game_config.yaml \
+experiments/transformer_experiments/logistic_data/5_clients/non_game_config.yaml \
 experiments/transformer_experiments/logistic_data/5_clients/best_results/ \
 ~/venv/fedmoe_env/
 ```
