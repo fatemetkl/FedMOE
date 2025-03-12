@@ -19,7 +19,7 @@ echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 ALPHA_VALUES=( 0.001 0.01 0.1 1.0 5.0 )
 GAMMA_VALUES=( 1.0 10.0 15.0 )
 # Sigma is not used in transformer
-SIGMA_VALUES=( 0.1 1.0 )
+SIGMA_VALUES=( 0.1 )
 # Hidden dimension should be divisible by nheads (4 by default).
 # Hidden dimension value should be fixed based on the structure of your pre-trained transformer.
 HIDDENDIM_VALUES=( 2 )

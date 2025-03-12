@@ -9,6 +9,7 @@ import seaborn as sns
 
 sns.set_style("whitegrid")
 
+
 def visualize_relative_server_squared_errors(
     time_axis: torch.Tensor,
     target_matrix: torch.Tensor,
@@ -56,7 +57,7 @@ def visualize_relative_server_squared_errors(
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
     plt.tight_layout(pad=1)
 
-    plt.savefig(plot_path , format='pdf')
+    plt.savefig(plot_path, format="pdf")
 
     plt.close()
 

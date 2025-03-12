@@ -16,7 +16,7 @@ echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 
 # best hps for non-game - 2 clients
 ALPHA_VALUES=( 0.001 )
-GAMMA_VALUES=( 10.0 )
+GAMMA_VALUES=( 15.0 )
 # Sigma is not used in transformer
 SIGMA_VALUES=( 0.1 )
 # Hidden dimension should be divisible by nheads (2 by default).
