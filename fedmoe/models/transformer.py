@@ -5,6 +5,7 @@ torch.set_default_dtype(torch.float64)
 
 
 class TransformerTimeSeriesModel(nn.Module):
+
     def __init__(
         self,
         input_dim: int,

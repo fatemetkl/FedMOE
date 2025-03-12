@@ -1,6 +1,7 @@
 import math
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 
 from fedmoe.datasets.data_matrix_generator import (
@@ -9,6 +10,7 @@ from fedmoe.datasets.data_matrix_generator import (
 )
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
+sns.set_style("whitegrid")
 torch.set_default_dtype(torch.float64)
 
 
@@ -117,8 +119,8 @@ class CovariateShiftDataset(TimeSeriesData):
         plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 30}, loc="upper left", labelspacing=0)
         plt.tight_layout(pad=0.5)
 
+        plt.savefig("concept_drift_rates.pdf", format="pdf")
         plt.show()
-        plt.savefig("temp.png")
 
         mixing_weights = self._get_mixing_weight(self.input_matrix[:, 0])
         _, ax = plt.subplots(1, 1, figsize=(24, 8))

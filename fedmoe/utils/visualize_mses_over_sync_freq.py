@@ -4,7 +4,9 @@ import os
 import re
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
+sns.set_style("whitegrid")
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -78,7 +80,7 @@ if __name__ == "__main__":
             run_folder = os.path.join(experiment, f"Run{index+1}")
             average_mse += get_loss_from_log(run_folder)
 
-        two_client_average_mses.append((int(m.group(1)), average_mse / 3.0))
+        two_client_average_mses.append((int(m.group(1)), average_mse / 3.0))  # type: ignore
 
     five_client_average_mses = []
     for experiment in five_client_experiments:
@@ -88,7 +90,7 @@ if __name__ == "__main__":
             run_folder = os.path.join(experiment, f"Run{index+1}")
             average_mse += get_loss_from_log(run_folder)
 
-        five_client_average_mses.append((int(m.group(1)), average_mse / 3.0))
+        five_client_average_mses.append((int(m.group(1)), average_mse / 3.0))  # type: ignore
 
     two_client_average_mses = sorted(two_client_average_mses, key=lambda x: x[0])
     five_client_average_mses = sorted(five_client_average_mses, key=lambda x: x[0])
@@ -99,8 +101,8 @@ if __name__ == "__main__":
     plt.rcParams["figure.figsize"] = [10, 6]
     ax = plt.figure().gca()
 
-    plt.scatter(parameter_values, two_client_mses, label="2 Clients", s=80)
-    plt.scatter(parameter_values, five_client_mses, label="5 Clients", s=80)
+    sns.scatterplot(x=parameter_values, y=two_client_mses, label="2 Clients", s=80)
+    sns.scatterplot(x=parameter_values, y=five_client_mses, label="5 Clients", s=80)
 
     title_font = {"family": "helvetica", "weight": "bold", "size": 30}
     axis_font = {"family": "helvetica", "weight": "bold", "size": 24}
@@ -113,6 +115,6 @@ if __name__ == "__main__":
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 24}, labelspacing=0)
     plt.tight_layout(pad=1)
 
-    plt.savefig(os.path.join(output_dir, "mses_over_sync_frequency.png"))
+    plt.savefig(os.path.join(output_dir, "mses_over_sync_frequency.pdf"), format="pdf")
 
     plt.close()

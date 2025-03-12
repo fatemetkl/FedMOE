@@ -2,6 +2,7 @@ from functools import partial
 from typing import Tuple
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 
 from fedmoe.datasets.data_matrix_generator import (
@@ -13,6 +14,7 @@ from fedmoe.datasets.data_matrix_generator import (
 from fedmoe.datasets.echotorch_datasets.logistic_map import LogisticMapDataset  # type: ignore
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
+sns.set_style("whitegrid")
 torch.set_default_dtype(torch.float64)
 
 
@@ -77,4 +79,5 @@ class TimeSeriesLogisticMap(TimeSeriesData):
         plt.title("Logistic Map Timeseries", fontdict=title_font)
 
         plt.tight_layout(pad=0.5)
+        plt.savefig("logistic_map_dataset.pdf", format="pdf")
         plt.show()
