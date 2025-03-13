@@ -7,7 +7,7 @@ import yaml
 
 from fedmoe.datasets.brownian_motion_dataset import BrownianSequenceAddition, TimeSeriesBrownianTarget
 from fedmoe.datasets.fedmoe_datasets.boc_rates import BankOfCanadaExchangeRates, ExchangeRates
-from fedmoe.datasets.fedmoe_datasets.covariate_shift import CovariateShiftDataset
+from fedmoe.datasets.fedmoe_datasets.concept_drift import ConceptDriftDataset
 from fedmoe.datasets.fedmoe_datasets.transformer_temperature import InputFeatures, TransformerTemperature
 from fedmoe.datasets.logistic_map_dataset import TimeSeriesLogisticMap
 from fedmoe.datasets.periodic_dataset import TimeInputPeriodic, TimeSeriesPeriodic
@@ -18,7 +18,7 @@ torch.set_default_dtype(torch.float64)
 
 
 class DataOptions(Enum):
-    PERIODIC_SIGNAL: str = "periodic_signal"
+    PERIODIC_SIGNAL = "periodic_signal"
     TIME_INPUT_PERIODIC = "time_input_periodic"
     LOGISTIC_MAP = "logistic_map"
     SINE_SIGNAL = "sine_signal"
@@ -33,8 +33,8 @@ class DataOptions(Enum):
     BOC_EXCHANGE_VALIDATION = "boc_exchange_validation"
     ETT = "ett_data"
     ETT_VALIDATION = "ett_data_validation"
-    COVARIATE_SHIFT = "covariate_shift"
-    COVARIATE_SHIFT_ONE_D = "covariate_shift_one_d"
+    CONCEPT_DRIFT = "concept_drift"
+    CONCEPT_DRIFT_ONE_D = "concept_drift_one_d"
 
 
 def load_config(config_path: str) -> Dict[str, Any]:
@@ -147,10 +147,10 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         )
         ett_dataset.cut_at_start_index(data_sequence_length=total_rounds, start_index=3500, normalize=True)
         return ett_dataset
-    elif dataset_option == DataOptions.COVARIATE_SHIFT:
-        return CovariateShiftDataset(total_time_steps=total_rounds)
-    elif dataset_option == DataOptions.COVARIATE_SHIFT_ONE_D:
-        return CovariateShiftDataset(total_time_steps=total_rounds, one_dim=True)
+    elif dataset_option == DataOptions.CONCEPT_DRIFT:
+        return ConceptDriftDataset(total_time_steps=total_rounds)
+    elif dataset_option == DataOptions.CONCEPT_DRIFT_ONE_D:
+        return ConceptDriftDataset(total_time_steps=total_rounds, one_dim=True)
     else:
         raise ValueError(f"dataset name {dataset_name} is not valid. See DataOptions.")
 

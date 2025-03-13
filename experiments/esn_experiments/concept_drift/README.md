@@ -8,18 +8,18 @@ Change the last argument to the path of your own virtual environment.
 
 *** With Game ***
 ```
-bash experiments/esn_experiments/covariate_shift/game_run_hp_sweep.sh \
-experiments/esn_experiments/covariate_shift/game_config.yaml \
-experiments/esn_experiments/covariate_shift/results/ \
+bash experiments/esn_experiments/concept_drift/game_run_hp_sweep.sh \
+experiments/esn_experiments/concept_drift/game_config.yaml \
+experiments/esn_experiments/concept_drift/results/ \
 ~/venv/fedmoe_env/
 ```
 
 
 *** No Game ***
 ```
-bash experiments/esn_experiments/covariate_shift/non_game_run_hp_sweep.sh \
-experiments/esn_experiments/covariate_shift/non_game_config.yaml \
-experiments/esn_experiments/covariate_shift/results/ \
+bash experiments/esn_experiments/concept_drift/non_game_run_hp_sweep.sh \
+experiments/esn_experiments/concept_drift/non_game_config.yaml \
+experiments/esn_experiments/concept_drift/results/ \
 ~/venv/fedmoe_env/
 ```
 
@@ -33,7 +33,7 @@ To find the best hp based on the server loss, run `find_best_hp.py` with the pat
 Don't forget to complete the path to the experiment directory by changing the experiment name.
 
 ```
-python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/covariate_shift/results/experiment_name
+python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/concept_drift/results/experiment_name
 ```
 
 ### Run the experiment with the best hyper-parameters
@@ -43,9 +43,9 @@ Make sure to set visualization variables to `True` in `config.yaml`.
 *** With Game ***
 
 ```
-bash experiments/esn_experiments/covariate_shift/game_two_clients_best_hp.sh \
-experiments/esn_experiments/covariate_shift/game_config.yaml \
-experiments/esn_experiments/covariate_shift/best_results/ \
+bash experiments/esn_experiments/concept_drift/game_two_clients_best_hp.sh \
+experiments/esn_experiments/concept_drift/game_config.yaml \
+experiments/esn_experiments/concept_drift/best_results/ \
 ~/venv/fedmoe_env/
 ```
 
@@ -53,9 +53,9 @@ experiments/esn_experiments/covariate_shift/best_results/ \
 *** No Game ***
 
 ```
-bash experiments/esn_experiments/covariate_shift/non_game_two_clients_best_hp.sh \
-experiments/esn_experiments/covariate_shift/non_game_config.yaml \
-experiments/esn_experiments/covariate_shift/best_results/ \
+bash experiments/esn_experiments/concept_drift/non_game_two_clients_best_hp.sh \
+experiments/esn_experiments/concept_drift/non_game_config.yaml \
+experiments/esn_experiments/concept_drift/best_results/ \
 ~/venv/fedmoe_env/
 ```
 
@@ -75,14 +75,14 @@ source ../fedmoe_env/bin/activate
 To launch the experiments run:
 
 ```
-bash experiments/esn_experiments/covariate_shift/local_run_hp_sweep.sh \
-experiments/esn_experiments/covariate_shift/config.yaml \
-experiments/esn_experiments/covariate_shift/results/
+bash experiments/esn_experiments/concept_drift/local_run_hp_sweep.sh \
+experiments/esn_experiments/concept_drift/config.yaml \
+experiments/esn_experiments/concept_drift/results/
 ```
 
 ### Find the best hyper-parameters
 Make sure your environment is activated. Don't forget to replace the `experiment_name` with your experiment name. Find the best hyper-parameter:
 Find the best hyper-parameter:
 ```
-python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/covariate_shift/results/experiment_name
+python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/concept_drift/results/experiment_name
 ```

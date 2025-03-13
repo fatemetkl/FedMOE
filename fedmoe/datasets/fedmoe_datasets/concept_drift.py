@@ -14,10 +14,10 @@ sns.set_style("whitegrid")
 torch.set_default_dtype(torch.float64)
 
 
-class CovariateShiftDataset(TimeSeriesData):
+class ConceptDriftDataset(TimeSeriesData):
     def __init__(self, total_time_steps: int, one_dim: bool = False) -> None:
         """
-        In this dataset we simulate a continuous but fast covariate shift in the relationship of x_t to y_t+1
+        In this dataset we simulate a continuous but fast concept drift in the relationship of x_t to y_t+1
         NOTE: By convention, at time step t, we are making predictions for y_{t+1} using x_t.
         So x_t generates y_{t+1} according to the relationship described below. See documentation in TimeSeriesData
         for more details

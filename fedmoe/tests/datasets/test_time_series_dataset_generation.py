@@ -3,7 +3,7 @@ import math
 import torch
 
 from fedmoe.datasets.brownian_motion_dataset import BrownianSequenceAddition, TimeSeriesBrownianTarget
-from fedmoe.datasets.fedmoe_datasets.covariate_shift import CovariateShiftDataset
+from fedmoe.datasets.fedmoe_datasets.concept_drift import ConceptDriftDataset
 from fedmoe.datasets.logistic_map_dataset import TimeSeriesLogisticMap
 from fedmoe.datasets.periodic_dataset import TimeSeriesPeriodic
 from fedmoe.datasets.simple_datasets import TimeSeriesLinearLine
@@ -25,8 +25,8 @@ def test_linear_line() -> None:
     assert torch.allclose(dataset.target_matrix, target_matrix)
 
 
-def test_covariate_shift() -> None:
-    dataset = CovariateShiftDataset(10)
+def test_concept_drift() -> None:
+    dataset = ConceptDriftDataset(10)
     assert dataset.input_matrix.shape == (10, 3)
     assert dataset.target_matrix.shape == (10, 2)
 
