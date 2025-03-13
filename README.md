@@ -7,6 +7,25 @@ The main code of the algorithm is located in `fedmoe`. You can re-generate exper
 
 ### Run Experiments
 The experimental scripts are all located in the `experiments` directory. Three main models are considered: `Echo State Network (ESN)`, `Random Feature Network (RFN)`, and `Pre-trained Transformer` model. You can find the experimental scripts for each dataset under the model experiment directory. Provided README files mention the exact command needed to run each experiment. All experiments include scripts for hyper-parameter tuning. Don't forget to install and activate your virtual environment as described [here](#developing).
+#### Example Running Script
+Note that slurm scrips to run the codes on a HPC environment are also provided. Here is an example of running one of the experiments on your local machine after if you already know the value of hyper-parameters. This experiment runs ESN experts, and the server. Details such as number of clients and the dataset name are specified in `config.yaml`, and its address should be specified as `CONFIG_PATH`.
+
+```bash
+python -m experiments.esn_experiments.run_esn_experiment \
+        --config_path ${CONFIG_PATH} \
+        --result_dir ${RUN_OUTPUT_DIR} \
+        --hidden_dim ${HIDDEN_DIM} \
+        --alpha ${ALPHA_VALUE} \
+        --gamma ${GAMMA_VALUE} \
+        --sigma ${SIGMA_VALUE} \
+        --K ${K_VALUE} \
+        --eta ${ETA_VALUE} \
+        --client_T ${CLIENT_T_VALUE} \
+        --game_sync_freq ${GAME_SYNC} \
+        --game_T ${GAME_T_VALUE} \
+        --random_seed ${SEED} \
+        > ${RUN_OUTPUT_FILE} 2>&1 &
+```
 
 ### `fedmoe` Components
 
