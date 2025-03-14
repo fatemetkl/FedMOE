@@ -27,6 +27,8 @@ python -m experiments.esn_experiments.run_esn_experiment \
         > ${RUN_OUTPUT_FILE} 2>&1 &
 ```
 
+To run other experiments, please see [RFN experiment documentation](experiments/rfn_experiments/README.md), and [Transformer model experiment documentation](experiments/transformer_experiments/README.md)..
+
 ### `fedmoe` Components
 
 `client_manager` manages a group of clients or experts and acts as a medium between the clients and the server.
