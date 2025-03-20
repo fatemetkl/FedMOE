@@ -145,7 +145,7 @@ experiments/**/*_results/
 *.err
 *.out
 *.json
-fedmoe/utils/esn/**/
+
 
 # saved models
 experiments/**/*models_*/
