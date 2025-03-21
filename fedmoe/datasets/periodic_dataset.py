@@ -2,6 +2,7 @@ from functools import partial
 from typing import List, Tuple
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 
 from fedmoe.datasets.data_matrix_generator import (
@@ -15,6 +16,7 @@ from fedmoe.datasets.echotorch_datasets.periodic_signal import PeriodicSignalDat
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
 torch.set_default_dtype(torch.float64)
+sns.set_style("whitegrid")
 
 
 class TimeSeriesPeriodic(TimeSeriesData):
@@ -69,7 +71,7 @@ class TimeSeriesPeriodic(TimeSeriesData):
 
         _, ax = plt.subplots(1, 1, figsize=(20, 8))
         for target_path in range(n_targets):
-            ax.plot(self.time_axis, self.target_matrix[:, target_path], linestyle="solid", linewidth=3)
+            sns.lineplot(x=self.time_axis, y=self.target_matrix[:, target_path], ax=ax, linestyle="solid", linewidth=3)
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 35}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 35}
@@ -80,7 +82,7 @@ class TimeSeriesPeriodic(TimeSeriesData):
         plt.title("Periodic Timeseries", fontdict=title_font)
 
         plt.tight_layout(pad=0.5)
-
+        plt.savefig("periodic_series.pdf", format="pdf")
         plt.show()
 
 

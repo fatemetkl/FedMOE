@@ -13,8 +13,8 @@ save_error_histogram: True # Set to True if you want to save the histogram of th
 # Fixed variables for this experiment. DO NOT CHANGE.
 client_type : 1 # 1: Pre-trained transformer model
 num_clients : 5 # The number of experts or clients
-data: "covariate_shift"  # Dataset options are saved in utils.DataOptions.
-models_dir: "experiments/transformer_experiments/covariate_shift/5_clients/models/" # The directory of saved the models
+data: "concept_drift"  # Dataset options are saved in utils.DataOptions.
+models_dir: "experiments/transformer_experiments/concept_drift/5_clients/models/" # The directory of saved the models
 have_sync: True # Do we want to have Nash game and synchronization steps or not
 update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t
 

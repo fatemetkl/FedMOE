@@ -5,12 +5,14 @@ from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 import torch
 from fl4health.utils.dataset import BaseDataset
 from torch.utils.data import DataLoader
 
 from fedmoe.datasets.time_series_data import TimeSeriesData, TimeSeriesTorchDataset
 
+sns.set_style("whitegrid")
 torch.set_default_dtype(torch.float64)
 
 
@@ -189,15 +191,38 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         targets_set = set(self.targets)
         assert len(inputs_set.intersection(targets_set)) == 0, "Inputs and targets should not overlap"
 
-    def visualize(self) -> None:
-        n_inputs = self.input_matrix.shape[1]
+    def visualize(self, visualize_only_main_inputs: bool = False) -> None:
+        """
+        Args:
+            visualize_only_main_inputs (bool, optional): Is set to true only visualizes the six main inputs
+            with their labels.
+        """
+        if visualize_only_main_inputs:
+            n_inputs = len(self.inputs)
+        else:
+            n_inputs = self.input_matrix.shape[1]
         n_targets = self.target_matrix.shape[1]
 
         _, ax = plt.subplots(1, 1, figsize=(20, 8))
-        for input_path in range(n_inputs):
-            ax.plot(self.time_axis, self.input_matrix[:, input_path], linestyle="solid", linewidth=3)
         for target_path in range(n_targets):
-            ax.plot(self.time_axis, self.target_matrix[:, target_path], linestyle="solid", linewidth=3)
+            sns.lineplot(
+                x=self.time_axis,
+                y=self.target_matrix[:, target_path],
+                label="USD",
+                ax=ax,
+                linestyle="solid",
+                linewidth=3,
+            )
+
+        for input_path in range(n_inputs):
+            sns.lineplot(
+                x=self.time_axis,
+                y=self.input_matrix[:, input_path],
+                label=self.inputs[input_path].value.replace("_CLOSE", "") if visualize_only_main_inputs else None,
+                ax=ax,
+                linestyle="solid",
+                linewidth=3,
+            )
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 35}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 35}
@@ -210,6 +235,7 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 30}, loc="upper left", labelspacing=0)
         plt.tight_layout(pad=0.5)
 
+        plt.savefig("boc_exchange_rates.pdf", format="pdf")
         plt.show()
 
     def cut_first_time_steps(self, data_sequence_length: int) -> None:

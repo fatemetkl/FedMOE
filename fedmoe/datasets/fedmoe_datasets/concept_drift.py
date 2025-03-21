@@ -1,6 +1,7 @@
 import math
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 
 from fedmoe.datasets.data_matrix_generator import (
@@ -9,13 +10,14 @@ from fedmoe.datasets.data_matrix_generator import (
 )
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
+sns.set_style("whitegrid")
 torch.set_default_dtype(torch.float64)
 
 
-class CovariateShiftDataset(TimeSeriesData):
+class ConceptDriftDataset(TimeSeriesData):
     def __init__(self, total_time_steps: int, one_dim: bool = False) -> None:
         """
-        In this dataset we simulate a continuous but fast covariate shift in the relationship of x_t to y_t+1
+        In this dataset we simulate a continuous but fast concept drift in the relationship of x_t to y_t+1
         NOTE: By convention, at time step t, we are making predictions for y_{t+1} using x_t.
         So x_t generates y_{t+1} according to the relationship described below. See documentation in TimeSeriesData
         for more details
@@ -98,9 +100,10 @@ class CovariateShiftDataset(TimeSeriesData):
 
         _, ax = plt.subplots(1, 1, figsize=(20, 8))
         for target_path in range(n_targets):
-            ax.plot(
-                self.input_matrix[:, 0].squeeze(),
-                self.target_matrix[:, target_path],
+            sns.lineplot(
+                x=self.input_matrix[:, 0].squeeze(),
+                y=self.target_matrix[:, target_path],
+                ax=ax,
                 label=f"$y_{target_path+1}$",
                 linestyle="-",
                 linewidth=2.5,
@@ -117,8 +120,8 @@ class CovariateShiftDataset(TimeSeriesData):
         plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 30}, loc="upper left", labelspacing=0)
         plt.tight_layout(pad=0.5)
 
+        plt.savefig("concept_drift_rates.pdf", format="pdf")
         plt.show()
-        plt.savefig("temp.png")
 
         mixing_weights = self._get_mixing_weight(self.input_matrix[:, 0])
         _, ax = plt.subplots(1, 1, figsize=(24, 8))

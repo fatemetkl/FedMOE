@@ -1,7 +1,7 @@
 
 `local_run_hp_sweep.sh` runs the experiment locally, and `run_hp_sweep.sh` schedules each experiment through slurm with specific CPU allocation.
 
-**Note that for RFN experiments we only work with datasets with dy=1 since the game implementations are currently only implemented for dy=1.** Therefore, we have not experimented with the *covariate_shift* and *brownian_addition* dataset here.
+**Note that for RFN experiments we only work with datasets with dy=1 since the game implementations are currently only implemented for dy=1.** Therefore, we have not experimented with the *concept_drift* and *brownian_addition* dataset here.
 
 # Run on cluster
 ### Run the main experiments

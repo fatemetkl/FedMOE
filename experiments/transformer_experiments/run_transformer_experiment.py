@@ -2,8 +2,9 @@ import argparse
 import logging
 import os
 import random
-from typing import Any, Dict, List
 import time
+from typing import Any, Dict, List
+
 import torch
 
 from experiments.transformer_experiments.pre_train_transformer import setup_transformer_structure
@@ -25,7 +26,6 @@ def main(
     game_T: int,
     alpha: float,
     gamma: float,
-    sigma: float,
     K: float,
     eta: float,
     data_loader_num_samples: int,
@@ -217,13 +217,6 @@ if __name__ == "__main__":
         default=0.01,
     )
     parser.add_argument(
-        "--sigma",
-        action="store",
-        type=float,
-        help="Sigma value.",
-        default=0.01,
-    )
-    parser.add_argument(
         "--K",
         action="store",
         type=float,
@@ -309,7 +302,6 @@ if __name__ == "__main__":
     logger.info("Game T: %d", args.game_T)
     logger.info("Alpha: %f", args.alpha)
     logger.info("Gamma: %f", args.gamma)
-    logger.info("Sigma: %f", args.sigma)
     logger.info("Kappa: %f", args.K)
     logger.info("Eta: %f", args.eta)
     logger.info("Arguments: %s", vars(args))
@@ -323,7 +315,6 @@ if __name__ == "__main__":
         args.game_T,
         args.alpha,
         args.gamma,
-        args.sigma,
         args.K,
         args.eta,
         args.data_loader_num_samples,

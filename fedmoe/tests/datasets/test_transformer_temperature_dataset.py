@@ -332,7 +332,9 @@ def test_cutting_and_dataloader_functionalities() -> None:
         assert target.shape == (2, 5, 1)
 
     # Test maybe_random_cut_time_steps function
-    non_random_input, non_random_output = dataset.maybe_random_cut_time_steps(data_sequence_length=4, start_index=3)
+    non_random_input, non_random_output = dataset.maybe_random_cut_time_steps(
+        data_sequence_length=4, start_index=3, normalize=False
+    )
     target_non_random_input = torch.tensor(
         [
             [1.7060, 2.4870, 19.4860, 17.3050],

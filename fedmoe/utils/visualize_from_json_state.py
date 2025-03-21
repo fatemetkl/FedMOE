@@ -4,8 +4,11 @@ import os
 from typing import Any, Dict, Optional
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 from matplotlib.ticker import MaxNLocator
+
+sns.set_style("whitegrid")
 
 
 def visualize_input(
@@ -27,7 +30,7 @@ def visualize_input(
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
     for i in range(input_matrix.shape[1]):
-        plt.plot(time_axis, input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="-", linewidth=2.5)
+        sns.lineplot(x=time_axis, y=input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="-", linewidth=2.5)
 
     if plot_info is not None and show_plot_info:
         text_content = ""
@@ -84,13 +87,13 @@ def visualize_server_prediction(
 
     # Plot target y
     for i in range(target_matrix.shape[1]):
-        plt.plot(time_axis, target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5)
+        sns.lineplot(x=time_axis, y=target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5)
 
     # Plot server's prediction
     for i in range(server_matrix.shape[1]):
-        plt.plot(
-            time_axis,
-            server_matrix[:, i].detach().numpy(),
+        sns.lineplot(
+            x=time_axis,
+            y=server_matrix[:, i].detach().numpy(),
             label=f"Prediction: Server $\\hat{{Y}}_{i+1}$",
             linestyle=":",
             linewidth=3.5,
@@ -102,9 +105,9 @@ def visualize_server_prediction(
             for i in range(server_matrix.shape[1]):
                 T_indices = [i * T for i in range(1, int(total_time_steps / T))]
                 T_values = [server_matrix[j, i].detach().numpy().item() for j in T_indices]
-                plt.scatter(
-                    T_indices,
-                    T_values,
+                sns.scatterplot(
+                    x=T_indices,
+                    y=T_values,
                     s=75,
                     marker="o",
                     facecolors="r",
@@ -144,7 +147,7 @@ def visualize_server_prediction(
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, loc="upper left", labelspacing=0)
     plt.tight_layout(pad=0.5)
 
-    plt.savefig(plot_path)
+    plt.savefig(plot_path, format="pdf")
 
     plt.close()
 
@@ -180,17 +183,17 @@ def visualize_clients_predictions(
 
     if show_target:
         for i in range(target_matrix.shape[1]):
-            plt.plot(time_axis, target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5)
+            sns.lineplot(x=time_axis, y=target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5)
 
     if show_input:
         for i in range(input_matrix.shape[1]):
-            plt.plot(time_axis, input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="--", linewidth=2.5)
+            sns.lineplot(x=time_axis, y=input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="--", linewidth=2.5)
 
     for client in range(int(plot_info["num_clients"])):
         for dim in range(clients_pred_matrix.shape[2]):
-            plt.plot(
-                time_axis,
-                clients_pred_matrix[:, client, dim],
+            sns.lineplot(
+                x=time_axis,
+                y=clients_pred_matrix[:, client, dim],
                 label=f"Prediction: $\\mathregular{{Client}}_{client}$ $\\hat{{Y}}_{dim+1}$",
                 linestyle=":",
                 linewidth=3.5,
@@ -218,7 +221,7 @@ def visualize_clients_predictions(
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, loc="upper left", labelspacing=0)
     plt.tight_layout(pad=0.5)
 
-    plt.savefig(plot_path)
+    plt.savefig(plot_path, format="pdf")
 
     plt.close()
 
@@ -251,10 +254,10 @@ def visualize_mixture_weights(
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
     for client in range(int(plot_info["num_clients"])):
-        plt.plot(
-            time_axis[:-1],
-            mixture_weights[:, client, 0],
-            label=f"Weight: $\\mathregular{{Client}}_{client}$",
+        sns.lineplot(
+            x=time_axis[:-1],
+            y=mixture_weights[:, client, 0],
+            # label=f"Weight: $\\mathregular{{Client}}_{client}$",
             linestyle="-",
             linewidth=3,
         )
@@ -271,9 +274,9 @@ def visualize_mixture_weights(
             for client in range(int(plot_info["num_clients"])):
                 T_indices = [i * T for i in range(1, int((total_time_steps) / T))]
                 T_values = [mixture_weights[j, client] for j in T_indices]
-                plt.scatter(
-                    T_indices,
-                    T_values,
+                sns.scatterplot(
+                    x=T_indices,
+                    y=T_values,
                     marker="o",
                     s=75,
                     facecolors="r",
@@ -297,17 +300,17 @@ def visualize_mixture_weights(
         plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
         plt.subplots_adjust(bottom=0.2)
 
-    title_font = {"family": "helvetica", "weight": "bold", "size": 40}
-    axis_font = {"family": "helvetica", "weight": "bold", "size": 36}
-    plt.xticks(fontname="helvetica", fontsize=28, fontweight="bold")
-    plt.yticks(fontname="helvetica", fontsize=28, fontweight="bold")
+    title_font = {"family": "helvetica", "weight": "bold", "size": 38}
+    axis_font = {"family": "helvetica", "weight": "bold", "size": 34}
+    plt.xticks(fontname="helvetica", fontsize=26, fontweight="bold")
+    plt.yticks(fontname="helvetica", fontsize=26, fontweight="bold")
     plt.xlabel("Time Step", fontdict=axis_font)
     plt.ylabel("Mixture Weight", fontdict=axis_font)
     plt.title(f"Mixture Weights ({game_status}Nash Game)", fontdict=title_font)
 
     # plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 28}, labelspacing=0)
     plt.tight_layout(pad=0.55)
-    plt.savefig(plot_path)
+    plt.savefig(plot_path, format="pdf")
 
     plt.close()
 
@@ -357,7 +360,7 @@ def visualize_squared_error_histogram(
 
     plt.tight_layout(pad=0.5)
 
-    plt.savefig(plot_path)
+    plt.savefig(plot_path, format="pdf")
 
     plt.close()
 
@@ -396,9 +399,9 @@ def visualize_server_squared_errors(
 
     # Plot server's prediction squared errors
     for i in range(server_matrix.shape[1]):
-        plt.plot(
-            time_axis,
-            squared_error[:, i].detach().numpy(),
+        sns.lineplot(
+            x=time_axis,
+            y=squared_error[:, i].detach().numpy(),
             label=f"$(\\hat{{Y}}_{i+1} - y_{i+1})^2$",
             linestyle="-",
             linewidth=2.5,
@@ -410,9 +413,9 @@ def visualize_server_squared_errors(
             for i in range(server_matrix.shape[1]):
                 T_indices = [i * T for i in range(1, int(total_time_steps / T))]
                 T_values = [squared_error[j, i].detach().numpy().item() for j in T_indices]
-                plt.scatter(
-                    T_indices,
-                    T_values,
+                sns.scatterplot(
+                    x=T_indices,
+                    y=T_values,
                     s=75,
                     marker="o",
                     facecolors="r",
@@ -449,7 +452,7 @@ def visualize_server_squared_errors(
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
     plt.tight_layout(pad=0.5)
 
-    plt.savefig(plot_path)
+    plt.savefig(plot_path, format="pdf")
 
     plt.close()
 
@@ -491,9 +494,9 @@ def visualize_client_squared_errors(
     for client in range(int(plot_info["num_clients"])):
         for dim in range(clients_pred_matrix.shape[2]):
             squared_error = (clients_pred_matrix[:, client, dim] - target_matrix[:, dim]) ** 2
-            plt.plot(
-                time_axis,
-                squared_error,
+            sns.lineplot(
+                x=time_axis,
+                y=squared_error,
                 label=f"$\\mathregular{{Client}}_{client}$: $(\\hat{{Y}}_{dim+1} - y_{dim+1})^2$",
                 linestyle="-",
                 linewidth=2.5,
@@ -503,9 +506,9 @@ def visualize_client_squared_errors(
                 # Display synchronization steps as points
                 T_indices = [i * T for i in range(1, int(total_time_steps / T))]
                 T_values = [squared_error[j].detach().numpy().item() for j in T_indices]
-                plt.scatter(
-                    T_indices,
-                    T_values,
+                sns.scatterplot(
+                    x=T_indices,
+                    y=T_values,
                     s=75,
                     marker="o",
                     facecolors="r",
@@ -543,7 +546,7 @@ def visualize_client_squared_errors(
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, labelspacing=0)
     plt.tight_layout(pad=0.5)
 
-    plt.savefig(plot_path)
+    plt.savefig(plot_path, format="pdf")
 
     plt.close()
 
@@ -565,6 +568,11 @@ if __name__ == "__main__":
         required=True,
         help="Path to directory for the visualizations",
     )
+    parser.add_argument(
+        "--game_played",
+        action="store_true",
+        help="Indicates if the game was played",
+    )
     args = parser.parse_args()
     json_state_path = args.state_json_path
     output_dir = args.output_dir
@@ -581,7 +589,7 @@ if __name__ == "__main__":
     total_time_steps = target.shape[0]
     time_axis = torch.arange(0, total_time_steps, dtype=torch.float64)
 
-    visualize_input(time_axis, input, os.path.join(output_dir, "input_plot.png"))
+    visualize_input(time_axis, input, os.path.join(output_dir, "input_plot.pdf"))
 
     # NOTE: These need to be manually entered along with some of the arguments below for visualizing the Nash
     # game synchronization information. The current components are just an example
@@ -599,8 +607,8 @@ if __name__ == "__main__":
         time_axis,
         target,
         server_predictions,
-        os.path.join(output_dir, "server_predictions_plot.png"),
-        game_played=False,
+        os.path.join(output_dir, "server_predictions_plot.pdf"),
+        game_played=args.game_played,
         T=10,
         plot_info=plot_info,
         show_points=False,
@@ -610,15 +618,15 @@ if __name__ == "__main__":
         input,
         target,
         client_predictions,
-        os.path.join(output_dir, "client_predictions_plot.png"),
+        os.path.join(output_dir, "client_predictions_plot.pdf"),
         plot_info=plot_info,
         show_target=True,
     )
     visualize_mixture_weights(
         time_axis,
         mixture_weights,
-        os.path.join(output_dir, "mixture_weights_plot.png"),
-        game_played=False,
+        os.path.join(output_dir, "mixture_weights_plot.pdf"),
+        game_played=args.game_played,
         T=10,
         plot_info=plot_info,
         show_points=False,
@@ -626,16 +634,16 @@ if __name__ == "__main__":
     visualize_squared_error_histogram(
         target,
         server_predictions,
-        os.path.join(output_dir, "squared_error_histogram.png"),
+        os.path.join(output_dir, "squared_error_histogram.pdf"),
         plot_info=plot_info,
-        game_played=True,
+        game_played=args.game_played,
     )
     visualize_server_squared_errors(
         time_axis,
         target,
         server_predictions,
-        os.path.join(output_dir, "squared_error_server.png"),
-        game_played=True,
+        os.path.join(output_dir, "squared_error_server.pdf"),
+        game_played=args.game_played,
         T=10,
         plot_info=plot_info,
         show_points=False,
@@ -644,8 +652,8 @@ if __name__ == "__main__":
         time_axis,
         target,
         client_predictions,
-        os.path.join(output_dir, "squared_error_clients.png"),
-        game_played=True,
+        os.path.join(output_dir, "squared_error_clients.pdf"),
+        game_played=args.game_played,
         T=10,
         plot_info=plot_info,
         show_points=False,

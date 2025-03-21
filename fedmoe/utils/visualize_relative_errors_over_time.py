@@ -3,8 +3,11 @@ import json
 import os
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 from matplotlib.ticker import MaxNLocator
+
+sns.set_style("whitegrid")
 
 
 def visualize_relative_server_squared_errors(
@@ -33,17 +36,17 @@ def visualize_relative_server_squared_errors(
     # Plot server's prediction squared errors relative to one another
     for i in range(game_server_predictions.shape[1]):
         relative_error = non_game_squared_error[:, i] / game_squared_error[:, i]
-        plt.scatter(
-            time_axis,
-            relative_error.detach().numpy(),
+        sns.scatterplot(
+            x=time_axis,
+            y=relative_error.detach().numpy(),
             label=f"$\\frac{{(\\hat{{Y}}^n_{i+1} - y_{i+1})^2}}{{(\\hat{{Y}}^g_{i+1} - y_{i+1})^2}}$",
         )
 
     ax.set_yscale("log")
 
-    plt.plot(
-        time_axis,
-        torch.ones_like(time_axis),
+    sns.lineplot(
+        x=time_axis,
+        y=torch.ones_like(time_axis),
         linestyle="--",
         linewidth=2.5,
         color="red",
@@ -60,7 +63,7 @@ def visualize_relative_server_squared_errors(
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 22}, loc="lower right", labelspacing=0)
     plt.tight_layout(pad=0.5)
 
-    plt.savefig(plot_path)
+    plt.savefig(plot_path, format="pdf")
 
     plt.close()
 
@@ -118,6 +121,6 @@ if __name__ == "__main__":
         game_target,
         game_server_predictions,
         non_game_server_predictions,
-        os.path.join(output_dir, "relative_squared_server_errors.png"),
+        os.path.join(output_dir, "relative_squared_server_errors.pdf"),
         render_line=True,
     )
