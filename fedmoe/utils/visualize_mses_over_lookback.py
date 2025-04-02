@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
     plt.yticks(ticks, labels)
 
-    sns.scatterplot(x=two_client_parameter_values, y=two_client_mses, label="2 Clients", s=120)
+    # sns.scatterplot(x=two_client_parameter_values, y=two_client_mses, label="2 Clients", s=120)
     sns.scatterplot(x=five_client_parameter_values, y=five_client_mses, label="5 Clients", s=120)
 
     title_font = {"family": "helvetica", "weight": "bold", "size": 28}
@@ -148,7 +148,10 @@ if __name__ == "__main__":
 
     plt.xlabel("Nash Game Lookback Length", fontdict=axis_font)
     plt.ylabel("Minimum MSE", fontdict=axis_font)
-    plt.title("Minimum MSE for BoC Exchange Rate Series", fontdict=title_font)
+    # Uncomment for BoC dataset
+    # plt.title("Minimum MSE for BoC Exchange Rate Series", fontdict=title_font)
+
+    plt.title("Minimum MSE for ETT Series", fontdict=title_font)
 
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 24}, loc="lower right", labelspacing=0)
     plt.tight_layout(pad=1)

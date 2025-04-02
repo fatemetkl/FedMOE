@@ -110,7 +110,8 @@ if __name__ == "__main__":
     plt.yticks(fontname="helvetica", fontsize=20, fontweight="bold")
     plt.xlabel("Nash Game Synchronization Frequency", fontdict=axis_font)
     plt.ylabel("Mean MSE", fontdict=axis_font)
-    plt.title("Average MSE for BoC Exchange Rate Series", fontdict=title_font)
+    # CHange the title when switching between BoC and ETT datasets
+    plt.title("Average MSE for ETT Series", fontdict=title_font)
 
     plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 24}, labelspacing=0)
     plt.tight_layout(pad=1)
