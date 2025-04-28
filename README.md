@@ -71,9 +71,10 @@ pre-commit run --all-files
 
 ## Citation
 If you find our work (code or the paper) helpful, please use the citation below.
-```
-@article{
-
+```bibtex
+@article{Yang_fedmoe,
+title={Online Federation For Mixtures of Proprietary Agents with Black-Box Access},
+author={Yang, Xuwei and Tavakoli, Fatemeh and Kratsios, Anastasis and Emerson, David B.},
+year={2025}
 }
-
 ```
