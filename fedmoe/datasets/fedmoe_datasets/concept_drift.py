@@ -100,9 +100,10 @@ class ConceptDriftDataset(TimeSeriesData):
 
         _, ax = plt.subplots(1, 1, figsize=(20, 8))
         for target_path in range(n_targets):
-            ax.plot(
-                self.input_matrix[:, 0].squeeze(),
-                self.target_matrix[:, target_path],
+            sns.lineplot(
+                x=self.input_matrix[:, 0].squeeze(),
+                y=self.target_matrix[:, target_path],
+                ax=ax,
                 label=f"$y_{target_path+1}$",
                 linestyle="-",
                 linewidth=2.5,

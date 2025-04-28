@@ -71,7 +71,7 @@ class TimeSeriesPeriodic(TimeSeriesData):
 
         _, ax = plt.subplots(1, 1, figsize=(20, 8))
         for target_path in range(n_targets):
-            ax.plot(self.time_axis, self.target_matrix[:, target_path], linestyle="solid", linewidth=3)
+            sns.lineplot(x=self.time_axis, y=self.target_matrix[:, target_path], ax=ax, linestyle="solid", linewidth=3)
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 35}
         axis_font = {"family": "helvetica", "weight": "bold", "size": 35}

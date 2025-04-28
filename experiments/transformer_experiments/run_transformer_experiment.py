@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 import random
+import time
 from typing import Any, Dict, List
 
 import torch
@@ -25,7 +26,6 @@ def main(
     game_T: int,
     alpha: float,
     gamma: float,
-    sigma: float,
     K: float,
     eta: float,
     data_loader_num_samples: int,
@@ -90,11 +90,11 @@ def main(
         eta=eta,
     )
     logger.info("Server initiated")
-    # start_time = time.time()
+    start_time = time.time()
     final_metric_value = server.fit(config["total_rounds"], config["have_sync"], config["update_last_Y_sync"])
-    # end_time = time.time()
-    # runtime = end_time - start_time
-    # logger.info(" Recorded runtime: %f", runtime)
+    end_time = time.time()
+    runtime = end_time - start_time
+    logger.info(" Recorded runtime: %f", runtime)
     print("Final metric value:", "\n", final_metric_value["server - server_predictions - MSE"])
     # Plot or save server predictions and the input data sequence
     plot_info = {
@@ -217,13 +217,6 @@ if __name__ == "__main__":
         default=0.01,
     )
     parser.add_argument(
-        "--sigma",
-        action="store",
-        type=float,
-        help="Sigma value.",
-        default=0.01,
-    )
-    parser.add_argument(
         "--K",
         action="store",
         type=float,
@@ -309,7 +302,6 @@ if __name__ == "__main__":
     logger.info("Game T: %d", args.game_T)
     logger.info("Alpha: %f", args.alpha)
     logger.info("Gamma: %f", args.gamma)
-    logger.info("Sigma: %f", args.sigma)
     logger.info("Kappa: %f", args.K)
     logger.info("Eta: %f", args.eta)
     logger.info("Arguments: %s", vars(args))
@@ -323,7 +315,6 @@ if __name__ == "__main__":
         args.game_T,
         args.alpha,
         args.gamma,
-        args.sigma,
         args.K,
         args.eta,
         args.data_loader_num_samples,

@@ -1,10 +1,12 @@
+"""This script is used to visualize the datasets."""
+
 import sys
 
 from experiments.utils import load_data
 from fedmoe.datasets.fedmoe_datasets.boc_rates import BankOfCanadaExchangeRates, ExchangeRates
 
 if len(sys.argv) != 3:
-    print("Usage: python run_visualize.py <dataset_name> <total_rounds>")
+    print("Usage: python run_dataset_visualize.py <dataset_name> <total_rounds>")
     sys.exit(1)
 
 dataset_name = sys.argv[1]

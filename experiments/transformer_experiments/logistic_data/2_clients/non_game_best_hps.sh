@@ -18,7 +18,6 @@ echo "ARTIFACTS_DIR"${ARTIFACTS_DIR}
 ALPHA_VALUES=( 0.01 )
 GAMMA_VALUES=( 10.0 )
 # Sigma is not used in transformer
-SIGMA_VALUES=( 0.1 )
 # Hidden dimension should be divisible by nheads (2 by default).
 # Hidden dimension value should be fixed based on the structure of your pre-trained transformer.
 HIDDENDIM_VALUES=( 2 )
@@ -45,43 +44,40 @@ PRE_TRAINING_LEARNING_RATE=( 0.001 )
 for HIDDEN_DIM in "${HIDDENDIM_VALUES[@]}"; do
   for ALPHA_VALUE in "${ALPHA_VALUES[@]}"; do
     for GAMMA_VALUE in "${GAMMA_VALUES[@]}"; do
-      for SIGMA_VALUE in "${SIGMA_VALUES[@]}"; do
-        for K_VALUE in "${K_VALUES[@]}"; do
-          for ETA_VALUE in "${ETA_VALUES[@]}"; do
-            for CLIENT_T_VALUE in "${CLIENT_T_VALUES[@]}"; do
-              for GAME_T_VALUE in "${GAME_T_VALUES[@]}"; do
-                for GAME_SYNC in "${GAME_SYNC_VALUES[@]}"; do
-                  for NUM_SAMPLES in "${DATA_LOADER_NUM_SAMPLES[@]}"; do
-                    for BATCH_SIZE in "${DATA_LOADER_BATCH_SIZE[@]}"; do
-                      for EPOCHS in "${PRE_TRAINING_EPOCHS[@]}"; do
-                        for LEARNING_RATE in "${PRE_TRAINING_LEARNING_RATE[@]}"; do
+      for K_VALUE in "${K_VALUES[@]}"; do
+        for ETA_VALUE in "${ETA_VALUES[@]}"; do
+          for CLIENT_T_VALUE in "${CLIENT_T_VALUES[@]}"; do
+            for GAME_T_VALUE in "${GAME_T_VALUES[@]}"; do
+              for GAME_SYNC in "${GAME_SYNC_VALUES[@]}"; do
+                for NUM_SAMPLES in "${DATA_LOADER_NUM_SAMPLES[@]}"; do
+                  for BATCH_SIZE in "${DATA_LOADER_BATCH_SIZE[@]}"; do
+                    for EPOCHS in "${PRE_TRAINING_EPOCHS[@]}"; do
+                      for LEARNING_RATE in "${PRE_TRAINING_LEARNING_RATE[@]}"; do
 
-                            EXPERIMENT_SETUP="T${CLIENT_T_VALUE}_sync${GAME_SYNC}_gameT${GAME_T_VALUE}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_sigma${SIGMA_VALUE}_DZ${HIDDEN_DIM}"
-                            EXPERIMENT_DIRECTORY="${RESULTS_DIR}/${EXPERIMENT_SETUP}/"
-                            mkdir -p $EXPERIMENT_DIRECTORY
-                            echo "Beginning Experiment ${EXPERIMENT_NAME} with hyper-parameters ${EXPERIMENT_SETUP}"
+                          EXPERIMENT_SETUP="T${CLIENT_T_VALUE}_sync${GAME_SYNC}_gameT${GAME_T_VALUE}_alpha${ALPHA_VALUE}_gamma${GAMMA_VALUE}_DZ${HIDDEN_DIM}"
+                          EXPERIMENT_DIRECTORY="${RESULTS_DIR}/${EXPERIMENT_SETUP}/"
+                          mkdir -p $EXPERIMENT_DIRECTORY
+                          echo "Beginning Experiment ${EXPERIMENT_NAME} with hyper-parameters ${EXPERIMENT_SETUP}"
 
-                            SBATCH_COMMAND="experiments/transformer_experiments/run_fold_experiment.slrm \
-                                ${CONFIG_PATH} \
-                                ${EXPERIMENT_DIRECTORY} \
-                                ${HIDDEN_DIM} \
-                                ${ALPHA_VALUE} \
-                                ${GAMMA_VALUE} \
-                                ${SIGMA_VALUE} \
-                                ${K_VALUE} \
-                                ${ETA_VALUE} \
-                                ${CLIENT_T_VALUE} \
-                                ${GAME_SYNC} \
-                                ${NUM_SAMPLES} \
-                                ${BATCH_SIZE} \
-                                ${EPOCHS} \
-                                ${LEARNING_RATE} \
-                                ${GAME_T_VALUE}\
-                                ${VENV_PATH} "
-                            echo "Running sbatch command ${SBATCH_COMMAND}"
-                            sbatch ${SBATCH_COMMAND}
+                          SBATCH_COMMAND="experiments/transformer_experiments/run_fold_experiment.slrm \
+                              ${CONFIG_PATH} \
+                              ${EXPERIMENT_DIRECTORY} \
+                              ${HIDDEN_DIM} \
+                              ${ALPHA_VALUE} \
+                              ${GAMMA_VALUE} \
+                              ${K_VALUE} \
+                              ${ETA_VALUE} \
+                              ${CLIENT_T_VALUE} \
+                              ${GAME_SYNC} \
+                              ${NUM_SAMPLES} \
+                              ${BATCH_SIZE} \
+                              ${EPOCHS} \
+                              ${LEARNING_RATE} \
+                              ${GAME_T_VALUE}\
+                              ${VENV_PATH} "
+                          echo "Running sbatch command ${SBATCH_COMMAND}"
+                          sbatch ${SBATCH_COMMAND}
 
-                        done
                       done
                     done
                   done
