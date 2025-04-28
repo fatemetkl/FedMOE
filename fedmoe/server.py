@@ -202,7 +202,7 @@ class Server:
                 self.client_manager.improve_previous_predictions_from_game(
                     t, game_improved_predictions[-1], past_T_betas[-1]
                 )
-                # # This function updated beta_t and Y_{t+1} in each client.
+                # This function updated beta_t and Y_{t+1} in each client.
                 new_predictions = self.client_manager.get_predictions_with_beta(t, past_T_betas[-1])
                 self.game_predictions.append((t, new_predictions))
 

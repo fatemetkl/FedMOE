@@ -1,12 +1,12 @@
-# FedMOE
-Codebase for federated mixture of experts.
+# Online Federation For Mixtures of Proprietary Agents with Black-Box Encoders
+Codebase for the paper "Online Federation For Mixtures of Proprietary Agents with Black-Box Encoders"
 
 ## Codebase Structure
 
-The main code of the algorithm is located in `fedmoe`. You can re-generate experiment results and artifacts by running the code in `experiments`.
+The main code of the algorithm is located in `fedmoe`. You can re-generate experiment results and artifacts by running the codes in `experiments`.
 
 ### Run Experiments
-The experimental scripts are all located in the `experiments` directory. Three main models are considered: `Echo State Network (ESN)`, `Random Feature Network (RFN)`, and `Pre-trained Transformer` model. You can find the experimental scripts for each dataset under the model experiment directory. Provided README files mention the exact command needed to run each experiment. All experiments include scripts for hyper-parameter tuning. Don't forget to install and activate your virtual environment as described [here](#developing).
+The experimental scripts are all located in the `experiments` directory. Three agent types are considered: `Echo State Network (ESN)`, `Random Feature Network (RFN)`, and `Pre-trained Transformer`. You can find the experimental scripts for each dataset under the model experiment directory. Provided README files include the exact commands needed to run each experiment. There are hyperparameter tuning scripts as a part of each experiment. Don't forget to install and activate your virtual environment as described [here](#developing).
 #### Example Running Script
 As mentioned before, provided README files in the `experiments` directory include the exact commands needed to run each experiment, in addition to the steps required for hyper-parameter tuning and transformer pre-training. Note that the slurm scripts to run the codes on an HPC environment are provided as well as scripts needed to run the code on your local machine. Here is an example of running one of the experiments on your local machine if you already know the value of hyper-parameters. This command runs the ESN experiments. Details such as the number of clients and the dataset name are specified in `config.yaml`, and its address should be specified as `CONFIG_PATH`. For more details, please see the [ESN experiment documentation](experiments/esn_experiments/README.md).
 
@@ -31,11 +31,11 @@ To run other experiments, please see [RFN experiment documentation](experiments/
 
 ### `fedmoe` Components
 
-`client_manager` manages a group of clients or experts and acts as a medium between the clients and the server.
-`server` implements the main time loop of the algorithm as described in the paper (See Algorithm 2 in the Appendix).
+* `client_manager` manages a group of clients or experts and acts as a medium between the clients and the server.
+* `server` implements the main time loop of the algorithm as described in the paper (See Algorithm 1 in the Appendix B).
 
 - [datasets](https://github.com/fatemetkl/FedMOE/tree/main/fedmoe/datasets): Contains scripts related to generating, loading, processing, and managing the datasets.
-- [clients](https://github.com/fatemetkl/FedMOE/tree/main/fedmoe/clients): Contains implementations of various client types, each with specific models and functionalities. These clients represent the participants or experts in our setup.
+- [clients](https://github.com/fatemetkl/FedMOE/tree/main/fedmoe/clients): Contains implementations of various client(agents) types, each with specific models and functionalities. These clients represent the agents or experts in our setup.
 - [models](https://github.com/fatemetkl/FedMOE/tree/main/fedmoe/models): Includes different model architectures used in the experiments. Each model is designed to integrate with the FedMOE framework and can be tailored for specific tasks.
 - [game](https://github.com/fatemetkl/FedMOE/tree/main/fedmoe/game): Implements the core logic of the Nash game, including expectation estimations and computation of matrices.
 - [state](https://github.com/fatemetkl/FedMOE/tree/main/fedmoe/state): The state of the clients and the game is saved and managed throughout the time-series algorithm.
@@ -70,4 +70,10 @@ pre-commit run --all-files
 ```
 
 ## Citation
-If you used our work (code or the paper) in your project or research, please use the citation below.
+If you find our work (code or the paper) helpful, please use the citation below.
+```
+@article{
+
+}
+
+```
