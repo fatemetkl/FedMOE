@@ -1,3 +1,5 @@
+"""This script is used to visualize the datasets."""
+
 import sys
 
 from experiments.utils import load_data

@@ -300,8 +300,8 @@ def visualize_mixture_weights(
         plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
         plt.subplots_adjust(bottom=0.2)
 
-    title_font = {"family": "helvetica", "weight": "bold", "size": 38}
-    axis_font = {"family": "helvetica", "weight": "bold", "size": 34}
+    title_font = {"family": "helvetica", "size": 38}
+    axis_font = {"family": "helvetica", "size": 34}
     plt.xticks(fontname="helvetica", fontsize=26, fontweight="bold")
     plt.yticks(fontname="helvetica", fontsize=26, fontweight="bold")
     plt.xlabel("Time Step", fontdict=axis_font)
@@ -600,7 +600,7 @@ if __name__ == "__main__":
         "d_z": json_state["d_z"],
         "alpha": json_state["alpha"],
         "gamma": json_state["gamma"],
-        "sigma": json_state["sigma"],
+        # "sigma": json_state["sigma"],
     }
 
     visualize_server_prediction(

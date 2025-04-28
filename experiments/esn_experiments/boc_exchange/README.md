@@ -77,7 +77,7 @@ experiments/esn_experiments/boc_exchange/results/
 
 ### Find the best hyper-parameters
 Make sure your environment is activated. Don't forget to replace the `experiment_name` with your experiment name. Find the best hyper-parameter:
-Find the best hyper-parameter:
+
 ```
 python -m experiments.find_best_hp --hp_sweep_dir experiments/esn_experiments/boc_exchange/results/experiment_name
 ```
