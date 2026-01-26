@@ -17,4 +17,3 @@ data: "periodic_signal"  # Dataset options are saved in utils.DataOptions.
 models_dir: "experiments/transformer_experiments/periodic_data/5_clients/models/" # The directory of saved the models
 have_sync: False # Do we want to have Nash game and synchronization steps or not
 update_last_Y_sync: False # Do we want to update Y^i_{t-1} after we play the Nash game? This is used to compute w_t
-

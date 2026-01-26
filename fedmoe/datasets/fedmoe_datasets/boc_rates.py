@@ -1,7 +1,6 @@
 import random
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -11,6 +10,7 @@ from fl4health.utils.dataset import BaseDataset
 from torch.utils.data import DataLoader
 
 from fedmoe.datasets.time_series_data import TimeSeriesData, TimeSeriesTorchDataset
+
 
 sns.set_style("whitegrid")
 torch.set_default_dtype(torch.float64)
@@ -35,17 +35,17 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
     """
     Historical daily exchange rates between CAD and multiple currencies from 2007 to 2017.
     12 currencies (CAD to X exchange rate), 3651 daily observations
-    https://www.bankofcanada.ca/rates/exchange/legacy-noon-and-closing-rates/
+    https://www.bankofcanada.ca/rates/exchange/legacy-noon-and-closing-rates/.
     """
 
     def __init__(
         self,
-        inputs: List[ExchangeRates],
-        targets: List[ExchangeRates],
-        input_lags: List[int],
-        target_lags: Optional[List[int]] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        inputs: list[ExchangeRates],
+        targets: list[ExchangeRates],
+        input_lags: list[int],
+        target_lags: list[int] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         dtype: torch.dtype = torch.float64,
         dataset_path: str = "fedmoe/datasets/assets/bank_of_canada_exchange_rates.csv",
     ) -> None:
@@ -67,34 +67,34 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         In this setup, X[0, :] = [USD_t, USD_{t-1}, AUD_t, AUD_{t-1}] would be used to predict Y[1] = USD_{t+1}
 
         Args:
-            inputs (List[ExchangeRates]): These are the currencies in the dataset to use to help make predictions.
+            inputs (list[ExchangeRates]): These are the currencies in the dataset to use to help make predictions.
                 The inputs and targets should be distinct. That is, target currencies should not be included here.
                 If you want to include lagged values of the targets, set target_lag.
-            targets (List[ExchangeRates]): These are the currencies that we are trying to make predictions for. If
+            targets (list[ExchangeRates]): These are the currencies that we are trying to make predictions for. If
                 multiple currencies are provided, we're predicting multiple exchange rates simultaneously
-            input_lags (List[int]): List of steps backward in input that should be included in the input features.
+            input_lags (list[int]): List of steps backward in input that should be included in the input features.
                 For example, if input_lag is [1, 2] and we have USD and EUR exchange rates at inputs, then at time t,
                 then x_t contains USD_{t-1}, USD_{t-2}, EUR_{t-1}, and EUR_{t-2}.
-            target_lags (Optional[List[int]], optional): Similar to input lag, this is a list of steps backward in
+            target_lags (list[int] | None, optional): Similar to input lag, this is a list of steps backward in
                 target values should be include in the input. For example, if target_lag is [1, 2] and we have USD and
                 EUR exchange rates at TARGETS, then at time t, x_t for y_t contains USD_{t-1}, USD_{t-2}, EUR_{t-1},
                 EUR_{t-2} in the input sequence  along with other input values.  If none, then lagged targets are not
                 included in the input.
-            start_date (Optional[datetime], optional): (INCLUSIVE) When in the dataset we want our time series to
+            start_date (datetime | None, optional): (INCLUSIVE) When in the dataset we want our time series to
                 begin.  The minimum value for this argument is 2007-05-01. If None, the minimum value is used.
                 If not the minimum value and input_lag/target_lag are greater than 1, we will still look back in time
                 to gather these as far as possible. When prior time stamps are not available, we set the lagged values
                 to 0. Defaults to None.
-            end_date (Optional[datetime], optional): (INCLUSIVE) When in the dataset we want our time series to end.
+            end_date (datetime | None, optional): (INCLUSIVE) When in the dataset we want our time series to end.
                 The maximum value for this argument is 2017-04-28. If None, the maximum value is used. Defaults to
                 None.
             dtype (torch.dtype, optional): Default type for any torch tensors created. Defaults to torch.float64.
             dataset_path (str): Path to the dataset csv file. By default it is assumed to exist in the datasets/assets
                 folder.
         """
-        assert (
-            len(inputs) > 0 or target_lags is not None
-        ), "No inputs specified. Either specify input features or specify a target lag"
+        assert len(inputs) > 0 or target_lags is not None, (
+            "No inputs specified. Either specify input features or specify a target lag"
+        )
         assert len(targets) > 0, "No targets have been specified."
 
         for input_lag in input_lags:
@@ -116,12 +116,12 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         if end_date is None:
             end_date = self.max_date
         assert start_date < end_date, "Start date occurs after end date. This is invalid"
-        assert (
-            self.min_date <= start_date <= self.max_date
-        ), "Start date must occur on or after 2007-05-01 and on or before 2017-04-28"
-        assert (
-            self.min_date <= end_date <= self.max_date
-        ), "End date must occur on or after 2007-05-01 and on or before 2017-04-28"
+        assert self.min_date <= start_date <= self.max_date, (
+            "Start date must occur on or after 2007-05-01 and on or before 2017-04-28"
+        )
+        assert self.min_date <= end_date <= self.max_date, (
+            "End date must occur on or after 2007-05-01 and on or before 2017-04-28"
+        )
 
         self.start_date = start_date
         self.end_date = end_date
@@ -137,7 +137,7 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         self.x_dim = self.input_matrix.shape[1]
         self.y_dim = self.target_matrix.shape[1]
 
-    def _construct_dataset(self) -> Tuple[torch.Tensor, torch.Tensor]:
+    def _construct_dataset(self) -> tuple[torch.Tensor, torch.Tensor]:
         raw_data = pd.read_csv(self.dataset_path)
         # Format the date column
         raw_data["date"] = pd.to_datetime(raw_data["date"])
@@ -197,10 +197,7 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
             visualize_only_main_inputs (bool, optional): Is set to true only visualizes the six main inputs
             with their labels.
         """
-        if visualize_only_main_inputs:
-            n_inputs = len(self.inputs)
-        else:
-            n_inputs = self.input_matrix.shape[1]
+        n_inputs = len(self.inputs) if visualize_only_main_inputs else self.input_matrix.shape[1]
         n_targets = self.target_matrix.shape[1]
 
         _, ax = plt.subplots(1, 1, figsize=(20, 8))
@@ -218,7 +215,7 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
             sns.lineplot(
                 x=self.time_axis,
                 y=self.input_matrix[:, input_path],
-                label=self.inputs[input_path].value.replace("_CLOSE", "") if visualize_only_main_inputs else None,
+                label=(self.inputs[input_path].value.replace("_CLOSE", "") if visualize_only_main_inputs else None),
                 ax=ax,
                 linestyle="solid",
                 linewidth=3,
@@ -232,7 +229,11 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         plt.ylabel("Exchange Rate Relative to CAD", fontdict=axis_font)
         plt.title("Exchange Rates for a Selection of Currencies", fontdict=title_font)
 
-        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 30}, loc="upper left", labelspacing=0)
+        plt.legend(
+            prop={"family": "helvetica", "weight": "bold", "size": 30},
+            loc="upper left",
+            labelspacing=0,
+        )
         plt.tight_layout(pad=0.5)
 
         plt.savefig("boc_exchange_rates.pdf", format="pdf")
@@ -265,12 +266,12 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
 
     def maybe_random_cut_time_steps(
         self, data_sequence_length: int, start_index: int | None = None
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Randomly cuts the original time series data to the specified length.
         If start_index is given start from that index and get the sequence.
         The main usage of this function is for generating samples for dataloader.
-        See self.get_dataloader
+        See self.get_dataloader.
         """
         if start_index is None:
             # Generate a random number between 0 and self.original_total_time_steps - data_sequence_length - 1.
@@ -285,8 +286,8 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         used to pre-train the transformer model.
         """
         # Generate new data samples
-        data: List[torch.Tensor] = []
-        targets: List[torch.Tensor] = []
+        data: list[torch.Tensor] = []
+        targets: list[torch.Tensor] = []
         for _ in range(num_samples):
             # Since the sampled sequence will be trimmed by one step later, we generate a longer sequence.
             sample_input, sample_target = self.maybe_random_cut_time_steps(self.total_time_steps + 1)
@@ -303,6 +304,5 @@ class BankOfCanadaExchangeRates(TimeSeriesData):
         # every input and output in our dataloader has the shape (self.total_time_steps, x_dim/y_dim)
         dataset: BaseDataset = TimeSeriesTorchDataset(data, targets)
 
-        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
         # Each item (input or output) in the data_loader will have a shape of (batch_size, time_steps, dim)
-        return data_loader
+        return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)

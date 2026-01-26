@@ -1,10 +1,9 @@
-from typing import List
-
 import torch
 
 from fedmoe.clients.client import Client
 from fedmoe.clients.esn_client import EchoStateNetworkClient
 from fedmoe.game.game import Game
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -12,7 +11,7 @@ torch.set_default_dtype(torch.float64)
 class EchoStateGame(Game):
     def __init__(
         self,
-        clients: List[Client],
+        clients: list[Client],
         sync_freq: int,
         z_dim: int,
         n_samples: int = 100,
@@ -50,8 +49,8 @@ class EchoStateGame(Game):
             sum_tensor = sum_tensor + sample
         average_estimated_z_t = sum_tensor / self.n_samples
         e_i = client.get_e(self.num_clients)
-        estimated_e_z_t = torch.matmul(e_i, average_estimated_z_t)
-        return estimated_e_z_t
+        # estimated_e_z_t
+        return torch.matmul(e_i, average_estimated_z_t)
 
     def get_expectation_e_z_transpose_P_e_z(self, game_t: int, client: Client, next_p_i: torch.Tensor) -> torch.Tensor:
         # Note that game_t here is not server time, but rather game time [0, sync_freq]
@@ -84,10 +83,9 @@ class EchoStateGame(Game):
             client_i_e_z = self.get_expectation_e_zt(game_t, client_i)
             client_j_e_z = self.get_expectation_e_zt(game_t, client_j)
             return torch.matmul(torch.matmul(client_i_e_z.T, next_p_i), client_j_e_z)
-        else:
-            # If we're on the diagonal, then the Z_ts are not independent and we have to do an estimation of everything
-            # combined
-            return self.get_expectation_e_z_transpose_P_e_z(game_t, client_i, next_p_i)
+        # If we're on the diagonal, then the Z_ts are not independent and we have to do an estimation of everything
+        # combined
+        return self.get_expectation_e_z_transpose_P_e_z(game_t, client_i, next_p_i)
 
     def get_expectation_e_z_transpose_wwT_e_z(
         self, game_t: int, client: Client, bold_w_t: torch.Tensor
@@ -102,7 +100,10 @@ class EchoStateGame(Game):
             Z_i = self.simulate_z_t(game_t, client)
             e_i = client.get_e(self.num_clients)
             estimated_e_z_i = torch.matmul(e_i, Z_i)
-            sample = torch.matmul(torch.matmul(torch.matmul(estimated_e_z_i.T, bold_w_t), bold_w_t.T), estimated_e_z_i)
+            sample = torch.matmul(
+                torch.matmul(torch.matmul(estimated_e_z_i.T, bold_w_t), bold_w_t.T),
+                estimated_e_z_i,
+            )
             samples.append(sample)
         sum_tensor = torch.zeros_like(samples[0])
         for sample in samples:
@@ -116,7 +117,10 @@ class EchoStateGame(Game):
         client_i_e_z_t = self.get_expectation_e_zt(time, client_i)
         client_j_e_z_t = self.get_expectation_e_zt(time, client_j)
         if i != j:
-            A_hat_ij = torch.matmul(torch.matmul(torch.matmul(client_i_e_z_t.T, bold_w_t), bold_w_t.T), client_j_e_z_t)
+            A_hat_ij = torch.matmul(
+                torch.matmul(torch.matmul(client_i_e_z_t.T, bold_w_t), bold_w_t.T),
+                client_j_e_z_t,
+            )
         else:
             # i == j
             A_hat_ij = self.get_expectation_e_z_transpose_wwT_e_z(time, client_i, bold_w_t)
@@ -128,7 +132,10 @@ class EchoStateGame(Game):
     def get_D_client_ij_t(self, time: int, i: int, j: int, P_t_plus_1_client: torch.Tensor) -> torch.Tensor:
         client_i = self.clients[i]
         client_j = self.clients[j]
-        assert P_t_plus_1_client.shape == (self.num_clients * self.y_dim, self.num_clients * self.y_dim)
+        assert P_t_plus_1_client.shape == (
+            self.num_clients * self.y_dim,
+            self.num_clients * self.y_dim,
+        )
         client_i_e_z_t = self.get_expectation_e_zt(time, client_i)
         client_j_e_z_t = self.get_expectation_e_zt(time, client_j)
         if i != j:

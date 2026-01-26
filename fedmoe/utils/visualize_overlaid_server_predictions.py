@@ -7,6 +7,7 @@ import seaborn as sns
 import torch
 from matplotlib.ticker import MaxNLocator
 
+
 sns.set_style("whitegrid")
 
 
@@ -18,21 +19,26 @@ def visualize_relative_server_squared_errors(
     plot_path: str,
     render_line: bool = False,
 ) -> None:
-
     plt.rcParams["figure.figsize"] = [10, 3]
     ax = plt.figure().gca()
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
     # Plot target y
     for i in range(target_matrix.shape[1]):
-        sns.lineplot(x=time_axis, y=target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5)
+        sns.lineplot(
+            x=time_axis,
+            y=target_matrix[:, i],
+            label=f"Target: $y_{i + 1}$",
+            linestyle="-",
+            linewidth=2.5,
+        )
 
     # Plot server's prediction
     for i in range(game_server_predictions.shape[1]):
         sns.lineplot(
             x=time_axis,
             y=game_server_predictions[:, i].detach().numpy(),
-            label=f"Nash Server $\\hat{{Y}}_{i+1}$",
+            label=f"Nash Server $\\hat{{Y}}_{i + 1}$",
             linestyle=":",
             linewidth=2.5,
         )
@@ -41,7 +47,7 @@ def visualize_relative_server_squared_errors(
         sns.lineplot(
             x=time_axis,
             y=non_game_server_predictions[:, i].detach().numpy(),
-            label=f"Non-Nash Server $\\hat{{Y}}_{i+1}$",
+            label=f"Non-Nash Server $\\hat{{Y}}_{i + 1}$",
             linestyle=":",
             linewidth=2.5,
         )

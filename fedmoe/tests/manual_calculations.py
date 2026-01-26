@@ -1,6 +1,5 @@
 # flake8: noqa
 import math
-from typing import List, Tuple
 
 import torch
 
@@ -9,7 +8,7 @@ from fedmoe.clients.client import Client
 torch.set_default_dtype(torch.float64)
 
 
-def manual_block_1() -> Tuple[torch.Tensor, torch.Tensor]:
+def manual_block_1() -> tuple[torch.Tensor, torch.Tensor]:
     input_w_2 = [[0.5000], [0.5000]]
     input_y_2 = [[6.0]]
     Id_y = torch.Tensor([[1.0]])
@@ -29,7 +28,7 @@ def manual_block_1() -> Tuple[torch.Tensor, torch.Tensor]:
     return ww_T, ST
 
 
-def calculate_z1_manually(clients: List[Client]) -> Tuple[torch.Tensor, torch.Tensor]:
+def calculate_z1_manually(clients: list[Client]) -> tuple[torch.Tensor, torch.Tensor]:
     client_1 = clients[0]
     client_2 = clients[1]
     # Z_1 = client_1.encoder.A
@@ -515,7 +514,10 @@ def calculate_st_manually(client_alpha: float, client_gamma: float) -> torch.Ten
     #                     [0.0000, 0.0000, 3.2503, 2.2620]])
 
     PD = torch.Tensor(
-        [[0.25 * 1.6451, 0.0, 0.25 * 3.2503, 0.25 * 2.2620], [0.25 * 1.6451, 0.0, 0.25 * 3.2503, 0.25 * 2.2620]]
+        [
+            [0.25 * 1.6451, 0.0, 0.25 * 3.2503, 0.25 * 2.2620],
+            [0.25 * 1.6451, 0.0, 0.25 * 3.2503, 0.25 * 2.2620],
+        ]
     )
     # PD = ([[0.5758, 0.0000, 0.8126, 0.5655], [0.5758, 0.0000, 0.8126, 0.5655]])
     # e_alpha_gamma_A_inv = torch.Tensor(
@@ -565,7 +567,10 @@ def calculate_st_manually(client_alpha: float, client_gamma: float) -> torch.Ten
     #  [0.0000, 2.2620]])
 
     BT_AinvDT = torch.Tensor(
-        [[0.3401 * 1.6451, 0.0484 * 3.2503 + 2.2620 * 0.4155], [0.3401 * 1.6451, 0.0484 * 3.2503 + 2.2620 * 0.4155]]
+        [
+            [0.3401 * 1.6451, 0.0484 * 3.2503 + 2.2620 * 0.4155],
+            [0.3401 * 1.6451, 0.0484 * 3.2503 + 2.2620 * 0.4155],
+        ]
     )
     # BT_AinvDT = ([[0.5595, 1.0972],
     #     [0.5595, 1.0972]])

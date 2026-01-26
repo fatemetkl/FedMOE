@@ -1,5 +1,4 @@
 from functools import partial
-from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -15,31 +14,37 @@ from fedmoe.datasets.data_matrix_generator import (
 from fedmoe.datasets.echotorch_datasets.periodic_signal import PeriodicSignalDataset  # type: ignore
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
+
 torch.set_default_dtype(torch.float64)
 sns.set_style("whitegrid")
 
 
 class TimeSeriesPeriodic(TimeSeriesData):
-    def __init__(self, total_time_steps: int, period_list: List[int] = [5, 6, 12, 20]) -> None:
-        self.period_list = period_list
+    def __init__(self, total_time_steps: int, period_list: list[int] | None = None) -> None:
+        self.period_list = period_list if period_list is not None else [5, 6, 12, 20]
         self.total_time_steps = total_time_steps
         # We still generate total_time_steps+1 datapoints to make the super class happy, but we'll just take the
         # first total_time_step values here
         self.periodic_sequence = PeriodicSignalDataset(
-            sample_len=self.total_time_steps + 1, n_samples=1, period=self.period_list, dtype=torch.float64
+            sample_len=self.total_time_steps + 1,
+            n_samples=1,
+            period=self.period_list,
+            dtype=torch.float64,
         )
-        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
+        super().__init__(
+            total_time_steps,
+            self.initiate_input_generator(),
+            self.initiate_target_generator(),
+        )
 
     def _post_process_data_matrices(
         self, input_matrix: torch.Tensor, target_matrix: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         # Overriding the post processing behavior to just take the first total_time_step values
         return input_matrix[:-1], target_matrix[:-1]
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
-        """
-        This function defines how input data should be generated using PeriodicSignalDataset.
-        """
+        """This function defines how input data should be generated using PeriodicSignalDataset."""
         # We just take the first sequence because n_samples is one.
         input_sequence = self.periodic_sequence.outputs[0].squeeze(1)
         assert input_sequence.shape == (self.total_time_steps + 1,)
@@ -87,15 +92,17 @@ class TimeSeriesPeriodic(TimeSeriesData):
 
 
 class TimeInputPeriodic(TimeSeriesData):
-    def __init__(self, total_time_steps: int, period_list: List[int] = [5, 6, 12, 20]) -> None:
-        self.period_list = period_list
+    def __init__(self, total_time_steps: int, period_list: list[int] | None = None) -> None:
+        self.period_list = period_list if period_list is not None else [5, 6, 12, 20]
         self.total_time_steps = total_time_steps
-        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
+        super().__init__(
+            total_time_steps,
+            self.initiate_input_generator(),
+            self.initiate_target_generator(),
+        )
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
-        """
-        This function defines how input data should be generated using PeriodicSignalDataset.
-        """
+        """This function defines how input data should be generated using PeriodicSignalDataset."""
 
         def func_x(t_axis: torch.Tensor) -> torch.Tensor:
             return t_axis

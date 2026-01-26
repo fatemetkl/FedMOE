@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Tuple
 
 import torch
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -12,8 +12,12 @@ class TensorGenerationType(Enum):
 
 
 def generate_random_tensor(
-    generator_type: TensorGenerationType, shape: Tuple[int, ...], device: torch.device = torch.device("cpu")
+    generator_type: TensorGenerationType,
+    shape: tuple[int, ...],
+    device: torch.device | None = None,
 ) -> torch.Tensor:
+    if device is None:
+        device = torch.device("cpu")
     if generator_type is TensorGenerationType.STANDARD_GAUSSIAN:
         r_tensor = torch.randn(shape, device=device)
     elif generator_type is TensorGenerationType.UNIFORM_NEG_ONE_TO_ONE:

@@ -1,15 +1,14 @@
-from typing import List
-
 import torch
 
 from fedmoe.clients.client import Client
 from fedmoe.game.game import Game
 
+
 torch.set_default_dtype(torch.float64)
 
 
 class TransformerGame(Game):
-    def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
+    def __init__(self, clients: list[Client], sync_freq: int, z_dim: int) -> None:
         super().__init__(clients, sync_freq, z_dim)
 
     def get_hidden_state(self, game_t: int, client: Client) -> torch.Tensor:
@@ -22,9 +21,7 @@ class TransformerGame(Game):
         return client.state.get_hidden_state_t(server_time)
 
     def get_expectation_e_zt(self, game_t: int, client: Client) -> torch.Tensor:
-        """
-        Computes "$e_i phi^{(i)}(x_t)$" for each client i
-        """
+        """Computes "$e_i phi^{(i)}(x_t)$" for each client i."""
         # We don't need to feed the transformer again.
         Z = self.get_hidden_state(game_t, client)
         # Embedding shape is y_dim x z_dim

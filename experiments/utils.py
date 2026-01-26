@@ -1,6 +1,7 @@
+# ruff: noqa: PLR0911
 import json
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any
 
 import torch
 import yaml
@@ -13,6 +14,7 @@ from fedmoe.datasets.logistic_map_dataset import TimeSeriesLogisticMap
 from fedmoe.datasets.periodic_dataset import TimeInputPeriodic, TimeSeriesPeriodic
 from fedmoe.datasets.simple_datasets import TimeSeriesLinearLine, TimeSeriesQuadratic, TimeSeriesSineSignal
 from fedmoe.datasets.time_series_data import TimeSeries2DXY, TimeSeriesData
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -37,10 +39,9 @@ class DataOptions(Enum):
     CONCEPT_DRIFT_ONE_D = "concept_drift_one_d"
 
 
-def load_config(config_path: str) -> Dict[str, Any]:
+def load_config(config_path: str) -> dict[str, Any]:
     with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
-    return config
+        return yaml.safe_load(f)
 
 
 def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
@@ -53,24 +54,28 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
 
     if dataset_option == DataOptions.PERIODIC_SIGNAL:
         return TimeSeriesPeriodic(total_time_steps=total_rounds)
-    elif dataset_option == DataOptions.LOGISTIC_MAP:
+    if dataset_option == DataOptions.LOGISTIC_MAP:
         return TimeSeriesLogisticMap(total_time_steps=total_rounds)
-    elif dataset_option == DataOptions.HORIZONTAL_LINE:
+    if dataset_option == DataOptions.HORIZONTAL_LINE:
         # In this dataset, input is the time_step, and output is always b (a is zero).
         return TimeSeriesLinearLine(total_time_steps=total_rounds, a=0.0, b=0.5)
-    elif dataset_option == DataOptions.LINEAR_LINE:
+    if dataset_option == DataOptions.LINEAR_LINE:
         return TimeSeriesLinearLine(total_time_steps=total_rounds, a=3.0, b=2.0)
-    elif dataset_option == DataOptions.QUADRATIC_DATA:
+    if dataset_option == DataOptions.QUADRATIC_DATA:
         return TimeSeriesQuadratic(total_time_steps=total_rounds, a=2.0, b=-1.0, c=1.0)
-    elif dataset_option == DataOptions.SINE_SIGNAL:
+    if dataset_option == DataOptions.SINE_SIGNAL:
         return TimeSeriesSineSignal(total_time_steps=total_rounds)
-    elif dataset_option == DataOptions.XY_2D:
+    if dataset_option == DataOptions.XY_2D:
         return TimeSeries2DXY(total_time_steps=total_rounds)
-    elif dataset_option == DataOptions.SIMPLE_BROWNIAN:
+    if dataset_option == DataOptions.SIMPLE_BROWNIAN:
         return TimeSeriesBrownianTarget(
-            total_time_steps=total_rounds, n_brownian_trajectories=5, mu=1.0, sigma=1.0, offset=0.5
+            total_time_steps=total_rounds,
+            n_brownian_trajectories=5,
+            mu=1.0,
+            sigma=1.0,
+            offset=0.5,
         )
-    elif dataset_option == DataOptions.BROWNIAN_ADDITION:
+    if dataset_option == DataOptions.BROWNIAN_ADDITION:
         return BrownianSequenceAddition(
             total_time_steps=total_rounds,
             n_brownian_trajectories=3,
@@ -79,14 +84,23 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
             offset=0.0,
             normalize=True,
         )
-    elif dataset_option == DataOptions.ONE_D_BROWNIAN_ADD:
+    if dataset_option == DataOptions.ONE_D_BROWNIAN_ADD:
         return BrownianSequenceAddition(
-            total_time_steps=total_rounds, n_brownian_trajectories=1, mu=1.0, sigma=1.0, offset=0.0
+            total_time_steps=total_rounds,
+            n_brownian_trajectories=1,
+            mu=1.0,
+            sigma=1.0,
+            offset=0.0,
         )
-    elif dataset_option == DataOptions.TIME_INPUT_PERIODIC:
+    if dataset_option == DataOptions.TIME_INPUT_PERIODIC:
         return TimeInputPeriodic(total_time_steps=total_rounds)
-    elif dataset_option == DataOptions.BOC_EXCHANGE:
-        inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.EUR_CLOSE, ExchangeRates.GBP_CLOSE, ExchangeRates.JPY_CLOSE]
+    if dataset_option == DataOptions.BOC_EXCHANGE:
+        inputs = [
+            ExchangeRates.AUD_CLOSE,
+            ExchangeRates.EUR_CLOSE,
+            ExchangeRates.GBP_CLOSE,
+            ExchangeRates.JPY_CLOSE,
+        ]
         targets = [ExchangeRates.USD_CLOSE]
         input_lag = [0, 1]
         target_lag = [0, 1]
@@ -98,8 +112,13 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         )
         dataset.cut_first_time_steps(data_sequence_length=total_rounds)
         return dataset
-    elif dataset_option == DataOptions.BOC_EXCHANGE_VALIDATION:
-        inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.EUR_CLOSE, ExchangeRates.GBP_CLOSE, ExchangeRates.JPY_CLOSE]
+    if dataset_option == DataOptions.BOC_EXCHANGE_VALIDATION:
+        inputs = [
+            ExchangeRates.AUD_CLOSE,
+            ExchangeRates.EUR_CLOSE,
+            ExchangeRates.GBP_CLOSE,
+            ExchangeRates.JPY_CLOSE,
+        ]
         targets = [ExchangeRates.USD_CLOSE]
         input_lag = [0, 1]
         target_lag = [0, 1]
@@ -111,7 +130,7 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         )
         dataset.cut_at_start_index(data_sequence_length=total_rounds, start_index=1600)
         return dataset
-    elif dataset_option == DataOptions.ETT:
+    if dataset_option == DataOptions.ETT:
         ett_inputs = [
             InputFeatures.HUFL,
             InputFeatures.HULL,
@@ -129,7 +148,7 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         )
         ett_dataset.cut_first_time_steps(data_sequence_length=total_rounds, normalize=True)
         return ett_dataset
-    elif dataset_option == DataOptions.ETT_VALIDATION:
+    if dataset_option == DataOptions.ETT_VALIDATION:
         ett_inputs = [
             InputFeatures.HUFL,
             InputFeatures.HULL,
@@ -147,16 +166,17 @@ def load_data(dataset_name: str, total_rounds: int) -> TimeSeriesData:
         )
         ett_dataset.cut_at_start_index(data_sequence_length=total_rounds, start_index=3500, normalize=True)
         return ett_dataset
-    elif dataset_option == DataOptions.CONCEPT_DRIFT:
+    if dataset_option == DataOptions.CONCEPT_DRIFT:
         return ConceptDriftDataset(total_time_steps=total_rounds)
-    elif dataset_option == DataOptions.CONCEPT_DRIFT_ONE_D:
+    if dataset_option == DataOptions.CONCEPT_DRIFT_ONE_D:
         return ConceptDriftDataset(total_time_steps=total_rounds, one_dim=True)
-    else:
-        raise ValueError(f"dataset name {dataset_name} is not valid. See DataOptions.")
+    raise ValueError(f"dataset name {dataset_name} is not valid. See DataOptions.")
 
 
 def save_output_json(
-    tensors_to_save: Dict[str, List[torch.Tensor]], path: str, dict_to_save: Dict[str, Any] | None
+    tensors_to_save: dict[str, list[torch.Tensor]],
+    path: str,
+    dict_to_save: dict[str, Any] | None,
 ) -> None:
     # Creating a new dict to avoid mypy error.
     lists_to_save = {}

@@ -1,16 +1,17 @@
-from typing import Dict, List, Sequence, Tuple
+from collections.abc import Sequence
 
 import torch
-from fl4health.utils.metrics import Metric, MetricManager
+from fl4health.metrics.metric_managers import MetricManager
+from fl4health.metrics.metrics import Metric
 
 from fedmoe.client_manager import ClientManager
 from fedmoe.game.game import Game
+
 
 torch.set_default_dtype(torch.float64)
 
 
 class Server:
-
     def __init__(
         self,
         total_game_steps: int,
@@ -21,9 +22,9 @@ class Server:
         kappa: float = 1.0,
         eta: float = 1.0,
     ) -> None:
-        assert (
-            total_game_steps == game.sync_freq
-        ), "Game T steps value of Server is not the same as the Sync Frequency of Game"
+        assert total_game_steps == game.sync_freq, (
+            "Game T steps value of Server is not the same as the Sync Frequency of Game"
+        )
         assert client_manager.z_dim == game.z_dim, "Latent dimension of Client Manager is not the same as the Game"
         # total_game_steps is the number of steps that we look back while playing the game.
         self.total_game_steps = total_game_steps
@@ -35,11 +36,11 @@ class Server:
         self.y_dim = client_manager.y_dim
         self.client_manager = client_manager
         self.game = game
-        self.server_outputs: List[torch.Tensor] = []
-        self.mixture_weights: List[torch.Tensor] = []
-        self.observed_values: List[torch.Tensor] = []
-        self.clients_predictions: List[torch.Tensor] = []
-        self.game_predictions: List[Tuple[int, torch.Tensor]] = []
+        self.server_outputs: list[torch.Tensor] = []
+        self.mixture_weights: list[torch.Tensor] = []
+        self.observed_values: list[torch.Tensor] = []
+        self.clients_predictions: list[torch.Tensor] = []
+        self.game_predictions: list[tuple[int, torch.Tensor]] = []
         self.z_dim = self.client_manager.z_dim
         self.metrics = metrics
         self.metric_manager = MetricManager(metrics=self.metrics, metric_manager_name="server")
@@ -76,9 +77,9 @@ class Server:
     def sync_round(
         self,
         current_t: int,
-        past_observed_values: List[torch.Tensor],
-        past_mixture_weights: List[torch.Tensor],
-    ) -> Tuple[List, List]:
+        past_observed_values: list[torch.Tensor],
+        past_mixture_weights: list[torch.Tensor],
+    ) -> tuple[list[torch.Tensor], list[torch.Tensor]]:
         # T last steps are considered
         # Server has the observed values of all clients for the past T time steps [0 to T] inclusive.
         # Server has the mixture weights of all the clients for the past T time steps [0 to T] inclusive.
@@ -132,8 +133,8 @@ class Server:
                 )
                 self.game.set_client_st(game_t, client_id, st_value=client_st)
 
-        past_T_betas = []
-        game_improved_predictions = []
+        past_T_betas: list[torch.Tensor] = []
+        game_improved_predictions: list[torch.Tensor] = []
         # 0 to T-1
         # Observed value for all the clients is the same.
         Y_hat_0 = past_observed_values[0].repeat(self.num_clients, 1)
@@ -148,7 +149,7 @@ class Server:
         # New betas for t = 0 to T-1
         return past_T_betas, game_improved_predictions
 
-    def fit(self, num_rounds: int, have_sync: bool = True, update_last_Y_sync: bool = False) -> Dict[str, float]:
+    def fit(self, num_rounds: int, have_sync: bool = True, update_last_Y_sync: bool = False) -> dict[str, float]:
         # num_round can be anything between 1 and data_length-1.
         self.metric_manager.clear()
         # We start from t = 1 instead of t = 0 zero.
@@ -210,7 +211,9 @@ class Server:
                 if update_last_Y_sync:
                     for game_t in range(0, self.total_game_steps):
                         self.client_manager.improve_previous_predictions_from_game(
-                            t - self.total_game_steps + game_t, game_improved_predictions[game_t], past_T_betas[game_t]
+                            t - self.total_game_steps + game_t,
+                            game_improved_predictions[game_t],
+                            past_T_betas[game_t],
                         )
 
             # A list of clients predictions is appended (Y_{t+1}^i for every i in N)
@@ -226,5 +229,4 @@ class Server:
             self.metric_manager.update({"server_predictions": server_output}, self.client_manager.get_y(t + 1))
 
         # Compute metric
-        final_metric_value = self.metric_manager.compute()
-        return final_metric_value
+        return self.metric_manager.compute()

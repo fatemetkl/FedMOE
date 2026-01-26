@@ -1,14 +1,12 @@
-from typing import Optional
-
 import torch
-import torch.nn as nn
-import torch.optim as optim
+from torch import nn, optim
 from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
 from fedmoe.clients.client import Client
 from fedmoe.metrics import MSEMetric
 from fedmoe.models.transformer import TransformerTimeSeriesModel
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -23,10 +21,10 @@ class TransformerClient(Client):
         z_dim: int,
         alpha: float = 0.01,
         gamma: float = 0.1,
-        sigma: Optional[torch.Tensor] = None,
+        sigma: torch.Tensor | None = None,
         pre_training_epochs: int = 3,
         pre_training_learning_rate: float = 0.01,
-        pre_training_dataloader: Optional[DataLoader] = None,
+        pre_training_dataloader: DataLoader | None = None,
     ) -> None:
         self.pre_training_epochs = pre_training_epochs
         self.pre_training_learning_rate = pre_training_learning_rate
@@ -38,7 +36,14 @@ class TransformerClient(Client):
         if sigma is None:
             sigma = torch.Tensor([])
         super().__init__(
-            id=id, sync_steps=sync_steps, x_dim=x_dim, y_dim=y_dim, z_dim=z_dim, alpha=alpha, gamma=gamma, sigma=sigma
+            id=id,
+            sync_steps=sync_steps,
+            x_dim=x_dim,
+            y_dim=y_dim,
+            z_dim=z_dim,
+            alpha=alpha,
+            gamma=gamma,
+            sigma=sigma,
         )
 
     def feed_encoder(self, input: torch.Tensor) -> torch.Tensor:
@@ -52,8 +57,7 @@ class TransformerClient(Client):
         # We squeeze to remove the extra batch dimension.
         # Shape that the model accepts is (batch_size, seq_len=1, input_dim).
         # Shape that the model outputs is (batch_size, seq_len=1, output_dim).
-        pred_t = self.encoder(input_batch).squeeze(0).reshape(self.y_dim, self.z_dim)
-        return pred_t
+        return self.encoder(input_batch).squeeze(0).reshape(self.y_dim, self.z_dim)
 
     @staticmethod
     def pre_train_model(
@@ -97,7 +101,9 @@ class TransformerClient(Client):
 
     @staticmethod
     def validate_model(
-        encoder: nn.Module, validation_sequence: torch.Tensor, validation_target: torch.Tensor
+        encoder: nn.Module,
+        validation_sequence: torch.Tensor,
+        validation_target: torch.Tensor,
     ) -> torch.Tensor:
         encoder.eval()
         validation_metric = MSEMetric("Validation MSE")
@@ -114,9 +120,7 @@ class TransformerClient(Client):
                     pred_t.T, validation_target[t].reshape(-1, 1)
                 )  # We store each prediction in shape (y_dim, 1)
 
-            val_metric = validation_metric.compute()
-
-            return val_metric
+            return validation_metric.compute()
 
     def setup_transformer_structure(self, x_dim: int, y_dim: int, z_dim: int) -> nn.Module:
         # Hyperparameters
@@ -129,10 +133,10 @@ class TransformerClient(Client):
         # In this model setup, hidden_dim has the shape d_y times d_z.
         assert self.y_dim * hidden_dim % nhead == 0, (
             "Error: embed_dim (self.y_dim*hidden_dim) must be divisible by num_heads, now it is "
-            f"{self.y_dim*hidden_dim} % {nhead}"
+            f"{self.y_dim * hidden_dim} % {nhead}"
         )
         # Create the model
-        model = TransformerTimeSeriesModel(
+        return TransformerTimeSeriesModel(
             input_dim,
             hidden_dim,
             nhead,
@@ -140,11 +144,14 @@ class TransformerClient(Client):
             dim_feedforward,
             output_dim,
         )
-        return model
 
     def init_model(self) -> nn.Module:
         model = self.setup_transformer_structure(self.x_dim, self.y_dim, self.z_dim)
         # Do pre-training: each client trains its model separately
         return TransformerClient.pre_train_model(
-            model, self.pre_training_epochs, self.pre_training_dataloader, self.pre_training_learning_rate, self.id
+            model,
+            self.pre_training_epochs,
+            self.pre_training_dataloader,
+            self.pre_training_learning_rate,
+            self.id,
         )

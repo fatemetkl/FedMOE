@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import matplotlib.pyplot as plt
 import torch
@@ -13,22 +13,23 @@ from fedmoe.datasets.data_matrix_generator import (
     TargetGenerator,
 )
 
+
 torch.set_default_dtype(torch.float64)
 
 
 class TimeSeriesTorchDataset(BaseDataset):
     def __init__(
         self,
-        data: List[torch.Tensor],
-        targets: List[torch.Tensor],
+        data: list[torch.Tensor],
+        targets: list[torch.Tensor],
     ) -> None:
-        super().__init__()
+        super().__init__(None, None)
         self.data = data
         self.targets = targets
         self.transform = None
         self.target_transform = None
 
-    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
         assert self.targets is not None
 
         data, target = self.data[index], self.targets[index]
@@ -46,7 +47,12 @@ class TimeSeriesTorchDataset(BaseDataset):
 
 
 class TimeSeriesData:
-    def __init__(self, total_time_steps: int, input_gen: InputGenerator, target_gen: TargetGenerator) -> None:
+    def __init__(
+        self,
+        total_time_steps: int,
+        input_gen: InputGenerator,
+        target_gen: TargetGenerator,
+    ) -> None:
         assert total_time_steps > 1, "Error, total_time_step should be positive and greater than one."
         self.total_time_steps = total_time_steps
         self.time_axis = torch.arange(0, self.total_time_steps, dtype=torch.float64)
@@ -65,7 +71,7 @@ class TimeSeriesData:
 
     def _post_process_data_matrices(
         self, input_matrix: torch.Tensor, target_matrix: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         # trim first x and last y
         return input_matrix[1:, :], target_matrix[:-1, :]
 
@@ -76,8 +82,8 @@ class TimeSeriesData:
         Set the shuffle variable to True for validation data loader.
         """
         # Generate new data samples
-        data: List[torch.Tensor] = []
-        targets: List[torch.Tensor] = []
+        data: list[torch.Tensor] = []
+        targets: list[torch.Tensor] = []
         # Since x_t generates y_{t+1}, we generate for an extra time step and trim the first x and the last y
         #  -    y_1     y_2     y_3     y_4     y_5
         # x_0   x_1     x_2     x_3     x_4
@@ -99,36 +105,47 @@ class TimeSeriesData:
         # every input and output in our dataloader has the shape (self.total_time_steps - 1 , x_dim/y_dim)
         dataset: BaseDataset = TimeSeriesTorchDataset(data, targets)
 
-        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
         # Each item (input or output) in the data_loader will have a shape of (batch_size, time_steps, dim)
-        return data_loader
+        return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
 
     def visualize_input(
         self,
         plot_path: str,
-        plot_info: Optional[Dict[str, Any]] = None,
+        plot_info: dict[str, Any] | None = None,
     ) -> None:
         """
         Saves a plot showing the input_matrix.
-            Args:
+
+        Args:
                 plot_path (str): the plot path (including name and location) to save the plot
-                plot_info: (Optional[Dict[str, Any]]): additional information of the experiment setting to be
+                plot_info: (dict[str, Any] | None): additional information of the experiment setting to be
                 added to the plot.
         """
         ax = plt.figure().gca()
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
         for i in range(self.input_matrix.shape[1]):
-            plt.plot(self.time_axis, self.input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="-", linewidth=2.5)
+            plt.plot(
+                self.time_axis,
+                self.input_matrix[:, i],
+                label=f"Input: $x_{i + 1}$",
+                linestyle="-",
+                linewidth=2.5,
+            )
 
         if plot_info is not None:
             text_content = ""
-            num_items = 0
-            for key, value in plot_info.items():
+            for num_items, (key, value) in enumerate(plot_info.items()):
                 text_content += f"{key}: {value},"
-                num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(
+                0.5,
+                -0.2,
+                text_content.rstrip(",\n"),
+                ha="center",
+                va="top",
+                transform=plt.gca().transAxes,
+            )
             plt.subplots_adjust(bottom=0.2)
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
@@ -148,35 +165,38 @@ class TimeSeriesData:
 
     def visualize_server_prediction(
         self,
-        server_prediction: List[torch.Tensor],
+        server_prediction: list[torch.Tensor],
         plot_path: str,
         game_played: bool = False,
         T: int = 0,
-        show_points: Optional[bool] = False,
+        show_points: bool | None = False,
         show_lines: bool = False,
-        plot_info: Optional[Dict[str, Any]] = None,
+        plot_info: dict[str, Any] | None = None,
     ) -> None:
         """
         Saves plots of target_matrix and prediction_matrix.
         Each matrix has shape (total_time_steps, num_dimensions).
         Plots each dimension (row) as a line.
 
-            Args:
-                server_prediction (List[torch.Tensor]): List of predictions made by server.
+        Args:
+                server_prediction (list[torch.Tensor]): List of predictions made by server.
                 plot_path (str): the plot path (including name and location) to save the plot.
                 game_played (bool): flag indicating if the game if played or not.
                 T (int): the value of synchronization frequency. If T > 0 and game_played is true,
                    plot will highlight the synchronization points.
-                show_points (Optional[bool]): if True, the plot will show the synchronization points as points.
+                show_points (bool | None): if True, the plot will show the synchronization points as points.
                 show_lines (bool): if True, the plot will show the synchronization steps as vertical lines.
-                plot_info: (Optional[Dict[str, Any]]): additional information of the experiment setting to be
+                plot_info: (dict[str, Any] | None): additional information of the experiment setting to be
                     added to the plot.
         """
         if game_played:
             assert T > 0, "Error: if the game is played, T should be greater than zero."
 
         server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
-        assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1]), {
+        assert server_matrix.shape == (
+            self.total_time_steps,
+            self.target_matrix.shape[1],
+        ), {
             f"Error:server output matrix has a shape {server_matrix.shape},\
                 but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
         }
@@ -185,7 +205,11 @@ class TimeSeriesData:
         # Plot target y
         for i in range(self.target_matrix.shape[1]):
             plt.plot(
-                self.time_axis, self.target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5
+                self.time_axis,
+                self.target_matrix[:, i],
+                label=f"Target: $y_{i + 1}$",
+                linestyle="-",
+                linewidth=2.5,
             )
 
         # Plot server's prediction
@@ -193,7 +217,7 @@ class TimeSeriesData:
             plt.plot(
                 self.time_axis,
                 server_matrix[:, i].detach().numpy(),
-                label=f"Prediction: Server $\\hat{{Y}}_{i+1}$",
+                label=f"Prediction: Server $\\hat{{Y}}_{i + 1}$",
                 linestyle=":",
                 linewidth=2.5,
             )
@@ -218,20 +242,22 @@ class TimeSeriesData:
                     label = "Nash Game Played" if j == 1 else None
                     plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
 
-        if game_played:
-            game_status = ""
-        else:
-            game_status = "No "
+        game_status = "" if game_played else "No "
 
         if plot_info is not None:
             text_content = ""
-            num_items = 0
-            for key, value in plot_info.items():
+            for num_items, (key, value) in enumerate(plot_info.items()):
                 text_content += f"{key}: {value},"
-                num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(
+                0.5,
+                -0.2,
+                text_content.rstrip(",\n"),
+                ha="center",
+                va="top",
+                transform=plt.gca().transAxes,
+            )
             plt.subplots_adjust(bottom=0.2)
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
@@ -251,10 +277,10 @@ class TimeSeriesData:
 
     def visualize_clients_predictions(
         self,
-        client_predictions: List[torch.Tensor],
+        client_predictions: list[torch.Tensor],
         plot_path: str,
-        plot_info: Dict[str, Any],
-        server_prediction: Optional[List[torch.Tensor]] = None,
+        plot_info: dict[str, Any],
+        server_prediction: list[torch.Tensor] | None = None,
         show_target: bool = True,
         show_input: bool = False,
     ) -> None:
@@ -264,12 +290,12 @@ class TimeSeriesData:
         Each matrix has shape (total_time_steps, num_dimensions).
         Plots each dimension (row) as a line.
 
-            Args:
-                client_predictions (List[torch.Tensor]): List of predictions made by clients.
+        Args:
+                client_predictions (list[torch.Tensor]): List of predictions made by clients.
                 plot_path (str): the plot path (including name and location) to save the plot.
-                plot_info: (Dict[str, Any]): additional information of the experiment setting to be added to the plot.
+                plot_info: (dict[str, Any]): additional information of the experiment setting to be added to the plot.
                     , including the number of clients.
-                server_prediction (Optional[List[torch.Tensor]]): if it is passed, plot will also show the predictions
+                server_prediction (list[torch.Tensor] | None): if it is passed, plot will also show the predictions
                     made by the server to help visualize how the individual predictions are combined for final
                     prediction.
                 show_target (bool): default is True, indicating whether we want to visualize the target or not.
@@ -283,7 +309,10 @@ class TimeSeriesData:
         if server_prediction is not None:
             server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
             # Server prediction matrix should have the same shape as target matrix.
-            assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1]), {
+            assert server_matrix.shape == (
+                self.total_time_steps,
+                self.target_matrix.shape[1],
+            ), {
                 f"Error:server output matrix has a shape {server_matrix.shape},\
                     but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
             }
@@ -291,7 +320,7 @@ class TimeSeriesData:
                 plt.plot(
                     self.time_axis,
                     server_matrix[:, i].detach().numpy(),
-                    label=f"Prediction: Server $\\hat{{Y}}_{i+1}$",
+                    label=f"Prediction: Server $\\hat{{Y}}_{i + 1}$",
                     linestyle="dashdot",
                     linewidth=2.5,
                 )
@@ -310,13 +339,21 @@ class TimeSeriesData:
         if show_target:
             for i in range(self.target_matrix.shape[1]):
                 plt.plot(
-                    self.time_axis, self.target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5
+                    self.time_axis,
+                    self.target_matrix[:, i],
+                    label=f"Target: $y_{i + 1}$",
+                    linestyle="-",
+                    linewidth=2.5,
                 )
 
         if show_input:
             for i in range(self.input_matrix.shape[1]):
                 plt.plot(
-                    self.time_axis, self.input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="--", linewidth=2.5
+                    self.time_axis,
+                    self.input_matrix[:, i],
+                    label=f"Input: $x_{i + 1}$",
+                    linestyle="--",
+                    linewidth=2.5,
                 )
 
         for client in range(int(plot_info["num_clients"])):
@@ -324,20 +361,25 @@ class TimeSeriesData:
                 plt.plot(
                     self.time_axis,
                     clients_pred_matrix[:, client, dim],
-                    label=f"Prediction: $\\mathregular{{Client}}_{client}$ $\\hat{{Y}}_{dim+1}$",
+                    label=f"Prediction: $\\mathregular{{Client}}_{client}$ $\\hat{{Y}}_{dim + 1}$",
                     linestyle=":",
                     linewidth=2.5,
                 )
 
         if plot_info is not None:
             text_content = ""
-            num_items = 0
-            for key, value in plot_info.items():
+            for num_items, (key, value) in enumerate(plot_info.items()):
                 text_content += f"{key}: {value},"
-                num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(
+                0.5,
+                -0.2,
+                text_content.rstrip(",\n"),
+                ha="center",
+                va="top",
+                transform=plt.gca().transAxes,
+            )
             plt.subplots_adjust(bottom=0.2)
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
@@ -357,9 +399,9 @@ class TimeSeriesData:
 
     def visualize_mixture_weights(
         self,
-        clients_mixture_weights: List[torch.Tensor],
+        clients_mixture_weights: list[torch.Tensor],
         plot_path: str,
-        plot_info: Dict[str, Any],
+        plot_info: dict[str, Any],
         game_played: bool = False,
         T: int = 0,
         show_points: bool = False,
@@ -368,10 +410,10 @@ class TimeSeriesData:
         """
         Saves a plot showing the mixture weights. Important: make sure to include num_clients in plot info.
 
-            Args:
-                clients_mixture_weights (List[torch.Tensor]): List of mixture weights as they evolve in the algorithm.
+        Args:
+                clients_mixture_weights (list[torch.Tensor]): List of mixture weights as they evolve in the algorithm.
                 plot_path (str): the plot path (including name and location) to save the plot
-                plot_info: (Dict[str, Any]): additional information of the experiment setting to be added to the plot,
+                plot_info: (dict[str, Any]): additional information of the experiment setting to be added to the plot,
                     including the number of clients.
                 game_played (bool): flag indicating if the game if played or not.
                 T (int): the value of synchronization frequency. If T > 0 and game_played is true,
@@ -425,20 +467,22 @@ class TimeSeriesData:
                         zorder=3,
                     )
 
-        if game_played:
-            game_status = ""
-        else:
-            game_status = "No "
+        game_status = "" if game_played else "No "
 
         if plot_info is not None:
             text_content = ""
-            num_items = 0
-            for key, value in plot_info.items():
+            for num_items, (key, value) in enumerate(plot_info.items()):
                 text_content += f"{key}: {value},"
-                num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(
+                0.5,
+                -0.2,
+                text_content.rstrip(",\n"),
+                ha="center",
+                va="top",
+                transform=plt.gca().transAxes,
+            )
             plt.subplots_adjust(bottom=0.2)
 
         title_font = {"family": "helvetica", "weight": "bold", "size": 20}
@@ -457,16 +501,17 @@ class TimeSeriesData:
 
     def visualize_squared_error_histogram(
         self,
-        server_prediction: List[torch.Tensor],
+        server_prediction: list[torch.Tensor],
         plot_path: str,
-        plot_info: Dict[str, Any],
+        plot_info: dict[str, Any],
         game_played: bool = False,
     ) -> None:
-        """
-        Saves a histogram showing the error distribution of the predictions made by the server
-        """
+        """Saves a histogram showing the error distribution of the predictions made by the server."""
         server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
-        assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1]), {
+        assert server_matrix.shape == (
+            self.total_time_steps,
+            self.target_matrix.shape[1],
+        ), {
             f"Error:server output matrix has a shape {server_matrix.shape},\
                 but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
         }
@@ -477,13 +522,18 @@ class TimeSeriesData:
 
         if plot_info is not None:
             text_content = ""
-            num_items = 0
-            for key, value in plot_info.items():
+            for num_items, (key, value) in enumerate(plot_info.items()):
                 text_content += f"{key}: {value},"
-                num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(
+                0.5,
+                -0.2,
+                text_content.rstrip(",\n"),
+                ha="center",
+                va="top",
+                transform=plt.gca().transAxes,
+            )
             plt.subplots_adjust(bottom=0.2)
 
         game_status = "" if game_played else "No "
@@ -504,18 +554,15 @@ class TimeSeriesData:
 
     def visualize_server_squared_errors(
         self,
-        server_prediction: List[torch.Tensor],
+        server_prediction: list[torch.Tensor],
         plot_path: str,
         game_played: bool = False,
         T: int = 0,
-        show_points: Optional[bool] = False,
+        show_points: bool | None = False,
         show_lines: bool = False,
-        plot_info: Optional[Dict[str, Any]] = None,
+        plot_info: dict[str, Any] | None = None,
     ) -> None:
-        """
-        Saves a time series plot showing the server prediction squared errors
-        """
-
+        """Saves a time series plot showing the server prediction squared errors."""
         if game_played:
             assert T > 0, "Error: if the game is played, T should be greater than zero."
 
@@ -523,7 +570,10 @@ class TimeSeriesData:
         ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
         server_matrix = torch.stack(server_prediction, dim=0).squeeze(-1)
-        assert server_matrix.shape == (self.total_time_steps, self.target_matrix.shape[1]), {
+        assert server_matrix.shape == (
+            self.total_time_steps,
+            self.target_matrix.shape[1],
+        ), {
             f"Error:server output matrix has a shape {server_matrix.shape},\
                 but it should be{(self.total_time_steps, self.target_matrix.shape[1])}"
         }
@@ -535,7 +585,7 @@ class TimeSeriesData:
             plt.plot(
                 self.time_axis,
                 squared_error[:, i].detach().numpy(),
-                label=f"$(\\hat{{Y}}_{i+1} - y_{i+1})^2$",
+                label=f"$(\\hat{{Y}}_{i + 1} - y_{i + 1})^2$",
                 linestyle="-",
                 linewidth=2.5,
             )
@@ -562,13 +612,18 @@ class TimeSeriesData:
 
         if plot_info is not None:
             text_content = ""
-            num_items = 0
-            for key, value in plot_info.items():
+            for num_items, (key, value) in enumerate(plot_info.items()):
                 text_content += f"{key}: {value},"
-                num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(
+                0.5,
+                -0.2,
+                text_content.rstrip(",\n"),
+                ha="center",
+                va="top",
+                transform=plt.gca().transAxes,
+            )
             plt.subplots_adjust(bottom=0.2)
 
         game_status = "" if game_played else "No "
@@ -590,18 +645,15 @@ class TimeSeriesData:
 
     def visualize_client_squared_errors(
         self,
-        client_predictions: List[torch.Tensor],
+        client_predictions: list[torch.Tensor],
         plot_path: str,
-        plot_info: Dict[str, Any],
+        plot_info: dict[str, Any],
         game_played: bool = False,
         T: int = 0,
-        show_points: Optional[bool] = False,
+        show_points: bool | None = False,
         show_lines: bool = False,
     ) -> None:
-        """
-        Saves a time series plot showing the client prediction squared errors
-        """
-
+        """Saves a time series plot showing the client prediction squared errors."""
         if game_played:
             assert T > 0, "Error: if the game is played, T should be greater than zero."
 
@@ -624,7 +676,7 @@ class TimeSeriesData:
                 plt.plot(
                     self.time_axis,
                     squared_error,
-                    label=f"$\\mathregular{{Client}}_{client}$: $(\\hat{{Y}}_{dim+1} - y_{dim+1})^2$",
+                    label=f"$\\mathregular{{Client}}_{client}$: $(\\hat{{Y}}_{dim + 1} - y_{dim + 1})^2$",
                     linestyle="-",
                     linewidth=2.5,
                 )
@@ -650,13 +702,18 @@ class TimeSeriesData:
 
         if plot_info is not None:
             text_content = ""
-            num_items = 0
-            for key, value in plot_info.items():
+            for num_items, (key, value) in enumerate(plot_info.items()):
                 text_content += f"{key}: {value},"
-                num_items += 1
                 if num_items % 6 == 0:
                     text_content += "\n"
-            plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+            plt.text(
+                0.5,
+                -0.2,
+                text_content.rstrip(",\n"),
+                ha="center",
+                va="top",
+                transform=plt.gca().transAxes,
+            )
             plt.subplots_adjust(bottom=0.2)
 
         game_status = "" if game_played else "No "
@@ -690,7 +747,11 @@ class TimeSeries2DXY(TimeSeriesData):
         self,
         total_time_steps: int,
     ) -> None:
-        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
+        super().__init__(
+            total_time_steps,
+            self.initiate_input_generator(),
+            self.initiate_target_generator(),
+        )
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
         # x1 = t, x2 = 2*t

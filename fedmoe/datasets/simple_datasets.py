@@ -8,13 +8,14 @@ from fedmoe.datasets.data_matrix_generator import (
 )
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
+
 torch.set_default_dtype(torch.float64)
 
 
 class TimeSeriesLinearLine(TimeSeriesData):
     """
     x = t
-    y = a * x + b
+    y = a * x + b.
     """
 
     def __init__(
@@ -25,7 +26,11 @@ class TimeSeriesLinearLine(TimeSeriesData):
     ) -> None:
         self.a = a
         self.b = b
-        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
+        super().__init__(
+            total_time_steps,
+            self.initiate_input_generator(),
+            self.initiate_target_generator(),
+        )
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
         # x = t
@@ -46,14 +51,18 @@ class TimeSeriesLinearLine(TimeSeriesData):
 class TimeSeriesQuadratic(TimeSeriesData):
     """
     x = t
-    y = a * x^2 + b * x + c
+    y = a * x^2 + b * x + c.
     """
 
     def __init__(self, total_time_steps: int, a: float = 2.0, b: float = -1.0, c: float = 1.0) -> None:
         self.a = a
         self.b = b
         self.c = c
-        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
+        super().__init__(
+            total_time_steps,
+            self.initiate_input_generator(),
+            self.initiate_target_generator(),
+        )
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
         # x = t
@@ -64,7 +73,13 @@ class TimeSeriesQuadratic(TimeSeriesData):
 
     def initiate_target_generator(self) -> MultiDimensionalTargetGenerator:
         # y  = a * x^2 + b * x + c
-        def func_y(a: float, b: float, c: float, input_matrix: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
+        def func_y(
+            a: float,
+            b: float,
+            c: float,
+            input_matrix: torch.Tensor,
+            t_axis: torch.Tensor,
+        ) -> torch.Tensor:
             # Notice that any operation should be done on individual dimensions (xn = input_matrix[:, n-1])
             return a * torch.pow(input_matrix[:, 0], 2) + b * input_matrix[:, 0] + c
 
@@ -74,14 +89,18 @@ class TimeSeriesQuadratic(TimeSeriesData):
 class TimeSeriesSineSignal(TimeSeriesData):
     """
     x = t
-    y = sin(t)
+    y = sin(t).
     """
 
     def __init__(
         self,
         total_time_steps: int,
     ) -> None:
-        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
+        super().__init__(
+            total_time_steps,
+            self.initiate_input_generator(),
+            self.initiate_target_generator(),
+        )
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
         # x = t

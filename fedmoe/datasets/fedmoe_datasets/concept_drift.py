@@ -10,6 +10,7 @@ from fedmoe.datasets.data_matrix_generator import (
 )
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
+
 sns.set_style("whitegrid")
 torch.set_default_dtype(torch.float64)
 
@@ -20,7 +21,7 @@ class ConceptDriftDataset(TimeSeriesData):
         In this dataset we simulate a continuous but fast concept drift in the relationship of x_t to y_t+1
         NOTE: By convention, at time step t, we are making predictions for y_{t+1} using x_t.
         So x_t generates y_{t+1} according to the relationship described below. See documentation in TimeSeriesData
-        for more details
+        for more details.
 
         x_1 and x_2 are evenly spaced from 0 to 2pi, x_3 is the square root of x_1
 
@@ -47,7 +48,11 @@ class ConceptDriftDataset(TimeSeriesData):
                 the smaller the steps between each input value (i.e. the interval 0 to 2pi is sliced more finely)
         """
         self.one_dim = one_dim
-        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
+        super().__init__(
+            total_time_steps,
+            self.initiate_input_generator(),
+            self.initiate_target_generator(),
+        )
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
         # Generate a uniform x_1, x_2, x_3 from 0 to 2pi and cut into total_time_steps
@@ -70,7 +75,6 @@ class ConceptDriftDataset(TimeSeriesData):
         return weights + weights_1 + weights_2
 
     def initiate_target_generator(self) -> MultiDimensionalTargetGenerator:
-
         def func_y1(input_matrix: torch.Tensor, t_axis: torch.Tensor) -> torch.Tensor:
             x_1 = input_matrix[:, 0]
             x_2 = input_matrix[:, 1]
@@ -92,8 +96,7 @@ class ConceptDriftDataset(TimeSeriesData):
 
         if not self.one_dim:
             return MultiDimensionalTargetGenerator([func_y1, func_y2], y_dim=2)
-        else:
-            return MultiDimensionalTargetGenerator([func_y2], y_dim=1)
+        return MultiDimensionalTargetGenerator([func_y2], y_dim=1)
 
     def visualize(self) -> None:
         n_targets = self.target_matrix.shape[1]
@@ -104,7 +107,7 @@ class ConceptDriftDataset(TimeSeriesData):
                 x=self.input_matrix[:, 0].squeeze(),
                 y=self.target_matrix[:, target_path],
                 ax=ax,
-                label=f"$y_{target_path+1}$",
+                label=f"$y_{target_path + 1}$",
                 linestyle="-",
                 linewidth=2.5,
             )
@@ -117,7 +120,11 @@ class ConceptDriftDataset(TimeSeriesData):
         plt.ylabel("Time-Series Values", fontdict=axis_font)
         plt.title("Concept Drift of $\\mathbf{{y}}$", fontdict=title_font)
 
-        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 30}, loc="upper left", labelspacing=0)
+        plt.legend(
+            prop={"family": "helvetica", "weight": "bold", "size": 30},
+            loc="upper left",
+            labelspacing=0,
+        )
         plt.tight_layout(pad=0.5)
 
         plt.savefig("concept_drift_rates.pdf", format="pdf")
@@ -125,7 +132,12 @@ class ConceptDriftDataset(TimeSeriesData):
 
         mixing_weights = self._get_mixing_weight(self.input_matrix[:, 0])
         _, ax = plt.subplots(1, 1, figsize=(24, 8))
-        ax.plot(self.input_matrix[:, 0].squeeze(), mixing_weights.squeeze(), linestyle="dotted", linewidth=1.5)
+        ax.plot(
+            self.input_matrix[:, 0].squeeze(),
+            mixing_weights.squeeze(),
+            linestyle="dotted",
+            linewidth=1.5,
+        )
         ax.set_title("Values of Mixture Weight")
         ax.set_xlabel("x_1")
         ax.set_ylabel("Value")

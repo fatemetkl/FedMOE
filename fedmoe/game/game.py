@@ -1,16 +1,16 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 import torch
 
 from fedmoe.clients.client import Client
 from fedmoe.state.game_state import GameState
 
+
 torch.set_default_dtype(torch.float64)
 
 
 class Game(ABC):
-    def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
+    def __init__(self, clients: list[Client], sync_freq: int, z_dim: int) -> None:
         super().__init__()
         self.clients = clients
         self.num_clients = len(clients)
@@ -41,7 +41,6 @@ class Game(ABC):
         that is between 0 to T, and returns the input associated with server time.
 
         Examples:
-
         For example, if the server time is 3T (self.current_time is a sync step) and the
         game time is game_t (0<=game_t<=T), we need to get the input at time 2T+game_t,
         so this function performs: 3T - T + game_t = 2T+game_t
@@ -63,7 +62,7 @@ class Game(ABC):
         """
         Maps the time t in the game (between 0 to sync_freq) to the time scale used in the server, current_time, and
         returns the input matrix (x_t) associated with server time.
-        Input matrix has the shape of (z_dim, z_dim)
+        Input matrix has the shape of (z_dim, z_dim).
         """
         server_time = self.map_game_time_to_server_time(game_t, client)
         return client.get_input_matrix(server_time)
@@ -77,28 +76,33 @@ class Game(ABC):
         return client.state.get_hidden_state_t(time=server_time)
 
     def get_e_alpha(self, t: int) -> torch.Tensor:
-        """
-        Calculates e^{- bold_alpha * (T- 1 - t)}
-        """
+        """Calculates e^{- bold_alpha * (T- 1 - t)}."""
         Iz = torch.eye(self.z_dim)
         alpha_tensor = torch.exp(
             torch.Tensor([-1 * client.alpha * (self.sync_freq - 1 - t) for client in self.clients])
         )
         bold_alpha = torch.block_diag(*[alpha * Iz for alpha in alpha_tensor])
-        assert bold_alpha.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
+        assert bold_alpha.shape == (
+            self.num_clients * self.z_dim,
+            self.num_clients * self.z_dim,
+        )
         return bold_alpha
 
     def get_e_alpha_gamma(self, t: int) -> torch.Tensor:
-        """
-        Calculates e^{- bold_alpha * (T- 1 - t)} * bold_gamma
-        """
+        """Calculates e^{- bold_alpha * (T- 1 - t)} * bold_gamma."""
         e_alpha = self.get_e_alpha(t)
         Iz = torch.eye(self.z_dim)
         bold_gamma = torch.block_diag(*[client.gamma * Iz for client in self.clients])
         # Output shape: Nd_z x Nd_z
-        assert bold_gamma.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
+        assert bold_gamma.shape == (
+            self.num_clients * self.z_dim,
+            self.num_clients * self.z_dim,
+        )
         out = torch.matmul(e_alpha, bold_gamma)
-        assert out.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
+        assert out.shape == (
+            self.num_clients * self.z_dim,
+            self.num_clients * self.z_dim,
+        )
         return out
 
     def create_bold_w_t(self, latest_mixture_weights: torch.Tensor) -> torch.Tensor:
@@ -110,9 +114,7 @@ class Game(ABC):
         return W_t
 
     def first_block_alg2(self, time: int) -> None:
-        """
-        This function implements the first block in Algorithm 2.
-        """
+        """This function implements the first block in Algorithm 2."""
         # Now that we are initializing P_T and S_T to zero, we don't need to pass latest_mixture_weights
         for client_id in range(0, self.num_clients):
             # P_t is N_d_y x Nd_y
@@ -122,7 +124,11 @@ class Game(ABC):
                 pt_value=torch.zeros(self.num_clients * self.y_dim, self.num_clients * self.y_dim),
             )
             # S_t is N_d_y x 1
-            self.set_client_st(t=time, client_id=client_id, st_value=torch.zeros(self.num_clients * self.y_dim, 1))
+            self.set_client_st(
+                t=time,
+                client_id=client_id,
+                st_value=torch.zeros(self.num_clients * self.y_dim, 1),
+            )
 
     def init_game_round_variables(self, current_time: int) -> None:
         # First update the local variable of clients
@@ -201,11 +207,13 @@ class Game(ABC):
         ) + self.game_state.get_B_t(t)
 
         g_t = torch.matmul(-1 * torch.linalg.inv(first_term), second_term)
-        assert g_t.shape == (self.num_clients * self.z_dim, self.num_clients * self.y_dim)
+        assert g_t.shape == (
+            self.num_clients * self.z_dim,
+            self.num_clients * self.y_dim,
+        )
         return g_t
 
     def calculate_h(self, t: int, bold_w_t: torch.Tensor, next_y: torch.Tensor) -> torch.Tensor:
-
         e_neg_alpha_t = self.get_e_alpha(t)
         e_neg_alpha_t_gamma = self.get_e_alpha_gamma(t)
         first_term = torch.add(
@@ -213,15 +221,24 @@ class Game(ABC):
             torch.matmul(e_neg_alpha_t, self.game_state.get_A_hat_t(t)),
         )
 
-        assert first_term.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
+        assert first_term.shape == (
+            self.num_clients * self.z_dim,
+            self.num_clients * self.z_dim,
+        )
 
         bold_w_t_next_y = torch.matmul(bold_w_t, next_y)
-        assert next_y.shape == (self.y_dim, 1), f"Error in shape of next_y: {next_y.shape}"
+        assert next_y.shape == (
+            self.y_dim,
+            1,
+        ), f"Error in shape of next_y: {next_y.shape}"
 
         second_term = torch.matmul(
             torch.matmul(e_neg_alpha_t, self.game_state.get_D_t(t).T), bold_w_t_next_y
         ) - self.game_state.get_C_t(t)
-        assert second_term.shape == (self.num_clients * self.z_dim, 1), f"shape is {second_term.shape}"
+        assert second_term.shape == (
+            self.num_clients * self.z_dim,
+            1,
+        ), f"shape is {second_term.shape}"
         inv_matrix = torch.linalg.inv(first_term)
         h_t = torch.matmul(inv_matrix, second_term.to(torch.float64))
 
@@ -233,7 +250,10 @@ class Game(ABC):
         e_alpha_gamma_t = self.get_e_alpha_gamma(t)  # output: Nd_z * Nd_z
         # output shape: N*d_z*N*d_z
         e_alpha_gamma_A = torch.add(e_alpha_gamma_t, A_t)
-        assert e_alpha_gamma_A.shape == (self.num_clients * self.z_dim, self.num_clients * self.z_dim)
+        assert e_alpha_gamma_A.shape == (
+            self.num_clients * self.z_dim,
+            self.num_clients * self.z_dim,
+        )
         return torch.linalg.inv(e_alpha_gamma_A)
 
     def calculate_Dt_client(self, game_time: int, client_id: int) -> torch.Tensor:
@@ -252,7 +272,6 @@ class Game(ABC):
         client_id: int,
         w_tw_tT: torch.Tensor,
     ) -> torch.Tensor:
-
         client_alpha = self.clients[client_id].alpha
         client_gamma = self.clients[client_id].gamma
         p_next = self.get_client_pt(t=(t + 1), client_id=client_id)
@@ -273,22 +292,34 @@ class Game(ABC):
             self.game_state.get_G_t(t),
         )
 
-        assert line_1.shape == (self.num_clients * self.y_dim, self.num_clients * self.y_dim)
+        assert line_1.shape == (
+            self.num_clients * self.y_dim,
+            self.num_clients * self.y_dim,
+        )
 
         line_2 = torch.matmul(
             torch.matmul(((e_client_alpha_t * w_tw_tT) + p_next), self.game_state.get_D_t(t)),
             self.game_state.get_G_t(t),
         )
-        assert line_2.shape == (self.num_clients * self.y_dim, self.num_clients * self.y_dim)
+        assert line_2.shape == (
+            self.num_clients * self.y_dim,
+            self.num_clients * self.y_dim,
+        )
 
         line_3 = torch.matmul(
             torch.matmul(self.game_state.get_G_t(t).T, self.game_state.get_D_t(t).T),
             (e_client_alpha_t * w_tw_tT + p_next).T,
         )
-        assert line_3.shape == (self.num_clients * self.y_dim, self.num_clients * self.y_dim)
+        assert line_3.shape == (
+            self.num_clients * self.y_dim,
+            self.num_clients * self.y_dim,
+        )
 
         line_4 = e_client_alpha_t * w_tw_tT + p_next
-        assert line_4.shape == (self.num_clients * self.y_dim, self.num_clients * self.y_dim)
+        assert line_4.shape == (
+            self.num_clients * self.y_dim,
+            self.num_clients * self.y_dim,
+        )
 
         P_t = line_1 + line_2 + line_3 + line_4
 
@@ -343,7 +374,10 @@ class Game(ABC):
         return s_t
 
     def set_client_pt(self, t: int, client_id: int, pt_value: torch.Tensor) -> None:
-        assert pt_value.shape == (self.num_clients * self.y_dim, self.num_clients * self.y_dim)
+        assert pt_value.shape == (
+            self.num_clients * self.y_dim,
+            self.num_clients * self.y_dim,
+        )
         assert (client_id, t) not in self.game_state._P_time_client_set
         self.clients[client_id].P[t] = pt_value
         # We record the set values

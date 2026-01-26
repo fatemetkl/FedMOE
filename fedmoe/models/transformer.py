@@ -1,11 +1,11 @@
 import torch
-import torch.nn as nn
+from torch import nn
+
 
 torch.set_default_dtype(torch.float64)
 
 
 class TransformerTimeSeriesModel(nn.Module):
-
     def __init__(
         self,
         input_dim: int,
@@ -61,9 +61,5 @@ class TransformerTimeSeriesModel(nn.Module):
         encoder_output = self.transformer_encoder(x_t, mask=causal_mask, is_causal=True)
 
         # Output projection during pre-training
-        if pre_training:
-            output = self.linear(encoder_output)  # Predict next value
-        else:
-            output = encoder_output  # Return encoder outputs for downstream tasks
 
-        return output
+        return self.linear(encoder_output) if pre_training else encoder_output

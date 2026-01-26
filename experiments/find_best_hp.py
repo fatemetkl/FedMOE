@@ -1,10 +1,10 @@
 import argparse
 import logging
 import os
-from typing import List, Optional
 
 import numpy as np
 import torch
+
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -12,12 +12,12 @@ logging.basicConfig(level=logging.INFO)
 torch.set_default_dtype(torch.float64)
 
 
-def get_hp_folders(hp_sweep_dir: str) -> List[str]:
+def get_hp_folders(hp_sweep_dir: str) -> list[str]:
     paths_in_hp_sweep_dir = [os.path.join(hp_sweep_dir, contents) for contents in os.listdir(hp_sweep_dir)]
     return [hp_folder for hp_folder in paths_in_hp_sweep_dir if os.path.isdir(hp_folder)]
 
 
-def get_run_folders(hp_dir: str) -> List[str]:
+def get_run_folders(hp_dir: str) -> list[str]:
     run_folder_names = [folder_name for folder_name in os.listdir(hp_dir) if "Run" in folder_name]
     return [os.path.join(hp_dir, run_folder_name) for run_folder_name in run_folder_names]
 
@@ -32,8 +32,7 @@ def get_loss_from_log(run_folder_path: str, delete_error_files: bool = False) ->
         files_lines = handle.readlines()
         line_to_convert = files_lines[-1].strip()
         try:
-            loss = float(line_to_convert)
-            return loss
+            return float(line_to_convert)
         except Exception:
             logger.info(f"{run_folder_path} file did not run completely due to error, check log file.")
             # Returning max loss
@@ -45,7 +44,7 @@ def get_loss_from_log(run_folder_path: str, delete_error_files: bool = False) ->
 
 def main(hp_sweep_dir: str, delete_error_files: bool = False) -> None:
     hp_folders = get_hp_folders(hp_sweep_dir)
-    best_avg_loss: Optional[float] = None
+    best_avg_loss: float | None = None
     best_folder = ""
     error_runs_count = 0
     not_completed_runs_count = 0

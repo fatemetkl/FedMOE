@@ -2,6 +2,7 @@ import argparse
 import logging
 import os
 
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -16,8 +17,7 @@ def get_loss_from_log(run_folder_path: str, delete_error_files: bool = False) ->
         files_lines = handle.readlines()
         line_to_convert = files_lines[-1].strip()
         try:
-            loss = float(line_to_convert)
-            return loss
+            return float(line_to_convert)
         except Exception:
             logger.info(f"{run_folder_path} file did not run completely due to error, check log file.")
             # Returning max loss
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     directory_of_runs = args.directory_of_runs
     total = 0.0
     for index in range(3):
-        run_folder = os.path.join(directory_of_runs, f"Run{index+1}")
+        run_folder = os.path.join(directory_of_runs, f"Run{index + 1}")
         total += get_loss_from_log(run_folder)
 
-    logger.info(f"{total/3.0}")
+    logger.info(f"{total / 3.0}")

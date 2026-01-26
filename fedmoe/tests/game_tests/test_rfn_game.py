@@ -5,6 +5,7 @@ from fedmoe.metrics import MSEMetric
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_rfn_client_manager_dy_dx_1
 
+
 torch.set_default_dtype(torch.float64)
 
 
@@ -50,6 +51,6 @@ def test_rfn_game_metric() -> None:
     non_game_loss = non_game_metric_value["server - server_predictions - MSE"]
     game_loss = game_metric_value["server - server_predictions - MSE"]
     tolerance = 1e-5
-    assert (
-        game_loss < non_game_loss + tolerance
-    ), f"Game loss: {game_loss} is greater than Non-game loss: {non_game_loss}"
+    assert game_loss < non_game_loss + tolerance, (
+        f"Game loss: {game_loss} is greater than Non-game loss: {non_game_loss}"
+    )

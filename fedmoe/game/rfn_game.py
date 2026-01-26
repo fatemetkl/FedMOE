@@ -1,20 +1,18 @@
 import math
-from typing import List
 
 import torch
 
 from fedmoe.clients.client import Client
 from fedmoe.game.game import Game
 
+
 torch.set_default_dtype(torch.float64)
 
 
 class RfnGame(Game):
-    """
-    The specific case of Random Feature Network game where dy = 1.
-    """
+    """The specific case of Random Feature Network game where dy = 1."""
 
-    def __init__(self, clients: List[Client], sync_freq: int, z_dim: int) -> None:
+    def __init__(self, clients: list[Client], sync_freq: int, z_dim: int) -> None:
         for client in clients:
             if client.y_dim != 1:
                 print("WARNING: The game is currently only well defined for dy=1")
@@ -23,7 +21,11 @@ class RfnGame(Game):
 
     def get_a_t_embedding(self, time: int, client: Client) -> torch.Tensor:
         # some parts of the forwards pass (without randomness)
-        a_t = (torch.matmul(client.encoder.A, self.get_input_matrix(time, client))) + client.encoder.b
+        A = client.encoder.A
+        b = client.encoder.b
+        assert isinstance(A, torch.Tensor)
+        assert isinstance(b, torch.Tensor)
+        a_t = (torch.matmul(A, self.get_input_matrix(time, client))) + b
         assert a_t.shape == (self.y_dim, self.z_dim)
         return a_t
 
@@ -42,9 +44,7 @@ class RfnGame(Game):
         return a_z_ti
 
     def get_expectation_e_zt(self, game_t: int, client: Client) -> torch.Tensor:
-        """
-        Computes "$e_i a(t, i)$" for each client i
-        """
+        """Computes "$e_i a(t, i)$" for each client i."""
         # We don't need to feed the transformer again.
         a_z_ti = self.get_expectation_zt(game_t, client)
         # Embedding shape is y_dim x z_dim
@@ -95,7 +95,7 @@ class RfnGame(Game):
         if i != j:
             a_z_ti = self.get_expectation_zt(time, client_i)
             a_z_tj = self.get_expectation_zt(time, client_j)
-            A_ij = torch.matmul(((a_z_ti.T * next_p_i[i][j])), a_z_tj)
+            A_ij = torch.matmul((a_z_ti.T * next_p_i[i][j]), a_z_tj)
         else:
             # i == j
             A_ij = self.compute_ii_sub_matrices(time, client_i, next_p_i[i][j])

@@ -1,20 +1,18 @@
 # type: ignore
 # Reference: https://github.com/nschaetti/EchoTorch/blob/dev/echotorch/datasets/LogisticMapDataset.py
 # Imports
-from typing import List
 
 import numpy as np
 import torch
 from torch.utils.data.dataset import Dataset
+
 
 torch.set_default_dtype(torch.float64)
 
 
 # Logistic Map dataset
 class LogisticMapDataset(Dataset):
-    """
-    Logistic Map dataset
-    """
+    """Logistic Map dataset."""
 
     # Constructor
     def __init__(
@@ -29,17 +27,7 @@ class LogisticMapDataset(Dataset):
         seed=None,
         dtype: torch.dtype = torch.float64,
     ):
-        """
-        Constructor
-        :param sample_len:
-        :param n_samples:
-        :param alpha:
-        :param beta:
-        :param gamma:
-        :param c:
-        :param b:
-        :param seed:
-        """
+        """Constructor."""
         # Properties
         self.sample_len = sample_len
         self.n_samples = n_samples
@@ -61,21 +49,14 @@ class LogisticMapDataset(Dataset):
 
     # Length
     def __len__(self):
-        """
-        Length
-        :return:
-        """
+        """Length."""
         return self.n_samples
 
     # end __len__
 
     # Get item
     def __getitem__(self, idx):
-        """
-        Get item
-        :param idx:
-        :return:
-        """
+        """Get item."""
         # Time and forces
         t = np.linspace(0, 1, self.sample_len, endpoint=0)
         dforce = np.sin(self.p2 * self.alpha * t) + np.sin(self.p2 * self.beta * t) + np.sin(self.p2 * self.gamma * t)
@@ -99,20 +80,12 @@ class LogisticMapDataset(Dataset):
 
     # Logistic map
     def _logistic_map(self, x, r):
-        """
-        Logistic map
-        :param x:
-        :param r:
-        :return:
-        """
+        """Logistic map."""
         return r * x * (1 - x)
 
     # Generate
-    def _generate(self) -> List[torch.Tensor]:
-        """
-        Generate dataset
-        :return:
-        """
+    def _generate(self) -> list[torch.Tensor]:
+        """Generate dataset."""
         # List of samples
         samples = []
 

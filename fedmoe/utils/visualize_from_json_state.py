@@ -1,12 +1,13 @@
 import argparse
 import json
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
 from matplotlib.ticker import MaxNLocator
+
 
 sns.set_style("whitegrid")
 
@@ -15,14 +16,15 @@ def visualize_input(
     time_axis: torch.Tensor,
     input_matrix: torch.Tensor,
     plot_path: str,
-    plot_info: Optional[Dict[str, Any]] = None,
+    plot_info: dict[str, Any] | None = None,
     show_plot_info: bool = False,
 ) -> None:
     """
     Saves a plot showing the input_matrix.
-        Args:
+
+    Args:
             plot_path (str): the plot path (including name and location) to save the plot
-            plot_info: (Optional[Dict[str, Any]]): additional information of the experiment setting to be
+            plot_info: (dict[str, Any] | None): additional information of the experiment setting to be
             added to the plot.
     """
     plt.rcParams["figure.figsize"] = [10, 5]
@@ -30,17 +32,28 @@ def visualize_input(
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
     for i in range(input_matrix.shape[1]):
-        sns.lineplot(x=time_axis, y=input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="-", linewidth=2.5)
+        sns.lineplot(
+            x=time_axis,
+            y=input_matrix[:, i],
+            label=f"Input: $x_{i + 1}$",
+            linestyle="-",
+            linewidth=2.5,
+        )
 
     if plot_info is not None and show_plot_info:
         text_content = ""
-        num_items = 0
-        for key, value in plot_info.items():
+        for num_items, (key, value) in enumerate(plot_info.items()):
             text_content += f"{key}: {value},"
-            num_items += 1
             if num_items % 6 == 0:
                 text_content += "\n"
-        plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+        plt.text(
+            0.5,
+            -0.2,
+            text_content.rstrip(",\n"),
+            ha="center",
+            va="top",
+            transform=plt.gca().transAxes,
+        )
         plt.subplots_adjust(bottom=0.2)
 
     title_font = {"family": "helvetica", "weight": "bold", "size": 20}
@@ -66,9 +79,9 @@ def visualize_server_prediction(
     plot_path: str,
     game_played: bool = False,
     T: int = 0,
-    show_points: Optional[bool] = False,
-    show_lines: Optional[bool] = False,
-    plot_info: Optional[Dict[str, Any]] = None,
+    show_points: bool | None = False,
+    show_lines: bool | None = False,
+    plot_info: dict[str, Any] | None = None,
     show_plot_info: bool = False,
 ) -> None:
     if game_played:
@@ -87,14 +100,20 @@ def visualize_server_prediction(
 
     # Plot target y
     for i in range(target_matrix.shape[1]):
-        sns.lineplot(x=time_axis, y=target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5)
+        sns.lineplot(
+            x=time_axis,
+            y=target_matrix[:, i],
+            label=f"Target: $y_{i + 1}$",
+            linestyle="-",
+            linewidth=2.5,
+        )
 
     # Plot server's prediction
     for i in range(server_matrix.shape[1]):
         sns.lineplot(
             x=time_axis,
             y=server_matrix[:, i].detach().numpy(),
-            label=f"Prediction: Server $\\hat{{Y}}_{i+1}$",
+            label=f"Prediction: Server $\\hat{{Y}}_{i + 1}$",
             linestyle=":",
             linewidth=3.5,
         )
@@ -120,20 +139,22 @@ def visualize_server_prediction(
                 label = "Nash Game Played" if j == 1 else None
                 plt.axvline(x=j * T, color="red", linestyle="--", linewidth=1.5, label=label)
 
-    if game_played:
-        game_status = ""
-    else:
-        game_status = "No "
+    game_status = "" if game_played else "No "
 
     if plot_info is not None and show_plot_info:
         text_content = ""
-        num_items = 0
-        for key, value in plot_info.items():
+        for num_items, (key, value) in enumerate(plot_info.items()):
             text_content += f"{key}: {value},"
-            num_items += 1
             if num_items % 6 == 0:
                 text_content += "\n"
-        plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+        plt.text(
+            0.5,
+            -0.2,
+            text_content.rstrip(",\n"),
+            ha="center",
+            va="top",
+            transform=plt.gca().transAxes,
+        )
         plt.subplots_adjust(bottom=0.2)
 
     title_font = {"family": "helvetica", "weight": "bold", "size": 20}
@@ -144,7 +165,11 @@ def visualize_server_prediction(
     plt.ylabel("Time-Series Values", fontdict=axis_font)
     plt.title(f"Server Predictions ({game_status}Nash Game)", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, loc="upper left", labelspacing=0)
+    plt.legend(
+        prop={"family": "helvetica", "weight": "bold", "size": 12},
+        loc="upper left",
+        labelspacing=0,
+    )
     plt.tight_layout(pad=0.5)
 
     plt.savefig(plot_path, format="pdf")
@@ -158,7 +183,7 @@ def visualize_clients_predictions(
     target_matrix: torch.Tensor,
     clients_pred_matrix: torch.Tensor,
     plot_path: str,
-    plot_info: Dict[str, Any],
+    plot_info: dict[str, Any],
     show_target: bool = True,
     show_input: bool = False,
     show_plot_info: bool = False,
@@ -183,31 +208,48 @@ def visualize_clients_predictions(
 
     if show_target:
         for i in range(target_matrix.shape[1]):
-            sns.lineplot(x=time_axis, y=target_matrix[:, i], label=f"Target: $y_{i+1}$", linestyle="-", linewidth=2.5)
+            sns.lineplot(
+                x=time_axis,
+                y=target_matrix[:, i],
+                label=f"Target: $y_{i + 1}$",
+                linestyle="-",
+                linewidth=2.5,
+            )
 
     if show_input:
         for i in range(input_matrix.shape[1]):
-            sns.lineplot(x=time_axis, y=input_matrix[:, i], label=f"Input: $x_{i+1}$", linestyle="--", linewidth=2.5)
+            sns.lineplot(
+                x=time_axis,
+                y=input_matrix[:, i],
+                label=f"Input: $x_{i + 1}$",
+                linestyle="--",
+                linewidth=2.5,
+            )
 
     for client in range(int(plot_info["num_clients"])):
         for dim in range(clients_pred_matrix.shape[2]):
             sns.lineplot(
                 x=time_axis,
                 y=clients_pred_matrix[:, client, dim],
-                label=f"Prediction: $\\mathregular{{Client}}_{client}$ $\\hat{{Y}}_{dim+1}$",
+                label=f"Prediction: $\\mathregular{{Client}}_{client}$ $\\hat{{Y}}_{dim + 1}$",
                 linestyle=":",
                 linewidth=3.5,
             )
 
     if plot_info is not None and show_plot_info:
         text_content = ""
-        num_items = 0
-        for key, value in plot_info.items():
+        for num_items, (key, value) in enumerate(plot_info.items()):
             text_content += f"{key}: {value},"
-            num_items += 1
             if num_items % 6 == 0:
                 text_content += "\n"
-        plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+        plt.text(
+            0.5,
+            -0.2,
+            text_content.rstrip(",\n"),
+            ha="center",
+            va="top",
+            transform=plt.gca().transAxes,
+        )
         plt.subplots_adjust(bottom=0.2)
 
     title_font = {"family": "helvetica", "weight": "bold", "size": 20}
@@ -218,7 +260,11 @@ def visualize_clients_predictions(
     plt.ylabel("Time-Series Values", fontdict=axis_font)
     plt.title("Individual Client Predictions", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 12}, loc="upper left", labelspacing=0)
+    plt.legend(
+        prop={"family": "helvetica", "weight": "bold", "size": 12},
+        loc="upper left",
+        labelspacing=0,
+    )
     plt.tight_layout(pad=0.5)
 
     plt.savefig(plot_path, format="pdf")
@@ -230,7 +276,7 @@ def visualize_mixture_weights(
     time_axis: torch.Tensor,
     mixture_weights: torch.Tensor,
     plot_path: str,
-    plot_info: Dict[str, Any],
+    plot_info: dict[str, Any],
     game_played: bool = False,
     T: int = 0,
     show_points: bool = False,
@@ -284,20 +330,22 @@ def visualize_mixture_weights(
                     zorder=3,
                 )
 
-    if game_played:
-        game_status = ""
-    else:
-        game_status = "No "
+    game_status = "" if game_played else "No "
 
     if plot_info is not None and show_plot_info:
         text_content = ""
-        num_items = 0
-        for key, value in plot_info.items():
+        for num_items, (key, value) in enumerate(plot_info.items()):
             text_content += f"{key}: {value},"
-            num_items += 1
             if num_items % 6 == 0:
                 text_content += "\n"
-        plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+        plt.text(
+            0.5,
+            -0.2,
+            text_content.rstrip(",\n"),
+            ha="center",
+            va="top",
+            transform=plt.gca().transAxes,
+        )
         plt.subplots_adjust(bottom=0.2)
 
     title_font = {"family": "helvetica", "size": 38}
@@ -319,13 +367,11 @@ def visualize_squared_error_histogram(
     target_matrix: torch.Tensor,
     server_matrix: torch.Tensor,
     plot_path: str,
-    plot_info: Dict[str, Any],
+    plot_info: dict[str, Any],
     game_played: bool = False,
     show_plot_info: bool = False,
 ) -> None:
-    """
-    Saves a histogram showing the error distribution of the predictions made by the server
-    """
+    """Saves a histogram showing the error distribution of the predictions made by the server."""
     total_time_steps = target_matrix.shape[0]
     assert server_matrix.shape == (total_time_steps, target_matrix.shape[1]), {
         f"Error:server output matrix has a shape {server_matrix.shape},\
@@ -339,13 +385,18 @@ def visualize_squared_error_histogram(
 
     if plot_info is not None and show_plot_info:
         text_content = ""
-        num_items = 0
-        for key, value in plot_info.items():
+        for num_items, (key, value) in enumerate(plot_info.items()):
             text_content += f"{key}: {value},"
-            num_items += 1
             if num_items % 6 == 0:
                 text_content += "\n"
-        plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+        plt.text(
+            0.5,
+            -0.2,
+            text_content.rstrip(",\n"),
+            ha="center",
+            va="top",
+            transform=plt.gca().transAxes,
+        )
         plt.subplots_adjust(bottom=0.2)
 
     game_status = "" if game_played else "No "
@@ -372,15 +423,12 @@ def visualize_server_squared_errors(
     plot_path: str,
     game_played: bool = False,
     T: int = 0,
-    show_points: Optional[bool] = False,
-    show_lines: Optional[bool] = False,
-    plot_info: Optional[Dict[str, Any]] = None,
+    show_points: bool | None = False,
+    show_lines: bool | None = False,
+    plot_info: dict[str, Any] | None = None,
     show_plot_info: bool = False,
 ) -> None:
-    """
-    Saves a time series plot showing the server prediction squared errors
-    """
-
+    """Saves a time series plot showing the server prediction squared errors."""
     if game_played:
         assert T > 0, "Error: if the game is played, T should be greater than zero."
 
@@ -402,7 +450,7 @@ def visualize_server_squared_errors(
         sns.lineplot(
             x=time_axis,
             y=squared_error[:, i].detach().numpy(),
-            label=f"$(\\hat{{Y}}_{i+1} - y_{i+1})^2$",
+            label=f"$(\\hat{{Y}}_{i + 1} - y_{i + 1})^2$",
             linestyle="-",
             linewidth=2.5,
         )
@@ -430,13 +478,18 @@ def visualize_server_squared_errors(
 
     if plot_info is not None and show_plot_info:
         text_content = ""
-        num_items = 0
-        for key, value in plot_info.items():
+        for num_items, (key, value) in enumerate(plot_info.items()):
             text_content += f"{key}: {value},"
-            num_items += 1
             if num_items % 6 == 0:
                 text_content += "\n"
-        plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+        plt.text(
+            0.5,
+            -0.2,
+            text_content.rstrip(",\n"),
+            ha="center",
+            va="top",
+            transform=plt.gca().transAxes,
+        )
         plt.subplots_adjust(bottom=0.2)
 
     game_status = "" if game_played else "No "
@@ -462,17 +515,14 @@ def visualize_client_squared_errors(
     target_matrix: torch.Tensor,
     clients_pred_matrix: torch.Tensor,
     plot_path: str,
-    plot_info: Dict[str, Any],
+    plot_info: dict[str, Any],
     game_played: bool = False,
     T: int = 0,
-    show_points: Optional[bool] = False,
-    show_lines: Optional[bool] = False,
+    show_points: bool | None = False,
+    show_lines: bool | None = False,
     show_plot_info: bool = False,
 ) -> None:
-    """
-    Saves a time series plot showing the client prediction squared errors
-    """
-
+    """Saves a time series plot showing the client prediction squared errors."""
     if game_played:
         assert T > 0, "Error: if the game is played, T should be greater than zero."
 
@@ -497,7 +547,7 @@ def visualize_client_squared_errors(
             sns.lineplot(
                 x=time_axis,
                 y=squared_error,
-                label=f"$\\mathregular{{Client}}_{client}$: $(\\hat{{Y}}_{dim+1} - y_{dim+1})^2$",
+                label=f"$\\mathregular{{Client}}_{client}$: $(\\hat{{Y}}_{dim + 1} - y_{dim + 1})^2$",
                 linestyle="-",
                 linewidth=2.5,
             )
@@ -524,13 +574,18 @@ def visualize_client_squared_errors(
 
     if plot_info is not None and show_plot_info:
         text_content = ""
-        num_items = 0
-        for key, value in plot_info.items():
+        for num_items, (key, value) in enumerate(plot_info.items()):
             text_content += f"{key}: {value},"
-            num_items += 1
             if num_items % 6 == 0:
                 text_content += "\n"
-        plt.text(0.5, -0.2, text_content.rstrip(",\n"), ha="center", va="top", transform=plt.gca().transAxes)
+        plt.text(
+            0.5,
+            -0.2,
+            text_content.rstrip(",\n"),
+            ha="center",
+            va="top",
+            transform=plt.gca().transAxes,
+        )
         plt.subplots_adjust(bottom=0.2)
 
     game_status = "" if game_played else "No "

@@ -6,6 +6,7 @@ import re
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 sns.set_style("whitegrid")
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -21,8 +22,7 @@ def get_loss_from_log(run_folder_path: str, delete_error_files: bool = False) ->
         files_lines = handle.readlines()
         line_to_convert = files_lines[-1].strip()
         try:
-            loss = float(line_to_convert)
-            return loss
+            return float(line_to_convert)
         except Exception:
             logger.info(f"{run_folder_path} file did not run completely due to error, check log file.")
             # Returning max loss
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         m = re.search(parse_parameter_re, str(experiment))
         average_mse = 0.0
         for index in range(3):
-            run_folder = os.path.join(experiment, f"Run{index+1}")
+            run_folder = os.path.join(experiment, f"Run{index + 1}")
             average_mse += get_loss_from_log(run_folder)
 
         two_client_average_mses.append((int(m.group(1)), average_mse / 3.0))  # type: ignore
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         m = re.search(parse_parameter_re, str(experiment))
         average_mse = 0.0
         for index in range(3):
-            run_folder = os.path.join(experiment, f"Run{index+1}")
+            run_folder = os.path.join(experiment, f"Run{index + 1}")
             average_mse += get_loss_from_log(run_folder)
 
         five_client_average_mses.append((int(m.group(1)), average_mse / 3.0))  # type: ignore

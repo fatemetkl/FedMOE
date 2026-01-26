@@ -1,5 +1,4 @@
 from functools import partial
-from typing import Tuple
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -14,6 +13,7 @@ from fedmoe.datasets.data_matrix_generator import (
 from fedmoe.datasets.echotorch_datasets.logistic_map import LogisticMapDataset  # type: ignore
 from fedmoe.datasets.time_series_data import TimeSeriesData
 
+
 sns.set_style("whitegrid")
 torch.set_default_dtype(torch.float64)
 
@@ -24,19 +24,20 @@ class TimeSeriesLogisticMap(TimeSeriesData):
         # We still generate total_time_steps+1 datapoints to make the super class happy, but we'll just take the
         # first total_time_step values here
         self.logistic_sequence = LogisticMapDataset(sample_len=self.total_time_steps + 1, n_samples=1)
-        super().__init__(total_time_steps, self.initiate_input_generator(), self.initiate_target_generator())
+        super().__init__(
+            total_time_steps,
+            self.initiate_input_generator(),
+            self.initiate_target_generator(),
+        )
 
     def _post_process_data_matrices(
         self, input_matrix: torch.Tensor, target_matrix: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         # Overriding the post processing behavior to just take the first total_time_step values
         return input_matrix[:-1], target_matrix[:-1]
 
     def initiate_input_generator(self) -> MultiDimensionalTimeFunctionInputGenerator:
-        """
-        This function defines how input data should be generated using PeriodicSignalDataset.
-        """
-
+        """This function defines how input data should be generated using PeriodicSignalDataset."""
         input_sequence = self.logistic_sequence.outputs[0].squeeze(1)
         # Each x dimension should be a sequence of size torch.Size([self.total_time_steps])
         assert input_sequence.shape == (self.total_time_steps + 1,)

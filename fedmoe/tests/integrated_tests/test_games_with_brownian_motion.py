@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from fedmoe.client_manager import ClientManager
@@ -9,6 +10,7 @@ from fedmoe.game.rfn_game import RfnGame
 from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_transformer_client_manager, setup_transformer_structure_patch
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -59,7 +61,7 @@ def do_not_test_input_output_shapes_rfn() -> None:
     assert torch.cat(server.server_outputs, dim=1).shape == (50, 99)
 
 
-def test_brownian_transformer(monkeypatch) -> None:
+def test_brownian_transformer(monkeypatch: pytest.MonkeyPatch) -> None:
     brownian_data_obj = TimeSeriesBrownianTarget(
         total_time_steps=100, n_brownian_trajectories=50, mu=1.0, sigma=2.0, offset=0.1
     )
@@ -75,9 +77,16 @@ def test_brownian_transformer(monkeypatch) -> None:
     T = 10
     hidden_dim = 4
     # num_clients is 2
-    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
+    monkeypatch.setattr(
+        TransformerClient,
+        "setup_transformer_structure",
+        setup_transformer_structure_patch,
+    )
     client_manager = get_transformer_client_manager(
-        z_dim=hidden_dim, sync_freq=T, data_sequence=input_sequence, target_sequence=target_sequence
+        z_dim=hidden_dim,
+        sync_freq=T,
+        data_sequence=input_sequence,
+        target_sequence=target_sequence,
     )
 
     game = TransformerGame(
