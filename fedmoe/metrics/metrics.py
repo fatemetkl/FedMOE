@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-import sklearn
+from sklearn.metrics import root_mean_squared_error, mean_squared_error
 import torch
 
 
@@ -79,7 +79,7 @@ class RMSEMetric(SimpleMetric):
         assert logits.shape[0] == target.shape[0]
         target = target.cpu().detach()
         logits = logits.cpu().detach()
-        return sklearn.metrics.root_mean_squared_error(target, logits)
+        return root_mean_squared_error(target, logits)
 
 
 class MSEMetric(SimpleMetric):
@@ -91,7 +91,7 @@ class MSEMetric(SimpleMetric):
         # Assuming data is batch-first
         target = target.cpu().detach()
         logits = logits.cpu().detach()
-        return sklearn.metrics.mean_squared_error(
+        return mean_squared_error(
             target,
             logits,
         )
