@@ -2,8 +2,9 @@ import argparse
 import logging
 import os
 import random
-from typing import Any, Dict, List
 import time
+from typing import Any
+
 import torch
 
 from experiments.utils import load_config, load_data, save_output_json
@@ -13,11 +14,12 @@ from fedmoe.game.echo_state_game import EchoStateGame
 from fedmoe.metrics import MSEMetric
 from fedmoe.server import Server
 
+
 torch.set_default_dtype(torch.float64)
 
 
 def main(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     results_dir: str,
     hidden_dim: int,
     T: int,
@@ -29,7 +31,6 @@ def main(
     K: float,
     eta: float,
 ) -> None:
-
     logger.info("Configuration loaded")
 
     assert os.path.exists(results_dir), "Error: result path does not exists"
@@ -70,7 +71,11 @@ def main(
     logger.info("Server initiated")
     start_time = time.time()
     final_metric_value = server.fit(config["total_rounds"], config["have_sync"], config["update_last_Y_sync"])
-    print("Final metric value:", "\n", final_metric_value["server - server_predictions - MSE"])
+    print(
+        "Final metric value:",
+        "\n",
+        final_metric_value["server - server_predictions - MSE"],
+    )
     end_time = time.time()
     runtime = end_time - start_time
     logger.info(" Recorded runtime: %f", runtime)
@@ -86,7 +91,7 @@ def main(
         "sigma": sigma,
     }
 
-    tensors_to_save: Dict[str, List[torch.Tensor]] = {}
+    tensors_to_save: dict[str, list[torch.Tensor]] = {}
 
     if config["save_server_prediction"]:
         data_object.visualize_server_prediction(
@@ -111,11 +116,13 @@ def main(
     if config["save_input"]:
         data_object.visualize_input(f"{results_dir}/input_plot.png", plot_info=plot_info)
         # Converting a matrix to a list of tensors to avoid mypy errors.
-        tensors_to_save["input"] = [row for row in data_object.input_matrix]
+        tensors_to_save["input"] = [row for row in data_object.input_matrix]  # noqa: C416
 
     if config["save_clients_predictions"]:
         data_object.visualize_clients_predictions(
-            server.clients_predictions, plot_path=f"{results_dir}/client_predictions.png", plot_info=plot_info
+            server.clients_predictions,
+            plot_path=f"{results_dir}/client_predictions.png",
+            plot_info=plot_info,
         )
         # Also visualize clients' errors
         data_object.visualize_client_squared_errors(
@@ -147,7 +154,7 @@ def main(
 
     if config["dump_json"]:
         # Dump results and data in JSON
-        tensors_to_save["target"] = [row for row in data_object.target_matrix]
+        tensors_to_save["target"] = [row for row in data_object.target_matrix]  # noqa: C416
         save_output_json(tensors_to_save, path=f"{results_dir}", dict_to_save=plot_info)
 
 

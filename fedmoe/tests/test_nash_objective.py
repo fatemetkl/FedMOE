@@ -6,13 +6,12 @@ from fedmoe.server import Server
 from fedmoe.tests.test_game_utils import compute_game_regret_objective
 from fedmoe.tests.utils import get_rfn_client_manager_dy_dx_1
 
+
 torch.set_default_dtype(torch.float64)
 
 
 def do_not_test_nash_game_objective_sync_step() -> None:
-    """
-    Testing if playing the Nash game reduces the regret value at each synchronization step.
-    """
+    """Testing if playing the Nash game reduces the regret value at each synchronization step."""
     # Assuming that the code is correct based on the paper, let's examine the solution.
     data_length = 20
     sync_freq = 3
@@ -81,16 +80,14 @@ def do_not_test_nash_game_objective_sync_step() -> None:
                     client_manager.alpha,
                     1,
                 )
-                assert (
-                    game_no_Y_regret < no_game_regret
-                ), f"Failed at index {i} client {client_id}\
+                assert game_no_Y_regret < no_game_regret, (
+                    f"Failed at index {i} client {client_id}\
                     no_game_regret: {no_game_regret}, game_no_Y_regret: {game_no_Y_regret}"
+                )
 
 
 def do_not_test_nash_game_objective_accumulative() -> None:
-    """
-    Testing if playing the Nash game reduces the regret value throughout the whole prediction length.
-    """
+    """Testing if playing the Nash game reduces the regret value throughout the whole prediction length."""
     data_length = 20
     sync_freq = 3
     client_manager = get_rfn_client_manager_dy_dx_1(
@@ -149,9 +146,9 @@ def do_not_test_nash_game_objective_accumulative() -> None:
                 )
                 simple_sum_regret += int(no_game_regret)
 
-    assert (
-        game_sum_regret < simple_sum_regret
-    ), f" Accumulative game_regret: {game_sum_regret}, no_game_regret: {simple_sum_regret}"
+    assert game_sum_regret < simple_sum_regret, (
+        f" Accumulative game_regret: {game_sum_regret}, no_game_regret: {simple_sum_regret}"
+    )
 
 
 def do_not_test_nash_beta() -> None:
@@ -202,7 +199,7 @@ def do_not_test_nash_beta() -> None:
             )
             opt_regret = opt_regret_0 + opt_regret_1
             # test whether any randomly drawn betas are better
-            for j in range(100000):
+            for _ in range(100000):
                 # z_dim = 3
                 # beta shape is N x d_z x d_y
                 test_betas = torch.randn((2, 3, 1))
@@ -229,8 +226,8 @@ def do_not_test_nash_beta() -> None:
                 )
 
                 test_regret = test_regret_1 + test_regret_0
-                assert (
-                    test_regret > opt_regret
-                ), f" opt regret: {opt_regret}, test regret: {test_regret}, test_beta: {test_betas},\
+                assert test_regret > opt_regret, (
+                    f" opt regret: {opt_regret}, test regret: {test_regret}, test_beta: {test_betas},\
                       target: {target[i]}, game pred: {game_server.server_outputs[i]},\
                             random pred: {new_server_output}"
+                )

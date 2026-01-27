@@ -5,6 +5,7 @@ import torch
 
 from fedmoe.datasets.fedmoe_datasets.transformer_temperature import InputFeatures, TransformerTemperature
 
+
 torch.set_default_dtype(torch.float64)
 
 
@@ -170,7 +171,18 @@ def test_two_input_one_target_at_end() -> None:
         ]
     )
     target_target_tensor = torch.tensor(
-        [[8.9340], [9.2150], [9.2150], [9.4260], [10.2000], [10.9040], [11.0440], [10.2710], [9.7780], [9.5670]]
+        [
+            [8.9340],
+            [9.2150],
+            [9.2150],
+            [9.4260],
+            [10.2000],
+            [10.9040],
+            [11.0440],
+            [10.2710],
+            [9.7780],
+            [9.5670],
+        ]
     )
     assert dataset.input_matrix.shape == (10, 6)
     assert dataset.target_matrix.shape == (10, 1)
@@ -179,7 +191,6 @@ def test_two_input_one_target_at_end() -> None:
 
 
 def test_various_dataset_assertions() -> None:
-
     inputs = [InputFeatures.HUFL, InputFeatures.HULL]
     input_lag = [1, 2]
     target_lag = [1, 2]

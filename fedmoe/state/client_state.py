@@ -1,16 +1,16 @@
 from dataclasses import dataclass, field
-from typing import List
 
 import torch
+
 
 torch.set_default_dtype(torch.float64)
 
 
 @dataclass
 class ClientState:
-    _hidden_states: List[torch.Tensor] = field(default_factory=list)
-    _predictions: List[torch.Tensor] = field(default_factory=list)
-    _betas: List[torch.Tensor] = field(default_factory=list)
+    _hidden_states: list[torch.Tensor] = field(default_factory=list)
+    _predictions: list[torch.Tensor] = field(default_factory=list)
+    _betas: list[torch.Tensor] = field(default_factory=list)
     _current_time: int = -1
     # These represent the a priori values that are required to start the time series modeling. In the notation of the
     # paper, these are Z_^i{-1}, \hat{Y}^i_{0}, \hat{Y}^i_{-1}
@@ -40,7 +40,12 @@ class ClientState:
         return self._betas[time]
 
     def init_state(
-        self, z_dim: int, y_dim: int, Z_neg1: torch.Tensor, Y_0: torch.Tensor, Y_neg1: torch.Tensor
+        self,
+        z_dim: int,
+        y_dim: int,
+        Z_neg1: torch.Tensor,
+        Y_0: torch.Tensor,
+        Y_neg1: torch.Tensor,
     ) -> None:
         self.z_dim = z_dim
         self.y_dim = y_dim

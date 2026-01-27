@@ -1,15 +1,15 @@
 import math
-from typing import List
 
 import torch
+
 
 torch.set_default_dtype(torch.float64)
 
 
 def compute_game_regret_objective(
-    past_betas_i: List[torch.Tensor],
-    target_seq: List[torch.Tensor],
-    server_pred_seq: List[torch.Tensor],
+    past_betas_i: list[torch.Tensor],
+    target_seq: list[torch.Tensor],
+    server_pred_seq: list[torch.Tensor],
     gamma: float,
     alpha: float,
     backward_time_length: int,
@@ -19,7 +19,7 @@ def compute_game_regret_objective(
     last step (sync step), if backward_time_length == 2, previous discounted regrets are also computed and added.
     For example, backward_time_length == 2 goes one step before the sync step.
     betas are always one step before the target seq and server prediction. (beta_{t-1}, Y_{t}, y_{t})
-    To calculate the regret for sync step we use (beta_{T-1}, Y_{T}, y_{T})
+    To calculate the regret for sync step we use (beta_{T-1}, Y_{T}, y_{T}).
     """
     # Equation 9
 

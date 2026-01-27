@@ -9,11 +9,11 @@ from fedmoe.datasets.periodic_dataset import TimeSeriesPeriodic
 from fedmoe.datasets.simple_datasets import TimeSeriesLinearLine
 from fedmoe.datasets.time_series_data import TimeSeries2DXY
 
+
 torch.set_default_dtype(torch.float64)
 
 
 def test_linear_line() -> None:
-
     dataset = TimeSeriesLinearLine(10, 2, 1)
     assert dataset.input_matrix.shape == (10, 1)
     assert dataset.target_matrix.shape == (10, 1)
@@ -71,7 +71,11 @@ def test_input_brownian_time_series_shape() -> None:
     # variables
     time_steps = 5
     brownian_data_obj = TimeSeriesBrownianTarget(
-        total_time_steps=time_steps, n_brownian_trajectories=3, mu=0.0, sigma=1.0, offset=0.0
+        total_time_steps=time_steps,
+        n_brownian_trajectories=3,
+        mu=0.0,
+        sigma=1.0,
+        offset=0.0,
     )
     # n_brownian_trajectories = y_dim
     assert brownian_data_obj.input_matrix.shape == (time_steps, 1)
@@ -84,7 +88,11 @@ def test_brownian_addition_time_series_data() -> None:
     # variables
     time_steps = 5
     brownian_data_obj = BrownianSequenceAddition(
-        total_time_steps=time_steps, n_brownian_trajectories=3, mu=0.0, sigma=1.0, offset=0.0
+        total_time_steps=time_steps,
+        n_brownian_trajectories=3,
+        mu=0.0,
+        sigma=1.0,
+        offset=0.0,
     )
     # n_brownian_trajectories = y_dim
     assert brownian_data_obj.input_matrix.shape == (time_steps, 4)

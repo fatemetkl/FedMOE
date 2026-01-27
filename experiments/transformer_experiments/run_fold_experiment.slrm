@@ -106,4 +106,3 @@ do
         # Create a file that verifies that the Run concluded properly
         touch "${RUN_OUTPUT_DIR}done.out"
 done
-

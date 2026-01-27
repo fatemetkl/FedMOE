@@ -1,6 +1,5 @@
 # type: ignore
 import random
-from typing import Tuple
 
 import torch
 
@@ -21,11 +20,20 @@ from fedmoe.tests.manual_calculations import (
 )
 from fedmoe.tests.test_game_utils import compute_game_regret_objective
 
+
 torch.set_default_dtype(torch.float64)
 
 
-class experiment_setup:
-    def __init__(self, y_dim: int, z_dim: int, sync_freq: int, alpha: float, gamma: float, sigma: float) -> None:
+class ExperimentSetup:
+    def __init__(
+        self,
+        y_dim: int,
+        z_dim: int,
+        sync_freq: int,
+        alpha: float,
+        gamma: float,
+        sigma: float,
+    ) -> None:
         self.y_dim = y_dim
         self.z_dim = z_dim
         self.sync_freq = sync_freq
@@ -35,14 +43,14 @@ class experiment_setup:
         self.eta = 2
 
 
-def set_data_target() -> Tuple[torch.Tensor, torch.Tensor]:
+def set_data_target() -> tuple[torch.Tensor, torch.Tensor]:
     # F(x) = 2x
     data = torch.Tensor([[1], [2], [3], [4], [5]])
     target = torch.Tensor([[2], [4], [6], [8], [10]])
     return data, target
 
 
-def set_data_target_long() -> Tuple[torch.Tensor, torch.Tensor]:
+def set_data_target_long() -> tuple[torch.Tensor, torch.Tensor]:
     # F(x) = 2x
     data = torch.Tensor([[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]])
     target = torch.Tensor([[2], [4], [6], [8], [10], [12], [14], [16], [18], [20]])
@@ -57,10 +65,18 @@ def _do_not_test_server_game() -> None:
     z_dim = 2
     num_clients = 2
     data, target = set_data_target()
-    exp_var = experiment_setup(1, z_dim, T, 0.1, 0.1, 0.001)
+    exp_var = ExperimentSetup(1, z_dim, T, 0.1, 0.1, 0.001)
 
     client_manager = ClientManager(
-        ClientType.RFN, num_clients, data, T, exp_var.z_dim, exp_var.alpha, exp_var.gamma, exp_var.sigma, target
+        ClientType.RFN,
+        num_clients,
+        data,
+        T,
+        exp_var.z_dim,
+        exp_var.alpha,
+        exp_var.gamma,
+        exp_var.sigma,
+        target,
     )
     game = RfnGame(
         client_manager.clients,
@@ -242,9 +258,9 @@ def _do_not_test_server_game() -> None:
         #     0,
         # )
 
-        assert (
-            game_no_Y_regret < no_game_regret
-        ), f"Failed for client {client_id} no_game_regret: {no_game_regret} < game_no_Y_regret: {game_no_Y_regret}"
+        assert game_no_Y_regret < no_game_regret, (
+            f"Failed for client {client_id} no_game_regret: {no_game_regret} < game_no_Y_regret: {game_no_Y_regret}"
+        )
 
 
 def do_not_test_input_z_indices_in_game() -> None:
@@ -255,10 +271,18 @@ def do_not_test_input_z_indices_in_game() -> None:
     z_dim = 2
     num_clients = 2
     data, target = set_data_target_long()
-    exp_var = experiment_setup(1, z_dim, T, 0.1, 0.1, 0.001)
+    exp_var = ExperimentSetup(1, z_dim, T, 0.1, 0.1, 0.001)
 
     client_manager = ClientManager(
-        ClientType.RFN, num_clients, data, T, exp_var.z_dim, exp_var.alpha, exp_var.gamma, exp_var.sigma, target
+        ClientType.RFN,
+        num_clients,
+        data,
+        T,
+        exp_var.z_dim,
+        exp_var.alpha,
+        exp_var.gamma,
+        exp_var.sigma,
+        target,
     )
     game = RfnGame(
         client_manager.clients,
@@ -274,14 +298,15 @@ def do_not_test_input_z_indices_in_game() -> None:
         if t % T == 0:
             game.init_game_round_variables(current_time=t)
 
-            # manually map time between T to 0
-            back_index = 0
-            for back_t in range(T, -1, -1):
+            for back_index, back_t in enumerate(range(T, -1, -1)):
+                # manually map time between T to 0
                 index = int((t / T) * T - back_index)
                 assert torch.allclose(
-                    data[index], game.get_input(back_t, client_manager.clients[0]), rtol=0.0, atol=1e-5
+                    data[index],
+                    game.get_input(back_t, client_manager.clients[0]),
+                    rtol=0.0,
+                    atol=1e-5,
                 )
-                back_index += 1
 
                 client_hidden_state = client_manager.clients[0].state.get_hidden_state_t(index - 1)
                 game_z = game.get_z(back_t - 1, client=client_manager.clients[0])

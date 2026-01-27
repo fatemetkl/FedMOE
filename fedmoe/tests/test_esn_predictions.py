@@ -1,9 +1,10 @@
 import torch
-import torch.nn as nn
+from torch import nn
 
 from fedmoe.clients.esn_client import EchoStateNetworkClient
 from fedmoe.models.echo_state_net import Esn
 from fedmoe.tests.utils import get_data_and_target_sequences, get_esn_client_manager
+
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 
@@ -26,7 +27,13 @@ def test_esn_client_prediction_process() -> None:
     assert predictions.shape == (2, 3)
 
     beta_0 = torch.Tensor([[0.0179], [0.1740], [-0.0479]])
-    random_state_0 = torch.Tensor([[0.0547, 0.0643, -0.0790], [0.1094, 0.1286, -0.1581], [0.1641, 0.1929, -0.2371]])
+    random_state_0 = torch.Tensor(
+        [
+            [0.0547, 0.0643, -0.0790],
+            [0.1094, 0.1286, -0.1581],
+            [0.1641, 0.1929, -0.2371],
+        ]
+    )
     client_0 = client_manager.clients[0]
     client_0_encoder = client_0.encoder
     assert isinstance(client_0_encoder, Esn)
@@ -51,7 +58,13 @@ def test_esn_client_prediction_process() -> None:
     assert predictions.shape == (2, 3)
 
     beta_1 = torch.Tensor([[0.1372], [0.0927], [0.0534]])
-    random_state_1 = torch.Tensor([[0.2117, -0.1712, 0.0165], [0.4235, -0.3424, 0.0330], [0.6352, -0.5135, 0.0495]])
+    random_state_1 = torch.Tensor(
+        [
+            [0.2117, -0.1712, 0.0165],
+            [0.4235, -0.3424, 0.0330],
+            [0.6352, -0.5135, 0.0495],
+        ]
+    )
     client_0 = client_manager.clients[0]
     client_0_encoder = client_0.encoder
     assert isinstance(client_0_encoder, Esn)
@@ -76,7 +89,13 @@ def test_esn_client_prediction_process() -> None:
     assert predictions.shape == (2, 3)
 
     beta_2 = torch.Tensor([[0.3037], [0.0661], [0.1090]])
-    random_state_2 = torch.Tensor([[0.1450, -0.0694, 0.0997], [0.2901, -0.1387, 0.1993], [0.4351, -0.2081, 0.2990]])
+    random_state_2 = torch.Tensor(
+        [
+            [0.1450, -0.0694, 0.0997],
+            [0.2901, -0.1387, 0.1993],
+            [0.4351, -0.2081, 0.2990],
+        ]
+    )
     client_0 = client_manager.clients[0]
     client_0_encoder = client_0.encoder
     assert isinstance(client_0_encoder, Esn)

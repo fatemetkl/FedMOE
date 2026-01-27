@@ -5,6 +5,7 @@ import sys
 from experiments.utils import load_data
 from fedmoe.datasets.fedmoe_datasets.boc_rates import BankOfCanadaExchangeRates, ExchangeRates
 
+
 if len(sys.argv) != 3:
     print("Usage: python run_dataset_visualize.py <dataset_name> <total_rounds>")
     sys.exit(1)
@@ -17,7 +18,12 @@ assert hasattr(data, "visualize"), f"Dataset {dataset_name} does not have visual
 if dataset_name == "ett_data":
     data.visualize(visualize_only_main_inputs=True)
 elif dataset_name == "boc_exchange":
-    inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.EUR_CLOSE, ExchangeRates.GBP_CLOSE, ExchangeRates.CHF_CLOSE]
+    inputs = [
+        ExchangeRates.AUD_CLOSE,
+        ExchangeRates.EUR_CLOSE,
+        ExchangeRates.GBP_CLOSE,
+        ExchangeRates.CHF_CLOSE,
+    ]
     targets = [ExchangeRates.USD_CLOSE]
     input_lag = [0, 1]
     target_lag = [0, 1]

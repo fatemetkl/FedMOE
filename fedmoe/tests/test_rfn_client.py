@@ -5,6 +5,7 @@ import torch
 from fedmoe.clients.client import Client
 from fedmoe.tests.utils import get_data_and_target_sequences, get_rfn_client_manager
 
+
 torch.set_default_dtype(torch.float64)
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
@@ -215,7 +216,7 @@ def test_client_side_optimization() -> None:
     # Ensure that beta is minimal for objective function
     opt_sum = compute_objective(client_0, client_0_beta, alpha, gamma, t)
     # test whether any randomly drawn betas are better
-    for i in range(100000):
+    for _ in range(100000):
         test_beta = torch.randn((z_dim, 1))
         test_sum = compute_objective(client_0, test_beta, alpha, gamma, t)
         assert test_sum > opt_sum, f"opt sum: {opt_sum}, test_sum: {test_sum}, test_beta: {test_beta}"

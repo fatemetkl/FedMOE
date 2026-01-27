@@ -5,6 +5,7 @@ from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
 
+
 torch.set_default_dtype(torch.float64)
 
 TOTAL_ROUNDS = 10
@@ -83,7 +84,10 @@ def test_inference_periodic_data_transformer() -> None:
 
     pred_0_1_input2 = torch.cat((input_0, input_1, input_2), dim=1)
     pred_2 = client_manager.clients[0].encoder(pred_0_1_input2, pre_training=True)
-    print("\nInput shape (batch_size, sequence length, embedding dim)", pred_0_1_input2.shape)
+    print(
+        "\nInput shape (batch_size, sequence length, embedding dim)",
+        pred_0_1_input2.shape,
+    )
     print("expected_target_2", data_object.target_matrix[3])
     print("full pred 2", pred_2)
     # Because this prediction is part of a sequence that the model has seen many times. This value should be close

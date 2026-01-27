@@ -1,5 +1,6 @@
 import math
 
+import pytest
 import torch
 
 from experiments.utils import load_data
@@ -12,6 +13,7 @@ from fedmoe.tests.utils import (
     get_transformer_client_manager,
     setup_transformer_structure_patch,
 )
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -31,21 +33,33 @@ def test_transformer_training_data_metrics() -> None:
         assert torch.allclose(data_object.target_matrix[1:], targets, rtol=0.0, atol=1e-5)
 
 
-def test_transformer_loss(monkeypatch) -> None:
+def test_transformer_loss(monkeypatch: pytest.MonkeyPatch) -> None:
     torch.manual_seed(42)
     num_rounds = 5
     _, target_sequence = get_data_and_target_sequences()
 
-    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
+    monkeypatch.setattr(
+        TransformerClient,
+        "setup_transformer_structure",
+        setup_transformer_structure_patch,
+    )
     client_manager = get_transformer_client_manager(Z_DIM)
     game = TransformerGame(client_manager.clients, sync_freq=T, z_dim=Z_DIM)
-    server = Server(total_game_steps=T, client_manager=client_manager, game=game, metrics=[RMSEMetric("RMSE")])
+    server = Server(
+        total_game_steps=T,
+        client_manager=client_manager,
+        game=game,
+        metrics=[RMSEMetric("RMSE")],
+    )
     metric_value = server.fit(num_rounds=num_rounds, have_sync=False)
     loss = torch.Tensor([0.0])
     for time in range(num_rounds + 1):
         loss_value = torch.sum(
             torch.pow(
-                torch.subtract(server.server_outputs[time].squeeze(-1).detach(), torch.Tensor(target_sequence[time])),
+                torch.subtract(
+                    server.server_outputs[time].squeeze(-1).detach(),
+                    torch.Tensor(target_sequence[time]),
+                ),
                 2,
             )
         )

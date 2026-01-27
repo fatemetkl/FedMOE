@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.ticker import FixedLocator
 
+
 sns.set_style("whitegrid")
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -22,8 +23,7 @@ def get_loss_from_log(run_folder_path: str, delete_error_files: bool = False) ->
         files_lines = handle.readlines()
         line_to_convert = files_lines[-1].strip()
         try:
-            loss = float(line_to_convert)
-            return loss
+            return float(line_to_convert)
         except Exception:
             logger.info(f"{run_folder_path} file did not run completely due to error, check log file.")
             # Returning max loss
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         m = re.search(parse_parameter_re, str(experiment))
         min_mse = None
         for index in range(3):
-            run_folder = os.path.join(experiment, f"Run{index+1}")
+            run_folder = os.path.join(experiment, f"Run{index + 1}")
             mse = get_loss_from_log(run_folder)
             if mse is None:
                 continue
@@ -95,7 +95,7 @@ if __name__ == "__main__":
         m = re.search(parse_parameter_re, str(experiment))
         min_mse = None
         for index in range(3):
-            run_folder = os.path.join(experiment, f"Run{index+1}")
+            run_folder = os.path.join(experiment, f"Run{index + 1}")
             mse = get_loss_from_log(run_folder)
             if mse is None:
                 continue
@@ -153,7 +153,11 @@ if __name__ == "__main__":
 
     plt.title("Minimum MSE for ETT Series", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 24}, loc="lower right", labelspacing=0)
+    plt.legend(
+        prop={"family": "helvetica", "weight": "bold", "size": 24},
+        loc="lower right",
+        labelspacing=0,
+    )
     plt.tight_layout(pad=1)
 
     plt.savefig(os.path.join(output_dir, "min_mses_over_lookback.pdf"), format="pdf")

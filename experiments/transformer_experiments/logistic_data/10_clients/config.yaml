@@ -17,4 +17,3 @@ client_type : 1 # 1: Pre-trained transformer model
 num_clients : 10 # The number of experts or clients
 data: "logistic_map"  # Dataset options are saved in utils.DataOptions.
 models_dir: "experiments/transformer_experiments/logistic_data/10_clients/models/" # The directory of saved the models
-

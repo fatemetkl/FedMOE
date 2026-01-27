@@ -1,15 +1,14 @@
-from typing import Tuple
-
 import torch
-import torch.nn as nn
+from torch import nn
 
 from experiments.utils import load_data
 from fedmoe.client_manager import ClientManager, ClientType, PreTrainingClientManager
 
+
 torch.set_default_dtype(torch.float64)
 
 
-def get_data_and_target_sequences() -> Tuple[torch.Tensor, torch.Tensor]:
+def get_data_and_target_sequences() -> tuple[torch.Tensor, torch.Tensor]:
     # Setup the data and targets
     x_0_sequence = torch.arange(0.1, 1.1, 0.1)
     x_1_sequence = torch.arange(0.2, 2.2, 0.2)
@@ -31,7 +30,6 @@ def get_esn_client_manager(
     num_clients: int = 2,
     sync_freq: int = 3,
 ) -> ClientManager:
-
     data_sequence, target_sequence = get_data_and_target_sequences()
 
     # Set seed for reproducibility
@@ -70,7 +68,6 @@ def get_rfn_client_manager(
     num_clients: int = 2,
     patch_client_state: bool = False,
 ) -> ClientManager:
-
     data_sequence, target_sequence = get_data_and_target_sequences()
 
     # Set seed for reproducibility

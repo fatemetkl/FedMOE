@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from experiments.utils import load_data
@@ -6,6 +7,7 @@ from fedmoe.clients.transformer_client import TransformerClient
 from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.server import Server
 from fedmoe.tests import utils
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -18,12 +20,16 @@ GAMMA = 0.1
 Y_DIM = 1
 
 
-def test_data_indexing(monkeypatch) -> None:
+def test_data_indexing(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     The goal of this test is to visually confirm and check that T step's prediction with game are good
     and result is a drop in residual.
     """
-    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", utils.setup_transformer_structure_patch)
+    monkeypatch.setattr(
+        TransformerClient,
+        "setup_transformer_structure",
+        utils.setup_transformer_structure_patch,
+    )
     client_manager = PreTrainingClientManager(
         num_clients=2,
         data_sequence=data_object.input_matrix,
@@ -62,6 +68,6 @@ def test_data_indexing(monkeypatch) -> None:
         server_residuals.append(inner_residual)
         if t % T == 0 and t > 0:
             print("THIS IS SYNC STEP")
-        print(f"server residual {inner_residual}, time {t} predicting {t+1}")
+        print(f"server residual {inner_residual}, time {t} predicting {t + 1}")
 
     # assert False

@@ -1,14 +1,14 @@
 import argparse
 import random
-from typing import Tuple
 
 import torch
-import torch.nn as nn
+from torch import nn
 from torch.utils.data import DataLoader
 
 from experiments.utils import load_config, load_data
 from fedmoe.clients.transformer_client import TransformerClient
 from fedmoe.models.transformer import TransformerTimeSeriesModel
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -24,7 +24,7 @@ def setup_transformer_structure(x_dim: int, y_dim: int, z_dim: int) -> nn.Module
     # In this model setup, hidden_dim has the shape d_y times d_z.
     assert y_dim * hidden_dim % nhead == 0, "Error: embed_dim (self.y_dim*hidden_dim) must be divisible by num_heads"
     # Create the model
-    model = TransformerTimeSeriesModel(
+    return TransformerTimeSeriesModel(
         input_dim,
         hidden_dim,
         nhead,
@@ -32,7 +32,6 @@ def setup_transformer_structure(x_dim: int, y_dim: int, z_dim: int) -> nn.Module
         dim_feedforward,
         output_dim,
     )
-    return model
 
 
 def pre_train_transformer(
@@ -45,11 +44,15 @@ def pre_train_transformer(
     pre_training_learning_rate: float,
     val_data: torch.Tensor,
     val_target: torch.Tensor,
-) -> Tuple[nn.Module, torch.Tensor]:
+) -> tuple[nn.Module, torch.Tensor]:
     # we use this if in the phase of client creation we turned off pre-training by passing epoch of 0.
     model = setup_transformer_structure(x_dim, y_dim, z_dim)
     model = TransformerClient.pre_train_model(
-        model, pre_training_epochs, train_data_loader, pre_training_learning_rate, client_id
+        model,
+        pre_training_epochs,
+        train_data_loader,
+        pre_training_learning_rate,
+        client_id,
     )
     validation_result = TransformerClient.validate_model(model, val_data, val_target)
     return model, validation_result
@@ -77,7 +80,9 @@ if __name__ == "__main__":
     torch.manual_seed(args.random_seed)
     data_object = load_data(config["data"], config["total_rounds"] + 1)
     train_data_loader = data_object.get_dataloader(
-        num_samples=config["data_loader_num_samples"], batch_size=config["data_loader_batch_size"], shuffle=True
+        num_samples=config["data_loader_num_samples"],
+        batch_size=config["data_loader_batch_size"],
+        shuffle=True,
     )
     # save_dir = os.makedirs(, exist_ok=True)
     for client_id in range(config["num_clients"]):

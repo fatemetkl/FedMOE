@@ -3,6 +3,7 @@ import torch
 from fedmoe.game.echo_state_game import EchoStateGame
 from fedmoe.tests.utils import get_data_and_target_sequences, get_esn_client_manager
 
+
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 
 torch.set_default_dtype(torch.float64)

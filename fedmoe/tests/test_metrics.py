@@ -1,13 +1,13 @@
 import torch
-from fl4health.utils.metrics import MetricManager
+from fl4health.metrics.metric_managers import MetricManager
 
 from fedmoe.metrics import RMSEMetric
+
 
 torch.set_default_dtype(torch.float64)
 
 
 def test_rmse_metric() -> None:
-
     input = torch.Tensor([0, 1, 2, 3, 4, 5])
     server_outputs = [
         torch.sin(input[0]),
@@ -28,7 +28,10 @@ def test_rmse_metric() -> None:
 
     metric_manager = MetricManager(metrics=[RMSEMetric("RMSE")], metric_manager_name="server")
     for i in range(0, len(server_outputs)):
-        metric_manager.update({"server_predictions": torch.Tensor([server_outputs[i]])}, torch.Tensor(true_values[i]))
+        metric_manager.update(
+            {"server_predictions": torch.Tensor([server_outputs[i]])},
+            torch.Tensor(true_values[i]),
+        )
 
     # Compute metric
     final_metric_value = metric_manager.compute()
@@ -42,7 +45,10 @@ def test_rmse_metric() -> None:
     # Assuming the prediction is y = 0.0
     wrong_prediction = [0.0]
     for i in range(0, len(true_values)):
-        metric_manager.update({"server_predictions": torch.Tensor([wrong_prediction])}, torch.Tensor(true_values[i]))
+        metric_manager.update(
+            {"server_predictions": torch.Tensor([wrong_prediction])},
+            torch.Tensor(true_values[i]),
+        )
 
     # Compute metric
     final_metric_value = metric_manager.compute()

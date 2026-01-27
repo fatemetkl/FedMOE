@@ -3,7 +3,7 @@ import logging
 import os
 import random
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 import torch
 
@@ -14,11 +14,12 @@ from fedmoe.game.transformer_game import TransformerGame
 from fedmoe.metrics import MSEMetric
 from fedmoe.server import Server
 
+
 torch.set_default_dtype(torch.float64)
 
 
 def main(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     results_dir: str,
     hidden_dim: int,
     T: int,
@@ -43,7 +44,9 @@ def main(
     # Load data
     data_object = load_data(config["data"], config["total_rounds"] + 1)
     train_data_loader = data_object.get_dataloader(
-        num_samples=data_loader_num_samples, batch_size=data_loader_batch_size, shuffle=True
+        num_samples=data_loader_num_samples,
+        batch_size=data_loader_batch_size,
+        shuffle=True,
     )
 
     client_manager = PreTrainingClientManager(
@@ -107,7 +110,7 @@ def main(
         "gamma": gamma,
     }
 
-    tensors_to_save: Dict[str, List[torch.Tensor]] = {}
+    tensors_to_save: dict[str, list[torch.Tensor]] = {}
 
     if config["save_server_prediction"]:
         data_object.visualize_server_prediction(
@@ -132,7 +135,7 @@ def main(
     if config["save_input"]:
         data_object.visualize_input(f"{results_dir}/input_plot.png", plot_info=plot_info)
         # Converting a matrix to a list of tensors to avoid mypy errors.
-        tensors_to_save["input"] = [row for row in data_object.input_matrix]
+        tensors_to_save["input"] = [row for row in data_object.input_matrix]  # noqa: C416
 
     if config["save_clients_predictions"]:
         # In transformer example, because of the pre-training step, we need to detach predictions before plotting.
@@ -175,7 +178,7 @@ def main(
 
     if config["dump_json"]:
         # Dump results and data in JSON
-        tensors_to_save["target"] = [row for row in data_object.target_matrix]
+        tensors_to_save["target"] = [row for row in data_object.target_matrix]  # noqa: C416
         save_output_json(tensors_to_save, path=f"{results_dir}", dict_to_save=plot_info)
 
 

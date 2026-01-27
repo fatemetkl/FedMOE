@@ -1,7 +1,8 @@
 import torch
-import torch.nn as nn
+from torch import nn
 
 from fedmoe.utils.utils import TensorGenerationType, generate_random_tensor
+
 
 torch.set_default_dtype(torch.float64)
 

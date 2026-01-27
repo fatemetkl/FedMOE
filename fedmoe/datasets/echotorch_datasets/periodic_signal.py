@@ -1,10 +1,10 @@
 # Reference code: https://github.com/nschaetti/EchoTorch/blob/dev/echotorch/data/datasets/PeriodicSignalDataset.py
 # Imports
-from typing import List
 
 import numpy as np
 import torch
 from torch.utils.data.dataset import Dataset
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -13,19 +13,18 @@ torch.set_default_dtype(torch.float64)
 # Two of the values are always -0.9(min) and the last is +0.9(max).
 # Periodic signal time-series
 class PeriodicSignalDataset(Dataset):
-    """
-    Create simple periodic signal time-series
-    """
+    """Create simple periodic signal time-series."""
 
     # Constructor
     def __init__(
-        self, sample_len: int, n_samples: int, period: List[int], start: int = 1, dtype: torch.dtype = torch.float64
+        self,
+        sample_len: int,
+        n_samples: int,
+        period: list[int],
+        start: int = 1,
+        dtype: torch.dtype = torch.float64,
     ) -> None:
-        """
-        Constructor
-        :param sample_len: Sample's length
-        :param period:
-        """
+        """Constructor."""
         # Properties
         self.sample_len = sample_len
         self.n_samples = n_samples
@@ -53,21 +52,14 @@ class PeriodicSignalDataset(Dataset):
 
     # Length
     def __len__(self) -> int:
-        """
-        Length
-        :return:
-        """
+        """Length."""
         return self.n_samples
 
     # end __len__
 
     # Get item
     def __getitem__(self, idx: int) -> torch.Tensor:
-        """
-        Get item
-        :param idx:
-        :return:
-        """
+        """Get item."""
         return self.outputs[idx]
 
     # end __getitem__
@@ -77,11 +69,8 @@ class PeriodicSignalDataset(Dataset):
     ##############################################
 
     # Generate
-    def _generate(self) -> List[torch.Tensor]:
-        """
-        Generate dataset
-        :return:
-        """
+    def _generate(self) -> list[torch.Tensor]:
+        """Generate dataset."""
         # List of samples
         samples = []
 

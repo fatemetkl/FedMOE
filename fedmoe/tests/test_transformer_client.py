@@ -1,5 +1,6 @@
 import math
 
+import pytest
 import torch
 
 from fedmoe.clients.client import Client
@@ -9,6 +10,7 @@ from fedmoe.tests.utils import (
     get_transformer_client_manager,
     setup_transformer_structure_patch,
 )
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -35,13 +37,17 @@ def compute_objective(client: Client, beta: torch.Tensor, alpha: float, gamma: f
     return first_summand + discount_1 * second_summand + discount_2 * third_summand + gamma * regularizer
 
 
-def test_client_side_optimization(monkeypatch) -> None:
+def test_client_side_optimization(monkeypatch: pytest.MonkeyPatch) -> None:
     # Fixing seed for reproducible sampling trajectory
     torch.manual_seed(42)
     alpha = 1.5
     gamma = 2.0
 
-    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
+    monkeypatch.setattr(
+        TransformerClient,
+        "setup_transformer_structure",
+        setup_transformer_structure_patch,
+    )
     client_manager = get_transformer_client_manager(Z_DIM, sync_freq=3, patch_client_state=True)
 
     # Making prediction for t=1
@@ -227,7 +233,7 @@ def test_client_side_optimization(monkeypatch) -> None:
     # Ensure that beta is minimal for objective function
     opt_sum = compute_objective(client_0, client_0_beta, alpha, gamma, t)
     # test whether any randomly drawn betas are better
-    for i in range(100000):
+    for _ in range(100000):
         test_beta = torch.randn((Z_DIM, 1))
         test_sum = compute_objective(client_0, test_beta, alpha, gamma, t)
         assert test_sum > opt_sum, f"opt sum: {opt_sum}, test_sum: {test_sum}, test_beta: {test_beta}"

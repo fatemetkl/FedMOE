@@ -7,6 +7,7 @@ import seaborn as sns
 import torch
 from matplotlib.ticker import MaxNLocator
 
+
 sns.set_style("whitegrid")
 
 
@@ -18,10 +19,12 @@ def visualize_relative_server_squared_errors(
     plot_path: str,
     render_line: bool = False,
 ) -> None:
-
     total_time_steps = target_matrix.shape[0]
 
-    assert game_server_predictions.shape == (total_time_steps, target_matrix.shape[1]), {
+    assert game_server_predictions.shape == (
+        total_time_steps,
+        target_matrix.shape[1],
+    ), {
         f"Error:server output matrix has a shape {game_server_predictions.shape},\
             but it should be{(total_time_steps, target_matrix.shape[1])}"
     }
@@ -39,7 +42,7 @@ def visualize_relative_server_squared_errors(
         sns.scatterplot(
             x=time_axis,
             y=relative_error.detach().numpy(),
-            label=f"$\\frac{{(\\hat{{Y}}^n_{i+1} - y_{i+1})^2}}{{(\\hat{{Y}}^g_{i+1} - y_{i+1})^2}}$",
+            label=f"$\\frac{{(\\hat{{Y}}^n_{i + 1} - y_{i + 1})^2}}{{(\\hat{{Y}}^g_{i + 1} - y_{i + 1})^2}}$",
         )
 
     ax.set_yscale("log")
@@ -60,7 +63,11 @@ def visualize_relative_server_squared_errors(
     plt.ylabel("Ratio of Squared Errors", fontdict=axis_font)
     plt.title("Ratio Squared Errors Without and With Nash Game", fontdict=title_font)
 
-    plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 22}, loc="lower right", labelspacing=0)
+    plt.legend(
+        prop={"family": "helvetica", "weight": "bold", "size": 22},
+        loc="lower right",
+        labelspacing=0,
+    )
     plt.tight_layout(pad=0.5)
 
     plt.savefig(plot_path, format="pdf")

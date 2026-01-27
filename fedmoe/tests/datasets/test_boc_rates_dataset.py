@@ -5,6 +5,7 @@ import torch
 
 from fedmoe.datasets.fedmoe_datasets.boc_rates import BankOfCanadaExchangeRates, ExchangeRates
 
+
 torch.set_default_dtype(torch.float64)
 
 
@@ -45,7 +46,19 @@ def test_zero_lag_for_target_and_input() -> None:
         ]
     )
     target_target_tensor = torch.tensor(
-        [[1.1112], [1.1122], [1.1122], [1.1122], [1.1070], [1.0988], [1.1039], [1.0987], [1.0895], [1.0895], [1.0895]]
+        [
+            [1.1112],
+            [1.1122],
+            [1.1122],
+            [1.1122],
+            [1.1070],
+            [1.0988],
+            [1.1039],
+            [1.0987],
+            [1.0895],
+            [1.0895],
+            [1.0895],
+        ]
     )
     assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
     assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
@@ -84,7 +97,19 @@ def test_one_input_one_target() -> None:
         ]
     )
     target_target_tensor = torch.tensor(
-        [[1.1112], [1.1122], [1.1122], [1.1122], [1.1070], [1.0988], [1.1039], [1.0987], [1.0895], [1.0895], [1.0895]]
+        [
+            [1.1112],
+            [1.1122],
+            [1.1122],
+            [1.1122],
+            [1.1070],
+            [1.0988],
+            [1.1039],
+            [1.0987],
+            [1.0895],
+            [1.0895],
+            [1.0895],
+        ]
     )
     assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
     assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)
@@ -299,7 +324,6 @@ def test_two_inputs_no_target_lag() -> None:
 
 
 def test_various_dataset_assertions() -> None:
-
     inputs = [ExchangeRates.AUD_CLOSE, ExchangeRates.DKK_CLOSE]
     targets = [ExchangeRates.GBP_CLOSE, ExchangeRates.USD_CLOSE]
     input_lag = [1, 2]
@@ -436,7 +460,19 @@ def test_cutting_and_dataloader_functionalities() -> None:
         ]
     )
     target_target_tensor = torch.tensor(
-        [[1.1112], [1.1122], [1.1122], [1.1122], [1.1070], [1.0988], [1.1039], [1.0987], [1.0895], [1.0895], [1.0895]]
+        [
+            [1.1112],
+            [1.1122],
+            [1.1122],
+            [1.1122],
+            [1.1070],
+            [1.0988],
+            [1.1039],
+            [1.0987],
+            [1.0895],
+            [1.0895],
+            [1.0895],
+        ]
     )
     assert torch.allclose(dataset.input_matrix, target_input_tensor, rtol=0.0, atol=1e-6)
     assert torch.allclose(dataset.target_matrix, target_target_tensor, rtol=0.0, atol=1e-6)

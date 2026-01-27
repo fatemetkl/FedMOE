@@ -3,6 +3,7 @@ import torch
 from fl4health.utils.metrics import SimpleMetric  # type: ignore
 from flwr.common.typing import Scalar
 
+
 torch.set_default_dtype(torch.float64)
 
 

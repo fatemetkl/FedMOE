@@ -1,23 +1,23 @@
 from dataclasses import dataclass, field
-from typing import Set, Tuple
 
 import torch
+
 
 torch.set_default_dtype(torch.float64)
 
 
 @dataclass
 class GameState:
-    _A_times_set: Set[int] = field(default_factory=set)
-    _A_hat_times_set: Set[int] = field(default_factory=set)
-    _B_times_set: Set[int] = field(default_factory=set)
-    _C_times_set: Set[int] = field(default_factory=set)
-    _D_times_set: Set[int] = field(default_factory=set)
-    _G_times_set: Set[int] = field(default_factory=set)
-    _H_times_set: Set[int] = field(default_factory=set)
-    _S_time_client_set: Set[Tuple[int, int]] = field(default_factory=set)
-    _P_time_client_set: Set[Tuple[int, int]] = field(default_factory=set)
-    _D_i_time_client_set: Set[Tuple[int, int]] = field(default_factory=set)
+    _A_times_set: set[int] = field(default_factory=set)
+    _A_hat_times_set: set[int] = field(default_factory=set)
+    _B_times_set: set[int] = field(default_factory=set)
+    _C_times_set: set[int] = field(default_factory=set)
+    _D_times_set: set[int] = field(default_factory=set)
+    _G_times_set: set[int] = field(default_factory=set)
+    _H_times_set: set[int] = field(default_factory=set)
+    _S_time_client_set: set[tuple[int, int]] = field(default_factory=set)
+    _P_time_client_set: set[tuple[int, int]] = field(default_factory=set)
+    _D_i_time_client_set: set[tuple[int, int]] = field(default_factory=set)
     A: torch.Tensor = field(default_factory=torch.Tensor)
     A_hat: torch.Tensor = field(default_factory=torch.Tensor)
     B: torch.Tensor = field(default_factory=torch.Tensor)
@@ -85,7 +85,10 @@ class GameState:
         return self.A_hat[t]
 
     def set_B_t(self, t: int, B_t: torch.Tensor) -> None:
-        assert B_t.shape == (self.num_clients * self.z_dim, self.num_clients * self.y_dim)
+        assert B_t.shape == (
+            self.num_clients * self.z_dim,
+            self.num_clients * self.y_dim,
+        )
         self.B[t] = B_t
         assert t not in self._B_times_set
         self._B_times_set.add(t)
@@ -105,7 +108,10 @@ class GameState:
         return self.C[t]
 
     def set_D_t(self, t: int, D_t: torch.Tensor) -> None:
-        assert D_t.shape == (self.num_clients * self.y_dim, self.num_clients * self.z_dim)
+        assert D_t.shape == (
+            self.num_clients * self.y_dim,
+            self.num_clients * self.z_dim,
+        )
         self.D[t] = D_t
         assert t not in self._D_times_set
         self._D_times_set.add(t)
@@ -115,7 +121,10 @@ class GameState:
         return self.D[t]
 
     def set_G_t(self, t: int, G_t: torch.Tensor) -> None:
-        assert G_t.shape == (self.num_clients * self.z_dim, self.num_clients * self.y_dim)
+        assert G_t.shape == (
+            self.num_clients * self.z_dim,
+            self.num_clients * self.y_dim,
+        )
         self.G[t] = G_t
         assert t not in self._G_times_set
         self._G_times_set.add(t)

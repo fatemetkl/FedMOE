@@ -46,16 +46,18 @@ To run other experiments, please see [RFN experiment documentation](experiments/
 
 ### Installing dependencies
 
-The development environment can be set up using [poetry](https://python-poetry.org/docs/#installation). You can initialize and manage poetry using a [virtualenv](https://pypi.org/project/virtualenv/) with a specific Python version. For this project, we use `python = ">=3.10.0,<3.11"`. First, create and activate your virtualenv, and then install poetry with the `pyproject.toml` file.
-
+The easiest way to set up the development environment:
 ```bash
-virtualenv "ENV_PATH"
-source "ENV_PATH/bin/activate"
-pip install --upgrade pip poetry
-poetry install --with "dev"
+# Install uv (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install all dependencies
+uv sync --group dev
 ```
 
-Note that this command will install all libraries required for the full development workflow.
+Note that the `--group` flag installs optional dependency groups required for the full development workflow. See the `pyproject.toml` file for details about each group.
+
+If you need to update dependencies, you should change the requirements in `pyproject.toml` and then update the `uv.lock` using the command `uv lock`
 
 ### Format checks and coding guidelines
 To invoke pre-commit hooks, you can install the pre-commit hooks to be run locally. Activate your environment and run:
@@ -73,11 +75,11 @@ pre-commit run --all-files
 If you find our work (code or the paper) helpful, please use the citation below.
 ```bibtex
 @article{yang2025onlinefederationmixturesproprietary,
-      title={Online Federation For Mixtures of Proprietary Agents with Black-Box Encoders}, 
+      title={Online Federation For Mixtures of Proprietary Agents with Black-Box Encoders},
       author={Xuwei Yang and Fatemeh Tavakoli and David B. Emerson and Anastasis Kratsios},
       year={2025},
       archivePrefix={arXiv},
       primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2505.00216}, 
+      url={https://arxiv.org/abs/2505.00216},
 }
 ```

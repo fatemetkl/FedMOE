@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from fedmoe.clients.transformer_client import TransformerClient
@@ -8,6 +9,7 @@ from fedmoe.tests.utils import (
     get_transformer_client_manager,
     setup_transformer_structure_patch,
 )
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -22,7 +24,7 @@ GAMMA = 1.0
 DO_SYNC = True
 
 
-def test_game_objective(monkeypatch) -> None:
+def test_game_objective(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     This function tests if the betas optimized in nash game are all better, and reduce residual.
     You can find the main assertions in line 290 which asserts that game residual is less (assert no_game >= in_game).
@@ -34,7 +36,11 @@ def test_game_objective(monkeypatch) -> None:
     torch.manual_seed(10)
     torch.set_default_dtype(torch.float64)
 
-    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
+    monkeypatch.setattr(
+        TransformerClient,
+        "setup_transformer_structure",
+        setup_transformer_structure_patch,
+    )
     client_manager = get_transformer_client_manager(Z_DIM, sync_freq=T, gamma=GAMMA, alpha=0.5)
 
     client_manager.clients[0].gamma = GAMMA
@@ -147,7 +153,8 @@ def test_game_objective(monkeypatch) -> None:
             # important update the client prediction at t=4 with Y_4 in game
             for client in client_manager.clients:
                 client.state.replace_prediction_t(
-                    game_improved_predictions[4].reshape(NUM_CLIENTS, Y_DIM, 1)[client.id].reshape(-1, 1), 4
+                    game_improved_predictions[4].reshape(NUM_CLIENTS, Y_DIM, 1)[client.id].reshape(-1, 1),
+                    4,
                 )
             game_prediction_5 = client_manager.get_predictions_with_beta(t, past_T_betas[3])
             game_residual_5 = TARGET_SEQUENCE[5].unsqueeze(1) - torch.matmul(mixture_weights[4].T, game_prediction_5).T
@@ -261,14 +268,15 @@ def test_game_objective(monkeypatch) -> None:
             game_residuals.append(game_inner_residual_8)
             game_residuals.append(game_inner_residual_9)
 
-            assert len(no_game_residuals) == len(
-                game_residuals
-            ), f"Error no_game_residuals {len(no_game_residuals)}, game_residuals {len(game_residuals)}"
+            assert len(no_game_residuals) == len(game_residuals), (
+                f"Error no_game_residuals {len(no_game_residuals)}, game_residuals {len(game_residuals)}"
+            )
 
             # to make current step better (predict for 9), we can use the games Y_8 in its prediction
             for client in client_manager.clients:
                 client.state.replace_prediction_t(
-                    game_improved_predictions[4].reshape(NUM_CLIENTS, Y_DIM, 1)[client.id].reshape(-1, 1), 8
+                    game_improved_predictions[4].reshape(NUM_CLIENTS, Y_DIM, 1)[client.id].reshape(-1, 1),
+                    8,
                 )
             # now do the regular thing in the server
             game_prediction_9_new = client_manager.get_predictions_with_beta(8, past_T_betas_2[3])
@@ -279,7 +287,7 @@ def test_game_objective(monkeypatch) -> None:
 
     if DO_SYNC:
         for game_res, no_game, time in zip(game_residuals, no_game_residuals, range(1, len(game_residuals) + 1)):
-            print(f"no game {no_game},  server game {game_res},  step {time-1} predicting for {time}")
+            print(f"no game {no_game},  server game {game_res},  step {time - 1} predicting for {time}")
             if time == 5:
                 print(
                     f"time is 4 (T): step 5 new game residual,{step_5_new_residual}",
@@ -287,19 +295,24 @@ def test_game_objective(monkeypatch) -> None:
                 )
 
         for time, in_game, no_game in zip(
-            range(0, len(game_residuals)), inside_game_predictions_residuals, no_game_residuals
+            range(0, len(game_residuals)),
+            inside_game_predictions_residuals,
+            no_game_residuals,
         ):
             assert no_game >= in_game
-            print(f"inside game residual {in_game}, time {time} predicting {time+1}")
+            print(f"inside game residual {in_game}, time {time} predicting {time + 1}")
 
         assert game_residual_inner_9_new <= game_inner_residual_9
-        print("This is what we get by using game Y_8: step 8 predicting for 9: ", game_residual_inner_9_new)
+        print(
+            "This is what we get by using game Y_8: step 8 predicting for 9: ",
+            game_residual_inner_9_new,
+        )
 
     else:
         assert len(no_game_residuals) == 9
         print("we have not played the game in this case:")
         for time, no_game in enumerate(no_game_residuals):
-            print(f"no game {no_game},  step {time} predicting for {time+1}")
+            print(f"no game {no_game},  step {time} predicting for {time + 1}")
 
     # Now try the whole server and see if it also uses the game prediction of Ts correctly.
     # Reset everything here

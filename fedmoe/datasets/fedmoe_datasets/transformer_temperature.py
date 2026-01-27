@@ -1,7 +1,6 @@
 import random
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -11,6 +10,7 @@ from fl4health.utils.dataset import BaseDataset
 from torch.utils.data import DataLoader
 
 from fedmoe.datasets.time_series_data import TimeSeriesData, TimeSeriesTorchDataset
+
 
 sns.set_style("whitegrid")
 torch.set_default_dtype(torch.float64)
@@ -31,16 +31,16 @@ class TransformerTemperature(TimeSeriesData):
     Readings are taking from 2016-07-01 00:00:00 to 2018-06-26 19:00:00.
     This dataset was first introduced in the Informer paper
     https://github.com/zhouhaoyi/ETDataset
-    The target is always the 1D value of oil temperature (OT column in the csv)
+    The target is always the 1D value of oil temperature (OT column in the csv).
     """
 
     def __init__(
         self,
-        inputs: List[InputFeatures],
-        input_lags: List[int],
-        target_lags: Optional[List[int]] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
+        inputs: list[InputFeatures],
+        input_lags: list[int],
+        target_lags: list[int] | None = None,
+        start_date: datetime | None = None,
+        end_date: datetime | None = None,
         dtype: torch.dtype = torch.float64,
         dataset_path: str = "fedmoe/datasets/assets/ETTh1.csv",
     ) -> None:
@@ -65,30 +65,30 @@ class TransformerTemperature(TimeSeriesData):
         In this setup, X[0, :] = [OT_t, OT_{t-1}, MUFL_t, MUFL_{t-1}] would be used to predict Y[1] = OT_{t+1}
 
         Args:
-            inputs (List[InputFeatures]): These are the features in the dataset to use to help make predictions.
+            inputs (list[InputFeatures]): These are the features in the dataset to use to help make predictions.
                 If you want to include lagged values of the target in the input as well, set target_lag > 0.
-            input_lags (List[int]): List of steps backward in input that should be included in the input features.
+            input_lags (list[int]): List of steps backward in input that should be included in the input features.
                 For example, if input_lag is [1, 2] and we have MUFL and LULL features at inputs, then at time t, then
                 x_t contains MUFL_{t-1}, MUFL_{t-2}, LULL_{t-1}, and LULL_{t-2}.
-            target_lags (Optional[List[int]], optional): Similar to input lag, this is a list of steps backward in
+            target_lags (list[int]], optional): Similar to input lag, this is a list of steps backward in
                 target values should be include in the input. For example, if target_lag is [1, 2], then at time t,
                 x_t for y_t contains OT_{t-1} and OT_{t-2} in the input sequence  along with other input values.
                 If none, then lagged targets are not included in the input.
-            start_date (Optional[datetime], optional): (INCLUSIVE) When in the dataset we want our time series to
+            start_date (datetime, optional): (INCLUSIVE) When in the dataset we want our time series to
                 begin.  The minimum value for this argument is 2016-07-01 00:00:00. If None, the minimum value is
                 used. If not the minimum value and input_lag/target_lag are greater than 1, we will still look back in
                 time to gather these as far as possible. When prior time stamps are not available, we set the lagged
                 values to 0. Defaults to None.
-            end_date (Optional[datetime], optional): (INCLUSIVE) When in the dataset we want our time series to end.
+            end_date (datetime, optional): (INCLUSIVE) When in the dataset we want our time series to end.
                 The maximum value for this argument is 2018-06-26 19:00:00. If None, the maximum value is
                 used. Defaults to None.
             dtype (torch.dtype, optional): Default type for any torch tensors created. Defaults to torch.float64.
             dataset_path (str): Path to the dataset csv file. By default it is assumed to exist in the datasets/assets
                 folder at "fedmoe/datasets/assets/ETTh1.csv".
         """
-        assert (
-            len(inputs) > 0 or target_lags is not None
-        ), "No inputs specified. Either specify input features or specify a target lag"
+        assert len(inputs) > 0 or target_lags is not None, (
+            "No inputs specified. Either specify input features or specify a target lag"
+        )
 
         for input_lag in input_lags:
             assert input_lag >= 0, "Input lag must be at least 0"
@@ -108,12 +108,12 @@ class TransformerTemperature(TimeSeriesData):
         if end_date is None:
             end_date = self.max_date
         assert start_date < end_date, "Start date occurs after end date. This is invalid"
-        assert (
-            self.min_date <= start_date <= self.max_date
-        ), "Start date must occur on or after 2016-07-01 00:00:00 and on or before 2018-06-26 19:00:00"
-        assert (
-            self.min_date <= end_date <= self.max_date
-        ), "End date must occur on or after 2016-07-01 00:00:00 and on or before 2018-06-26 19:00:00"
+        assert self.min_date <= start_date <= self.max_date, (
+            "Start date must occur on or after 2016-07-01 00:00:00 and on or before 2018-06-26 19:00:00"
+        )
+        assert self.min_date <= end_date <= self.max_date, (
+            "End date must occur on or after 2016-07-01 00:00:00 and on or before 2018-06-26 19:00:00"
+        )
 
         self.start_date = start_date
         self.end_date = end_date
@@ -140,13 +140,12 @@ class TransformerTemperature(TimeSeriesData):
 
         del self.raw_data
 
-    def _get_start_and_end_indices(self) -> Tuple[int, int]:
-        start_index = self.raw_data.index.get_indexer([self.start_date], method="ffill")
-        end_index = self.raw_data.index.get_indexer([self.end_date], method="ffill")
+    def _get_start_and_end_indices(self) -> tuple[int, int]:
+        start_index = self.raw_data.index.get_indexer(pd.Index([self.start_date]), method="ffill")
+        end_index = self.raw_data.index.get_indexer(pd.Index([self.end_date]), method="ffill")
         return start_index[0], end_index[0]
 
-    def _construct_dataset(self) -> Tuple[torch.Tensor, torch.Tensor]:
-
+    def _construct_dataset(self) -> tuple[torch.Tensor, torch.Tensor]:
         input_tensors = []
         for lag in self.input_lags:
             # Filter the data to the time period we care about
@@ -195,10 +194,7 @@ class TransformerTemperature(TimeSeriesData):
             visualize_only_main_inputs (bool, optional): Is set to true only visualizes the six main inputs
             with their labels. Defaults to False.
         """
-        if visualize_only_main_inputs:
-            n_inputs = len(self.inputs)
-        else:
-            n_inputs = self.input_matrix.shape[1]
+        n_inputs = len(self.inputs) if visualize_only_main_inputs else self.input_matrix.shape[1]
         n_targets = self.target_matrix.shape[1]
 
         _, ax = plt.subplots(1, 1, figsize=(20, 8))
@@ -207,7 +203,7 @@ class TransformerTemperature(TimeSeriesData):
                 x=self.time_axis,
                 y=self.input_matrix[:, input_path],
                 ax=ax,
-                label=self.inputs[input_path].value if visualize_only_main_inputs else None,
+                label=(self.inputs[input_path].value if visualize_only_main_inputs else None),
                 linestyle="solid",
                 linewidth=3.0,
             )
@@ -232,7 +228,11 @@ class TransformerTemperature(TimeSeriesData):
         plt.ylabel("Features and Oil Temperature", fontdict=axis_font)
         plt.title("ETT-Small-h1 Dataset", fontdict=title_font)
 
-        plt.legend(prop={"family": "helvetica", "weight": "bold", "size": 30}, loc="upper right", labelspacing=0)
+        plt.legend(
+            prop={"family": "helvetica", "weight": "bold", "size": 30},
+            loc="upper right",
+            labelspacing=0,
+        )
         plt.tight_layout(pad=0.5)
         plt.savefig("ett_dataset.pdf", format="pdf")
         plt.show()
@@ -269,13 +269,16 @@ class TransformerTemperature(TimeSeriesData):
             self.target_matrix = self.target_matrix / torch.max(self.target_matrix)
 
     def maybe_random_cut_time_steps(
-        self, data_sequence_length: int, start_index: int | None = None, normalize: bool = True
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        self,
+        data_sequence_length: int,
+        start_index: int | None = None,
+        normalize: bool = True,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Randomly cuts the original time series data to the specified length.
         If start_index is given start from that index and get the sequence.
         The main usage of this function is for generating samples for dataloader.
-        See self.get_dataloader
+        See self.get_dataloader.
         """
         if start_index is None:
             # Generate a random number between 0 and self.original_total_time_steps - data_sequence_length - 1.
@@ -295,8 +298,8 @@ class TransformerTemperature(TimeSeriesData):
         Set the shuffle variable to True for validation data loader.
         """
         # Generate new data samples
-        data: List[torch.Tensor] = []
-        targets: List[torch.Tensor] = []
+        data: list[torch.Tensor] = []
+        targets: list[torch.Tensor] = []
         # Since the sampled sequence will be trimmed by one step later, we generate a longer sequence.
         for _ in range(num_samples):
             sample_input, sample_target = self.maybe_random_cut_time_steps(self.total_time_steps + 1)
@@ -313,6 +316,5 @@ class TransformerTemperature(TimeSeriesData):
         # every input and output in our dataloader has the shape (self.total_time_steps, x_dim/y_dim)
         dataset: BaseDataset = TimeSeriesTorchDataset(data, targets)
 
-        data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)
         # Each item (input or output) in the data_loader will have a shape of (batch_size, time_steps, dim)
-        return data_loader
+        return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle)

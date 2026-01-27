@@ -1,5 +1,3 @@
-from typing import List, Optional, Union
-
 import torch
 from torch.utils.data import DataLoader
 
@@ -7,6 +5,7 @@ from fedmoe.clients.client import Client, ClientType
 from fedmoe.clients.esn_client import EchoStateNetworkClient
 from fedmoe.clients.rfn_client import RandomFeatureNetworkClient
 from fedmoe.clients.transformer_client import TransformerClient
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -21,9 +20,9 @@ class ClientManager:
         z_dim: int,
         alpha: float,
         gamma: float,
-        sigma: Union[float, torch.Tensor],
-        target_sequence: Optional[torch.Tensor] = None,
-        game_T: Optional[int] = None,
+        sigma: float | torch.Tensor,
+        target_sequence: torch.Tensor | None = None,
+        game_T: int | None = None,
     ) -> None:
         self.client_type = client_type
         self.num_clients = num_clients
@@ -63,8 +62,8 @@ class ClientManager:
         #  y_0 = x_1 (predict next input)
         return self.data[1:]
 
-    def initiate_clients(self) -> List[Client]:
-        clients: List[Client] = []
+    def initiate_clients(self) -> list[Client]:
+        clients: list[Client] = []
         #  Every tensor type is float64
         for i in range(self.num_clients):
             client: RandomFeatureNetworkClient | EchoStateNetworkClient
@@ -122,26 +121,22 @@ class ClientManager:
         # beta shape is Nd_z x 1 ---> to N x d_z x 1
         betas = betas.reshape(self.num_clients, self.z_dim, 1)
         new_round_predictions = []
-        i = 0
-        for client in self.clients:
+        for i, client in enumerate(self.clients):
             new_pred = client.update_prediction_with_beta(round, betas[i])
-            i += 1
             new_round_predictions.append(new_pred)
         predictions_tensor = torch.stack(new_round_predictions, dim=0).squeeze(-1)
         assert predictions_tensor.shape == (self.num_clients, self.y_dim)
         return predictions_tensor
 
-    def update_past_predictions(self, current_round: int, betas: List[torch.Tensor]) -> None:
+    def update_past_predictions(self, current_round: int, betas: list[torch.Tensor]) -> None:
         # Update client predictions for past T time steps (not including the current time step)
         past_time_steps = [current_round - t for t in range(1, self.sync_freq)]
         round_counter = -1
         for prev_round in past_time_steps:
             round_counter -= 1
             round_betas = betas[round_counter].reshape(self.num_clients, self.z_dim, self.y_dim)
-            client_counter = 0
-            for client in self.clients:
+            for client_counter, client in enumerate(self.clients):
                 client.update_prediction_with_beta(prev_round, round_betas[client_counter])
-                client_counter += 1
 
     def get_y(self, t: int) -> torch.Tensor:
         #  All clients have the same target sequence
@@ -169,11 +164,11 @@ class PreTrainingClientManager(ClientManager):
         z_dim: int,
         alpha: float,
         gamma: float,
-        pre_training_dataloader: Optional[DataLoader] = None,
+        pre_training_dataloader: DataLoader | None = None,
         pre_training_epochs: int = 3,
         pre_training_learning_rate: float = 0.01,
-        target_sequence: Optional[torch.Tensor] = None,
-        game_T: Optional[int] = None,
+        target_sequence: torch.Tensor | None = None,
+        game_T: int | None = None,
     ) -> None:
         self.pre_training_epochs = pre_training_epochs
         self.pre_training_learning_rate = pre_training_learning_rate
@@ -195,8 +190,8 @@ class PreTrainingClientManager(ClientManager):
             game_T=game_T,
         )
 
-    def initiate_clients(self) -> List[Client]:
-        clients: List[Client] = []
+    def initiate_clients(self) -> list[Client]:
+        clients: list[Client] = []
         assert self.client_type == ClientType.TRANSFORMER, "Error: client should be a transformer based client"
         for i in range(self.num_clients):
             client = TransformerClient(

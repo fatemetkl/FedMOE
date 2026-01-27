@@ -1,12 +1,12 @@
 import math
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional, Tuple, Union
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from fedmoe.state.client_state import ClientState
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -62,9 +62,9 @@ class Client(ABC):
 
     def init_client_state(
         self,
-        init_hidden_state_neg1: Union[torch.Tensor, None] = None,
-        init_prediction_0: Union[torch.Tensor, None] = None,
-        init_prediction_neg1: Optional[torch.Tensor] = None,
+        init_hidden_state_neg1: torch.Tensor | None = None,
+        init_prediction_0: torch.Tensor | None = None,
+        init_prediction_neg1: torch.Tensor | None = None,
     ) -> None:
         if init_hidden_state_neg1 is None:
             # Initializing Z to zero rather than a random value
@@ -80,7 +80,13 @@ class Client(ABC):
             init_prediction_0 is not None and init_prediction_neg1 is not None and init_hidden_state_neg1 is not None
         )
 
-        self.state.init_state(self.z_dim, self.y_dim, init_hidden_state_neg1, init_prediction_0, init_prediction_neg1)
+        self.state.init_state(
+            self.z_dim,
+            self.y_dim,
+            init_hidden_state_neg1,
+            init_prediction_0,
+            init_prediction_neg1,
+        )
 
     def init_p_s(self, num_clients: int, game_T: int) -> None:
         self.P = torch.zeros(
@@ -133,9 +139,14 @@ class Client(ABC):
         start_point = max(t - self.sync_steps, -1)
         # From t-T (or -1) to t-1
         for s in range(start_point, t):
-            X.append(torch.mul(pow(math.e, -1 * self.alpha * ((t - 1 - s) / 2)), self.state.get_hidden_state_t(s).T))
-        output_X = torch.cat(X, dim=1).T
-        return output_X
+            X.append(
+                torch.mul(
+                    pow(math.e, -1 * self.alpha * ((t - 1 - s) / 2)),
+                    self.state.get_hidden_state_t(s).T,
+                )
+            )
+        # output_X
+        return torch.cat(X, dim=1).T
 
     def compute_y_t(self, t: int) -> torch.Tensor:
         y = []
@@ -145,8 +156,9 @@ class Client(ABC):
             residual = self.get_y(s + 1) - self.state.get_prediction_t(s)
             assert residual.shape == (self.y_dim, 1)
             y.append(pow(math.e, -1 * self.alpha * ((t - 1 - s) / 2)) * residual.T)
-        output_y = torch.cat(y, dim=1).T
-        return output_y
+
+        # output_y
+        return torch.cat(y, dim=1).T
 
     def update_prediction_with_beta(self, t: int, nash_beta: torch.Tensor) -> torch.Tensor:
         # Replace previous beta
@@ -169,10 +181,11 @@ class Client(ABC):
         identity_matrix = torch.eye(self.z_dim)
         first_term = torch.matmul(X_t_T, X_t) + self.gamma * identity_matrix
         second_term = torch.matmul(torch.inverse(first_term), X_t_T)
-        beta_t = torch.matmul(second_term, y_t)
-        return beta_t
 
-    def predict(self, t: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        # beta_t
+        return torch.matmul(second_term, y_t)
+
+    def predict(self, t: int) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         # First optimize betas based on past observations
         beta_t = self.optimize_beta(t)
 

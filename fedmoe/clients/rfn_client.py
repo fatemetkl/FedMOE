@@ -1,11 +1,10 @@
-from typing import Optional
-
 import torch
-import torch.nn as nn
+from torch import nn
 
 from fedmoe.clients.client import Client
 from fedmoe.models.random_feature_net import Rfn
 from fedmoe.utils.utils import TensorGenerationType
+
 
 torch.set_default_dtype(torch.float64)
 
@@ -20,7 +19,7 @@ class RandomFeatureNetworkClient(Client):
         z_dim: int,
         alpha: float = 0.01,
         gamma: float = 0.1,
-        sigma: Optional[torch.Tensor] = None,
+        sigma: torch.Tensor | None = None,
         affine_map_generator: TensorGenerationType = TensorGenerationType.STANDARD_GAUSSIAN,
     ) -> None:
         self.affine_map_generator = affine_map_generator
@@ -28,12 +27,22 @@ class RandomFeatureNetworkClient(Client):
             sigma = torch.Tensor([0.001]).repeat(1, y_dim).T
         assert sigma.shape == (y_dim, 1)
         super().__init__(
-            id, sync_steps=sync_steps, x_dim=x_dim, y_dim=y_dim, z_dim=z_dim, alpha=alpha, gamma=gamma, sigma=sigma
+            id,
+            sync_steps=sync_steps,
+            x_dim=x_dim,
+            y_dim=y_dim,
+            z_dim=z_dim,
+            alpha=alpha,
+            gamma=gamma,
+            sigma=sigma,
         )
 
     def init_model(self) -> nn.Module:
         return Rfn(
-            x_dim=self.x_dim, y_dim=self.y_dim, z_dim=self.z_dim, affine_map_generator=self.affine_map_generator
+            x_dim=self.x_dim,
+            y_dim=self.y_dim,
+            z_dim=self.z_dim,
+            affine_map_generator=self.affine_map_generator,
         )
 
     def feed_encoder(self, input: torch.Tensor) -> torch.Tensor:

@@ -1,5 +1,6 @@
+import pytest
 import torch
-import torch.nn as nn
+from torch import nn
 
 from fedmoe.clients.transformer_client import TransformerClient
 from fedmoe.tests.utils import (
@@ -9,18 +10,22 @@ from fedmoe.tests.utils import (
     setup_transformer_structure_patch,
 )
 
+
 torch.set_default_dtype(torch.float64)
 
 DATA_SEQUENCE, TARGET_SEQUENCE = get_data_and_target_sequences()
 Z_DIM = 5
 
 
-def test_transformer_client_prediction_process(monkeypatch) -> None:
-
+def test_transformer_client_prediction_process(monkeypatch: pytest.MonkeyPatch) -> None:
     # Fixing seed for reproducible sampling trajectory
     torch.manual_seed(42)
 
-    monkeypatch.setattr(TransformerClient, "setup_transformer_structure", setup_transformer_structure_patch)
+    monkeypatch.setattr(
+        TransformerClient,
+        "setup_transformer_structure",
+        setup_transformer_structure_patch,
+    )
     client_manager = get_transformer_client_manager(Z_DIM, patch_client_state=True)
 
     # Transforms in the linear model. We'll inject them here

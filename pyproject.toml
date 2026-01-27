@@ -1,37 +1,134 @@
-[tool.poetry]
+[project]
 name = "fedmoe"
 version = "0.1.0"
-description = ""
-license = "Apache-2.0"
-authors = ["Vector AI Engineering <fl4health@vectorinstitute.ai>"]
+description = "Federated Mixture of Experts"
+authors = [
+    {name = "Vector AI Engineering"}
+]
+license = {text = "Apache-2.0"}
 readme = "README.md"
+requires-python = ">=3.10.0,<3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10.0,<3.11"
-fl4health = "^0.1.17"
-torch = "^2.3.0"
-EchoTorch = "^0.1.1"
-numpy = "^1.26.4"
-pandas = "^2.2.3"
-seaborn = "^0.13.2"
+dependencies = [
+    "fl4health>=0.1.17",
+    "torch>=2.3.0",
+    "EchoTorch>=0.1.1",
+    "numpy>=1.26.4",
+    "pandas>=2.2.3",
+    "seaborn>=0.13.2",
+]
 
 
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^3.7.1"
-black = "^24.4.2"
-flake8 = "^7.0.0"
-mypy = "^1.10.0"
-pytest = "^8.2.1"
-isort = "5.11.5"
+[dependency-groups]
+dev = [
+    "ruff>=0.12.1,<1.0.0",
+    "pre-commit>=3.0.1,<4.0.0",
+    "toml>=0.10.2,<1.0.0",
+    "types-requests>=2.28.11.8",
+    "types-setuptools>=65.7.0.3",
+    "types-protobuf>=4.24.0.4",
+    "types-pyyaml>=6.0.12.12",
+    "types-six>=1.16.21.9",
+    "types-tabulate>=0.9.0.3",
+    "types-tqdm>=4.66.0,<5.0.0",
+    "pandas-stubs>=2.0.0,<3.0.0",
+    "types-mock>=5.1.0,<6.0.0",
+    "mypy>=1.9.0,<2.0.0",
+    "pytest>=8.2.1"
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.black]
+[tool.uv]
+default-groups = ["dev"]
+
+[tool.ruff]
+include = ["*.py", "pyproject.toml"]
+exclude = ["mypy_disallow_legacy_types.py", "*.ipynb", "conf.py"]
 line-length = 119
 
-[tool.isort]
-line_length = 119
-profile = "black"
-skip_gitignore = true
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+    "A", # flake8-builtins
+    "B", # flake8-bugbear
+    "COM", # flake8-commas
+    "C4", # flake8-comprehensions
+    "RET", # flake8-return
+    "SIM", # flake8-simplify
+    "ICN", # flake8-import-conventions
+    "Q", # flake8-quotes
+    "RSE", # flake8-raise
+    "D", # pydocstyle
+    "E", # pycodestyle
+    "F", # pyflakes
+    "I", # isort
+    "W", # pycodestyle
+    "N", # pep8-naming
+    "ERA", # eradicate
+    "PL", # pylint
+    "D213", # Multiline Docstrings start on newline
+]
+fixable = ["A", "B", "COM", "C4", "RET", "SIM", "ICN", "Q", "RSE", "D", "E", "F", "I", "W", "N", "ERA", "PL", "D213"]
+ignore = [
+    "B905", # `zip()` without an explicit `strict=` parameter
+    "D203", # 1 blank line required before class docstring
+    "D205", # 1 blank line required between summary line and description
+    "ERA001", # Found commented-out code (too many false positives with math comments)
+    "PLR0913", # Too many arguments
+    "COM812", # Missing trailing comma
+    "A001", # Ignore variable `input` is shadowing a Python builtin
+    "A002", # Ignore variable `input` is shadowing a Python builtin in function
+    "PLR0915", # Too many statements (> 50)
+    "PLR0912", # Too many branches (>12)
+    "PLW2901", # `for` loop variable `target` overwritten by assignment target
+    "D212", # Multi-line docstring summary should start at the first line
+    "D301", # r-strings for docstrings with backslashes
+    "D101", # Public class requires documentation. Ignoring since we document our inits
+    "D100", # TEMPORARY IGNORE: Ignore module level docstrings requirement
+    "D104", # TEMPORARY IGNORE: Ignore package level docstrings requirement
+    "D103", # TEMPORARY IGNORE WILL FIX: Undocumented public function
+    "D102", # TEMPORARY IGNORE WILL FIX: Undocumented public method
+    "N802", # Variable with capital letter
+    "N806", # Variable with capital letter
+    "N803", # Variable with capital letter
+    "D107", # Init docstring missing. Research code so not forcing
+    "PLR2004", # Magic numbers allowed in research code so not forcing
+    "D417", # Incomplete docs allowed in research code so not forcing
+    "D105", # Magic method docs not necessary in research code so not forcing
+    "B904", # Ignore Exception chaining for now
+]
+
+# Ignore import violations in all `__init__.py` files.
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "F401", "F403", "F811"]
+# Ignoring undocumented public functions, public init, magic method, and magic numbers
+"tests/*" = ["D103", "D105", "D107", "PLR2004"]
+# Ignoring undocumented, public init, magic method, and magic numbers
+"experiments/*" = ["PLR2004", "D105", "D107"]
+
+[tool.ruff.lint.pep8-naming]
+ignore-names = ["SimpleITK", "F", "NN"]
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 119
+
+[tool.ruff.lint.flake8-builtins]
+strict-checking = false

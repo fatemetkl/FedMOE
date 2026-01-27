@@ -4,6 +4,7 @@ import torch
 
 from fedmoe.datasets.time_series_data import TimeSeries2DXY
 
+
 torch.set_default_dtype(torch.float64)
 
 
@@ -39,7 +40,11 @@ def test_time_series_2d_xy(tmp_path: Path) -> None:
         show_lines=True,
     )
     two_d_data_obj.visualize_server_prediction(
-        manual_server_prediction, f"{save_dir}/test_plot_server_2.png", T=2, show_points=True, plot_info=plot_info
+        manual_server_prediction,
+        f"{save_dir}/test_plot_server_2.png",
+        T=2,
+        show_points=True,
+        plot_info=plot_info,
     )
     two_d_data_obj.visualize_server_prediction(
         manual_server_prediction,
@@ -77,7 +82,9 @@ def test_visualize_clients_predictions(tmp_path: Path) -> None:
         "num_clients": num_clients,
     }
     two_d_data_obj.visualize_clients_predictions(
-        manual_clients_predictions, f"{save_dir}/client_pred_plot.png", plot_info=plot_info
+        manual_clients_predictions,
+        f"{save_dir}/client_pred_plot.png",
+        plot_info=plot_info,
     )
 
 
@@ -136,7 +143,9 @@ def test_visualize_errors_histogram(tmp_path: Path) -> None:
         "num_clients": num_clients,
     }
     two_d_data_obj.visualize_squared_error_histogram(
-        manual_server_prediction, f"{save_dir}/errors_histogram.png", plot_info=plot_info
+        manual_server_prediction,
+        f"{save_dir}/errors_histogram.png",
+        plot_info=plot_info,
     )
 
 
