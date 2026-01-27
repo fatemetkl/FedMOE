@@ -1,7 +1,7 @@
 import torch
-from fl4health.metrics.metric_managers import MetricManager
 
-from fedmoe.metrics import RMSEMetric
+from fedmoe.metrics.metric_managers import MetricManager
+from fedmoe.metrics.metrics import RMSEMetric
 
 
 torch.set_default_dtype(torch.float64)

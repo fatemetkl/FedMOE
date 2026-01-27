@@ -4,7 +4,7 @@ from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
 
 from fedmoe.clients.client import Client
-from fedmoe.metrics import MSEMetric
+from fedmoe.metrics.metrics import MSEMetric
 from fedmoe.models.transformer import TransformerTimeSeriesModel
 
 
@@ -104,7 +104,7 @@ class TransformerClient(Client):
         encoder: nn.Module,
         validation_sequence: torch.Tensor,
         validation_target: torch.Tensor,
-    ) -> torch.Tensor:
+    ) -> dict[str, float]:
         encoder.eval()
         validation_metric = MSEMetric("Validation MSE")
         seq_len = validation_sequence.size(0)

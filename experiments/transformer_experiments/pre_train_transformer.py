@@ -44,7 +44,7 @@ def pre_train_transformer(
     pre_training_learning_rate: float,
     val_data: torch.Tensor,
     val_target: torch.Tensor,
-) -> tuple[nn.Module, torch.Tensor]:
+) -> tuple[nn.Module, dict[str, float]]:
     # we use this if in the phase of client creation we turned off pre-training by passing epoch of 0.
     model = setup_transformer_structure(x_dim, y_dim, z_dim)
     model = TransformerClient.pre_train_model(

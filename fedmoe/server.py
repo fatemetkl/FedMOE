@@ -1,11 +1,11 @@
 from collections.abc import Sequence
 
 import torch
-from fl4health.metrics.metric_managers import MetricManager
-from fl4health.metrics.metrics import Metric
 
 from fedmoe.client_manager import ClientManager
 from fedmoe.game.game import Game
+from fedmoe.metrics.metric_managers import MetricManager
+from fedmoe.metrics.metrics import SimpleMetric
 
 
 torch.set_default_dtype(torch.float64)
@@ -17,7 +17,7 @@ class Server:
         total_game_steps: int,
         client_manager: ClientManager,
         game: Game,
-        metrics: Sequence[Metric],
+        metrics: Sequence[SimpleMetric],
         game_freq: int = 0,
         kappa: float = 1.0,
         eta: float = 1.0,

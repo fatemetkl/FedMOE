@@ -11,7 +11,7 @@ from experiments.transformer_experiments.pre_train_transformer import setup_tran
 from experiments.utils import load_config, load_data, save_output_json
 from fedmoe.client_manager import PreTrainingClientManager
 from fedmoe.game.transformer_game import TransformerGame
-from fedmoe.metrics import MSEMetric
+from fedmoe.metrics.metrics import MSEMetric
 from fedmoe.server import Server
 
 

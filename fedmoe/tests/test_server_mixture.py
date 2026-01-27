@@ -1,7 +1,7 @@
 import torch
 
 from fedmoe.game.rfn_game import RfnGame
-from fedmoe.metrics import RMSEMetric
+from fedmoe.metrics.metrics import RMSEMetric
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_data_and_target_sequences, get_rfn_client_manager, get_rfn_client_manager_dy_dx_1
 
