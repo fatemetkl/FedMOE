@@ -11,7 +11,7 @@ from experiments.utils import load_config, load_data, save_output_json
 from fedmoe.client_manager import ClientManager
 from fedmoe.clients.client import ClientType
 from fedmoe.game.rfn_game import RfnGame
-from fedmoe.metrics import MSEMetric
+from fedmoe.metrics.metrics import MSEMetric
 from fedmoe.server import Server
 
 

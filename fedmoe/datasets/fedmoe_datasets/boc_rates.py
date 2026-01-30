@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import torch
-from fl4health.utils.dataset import BaseDataset
 from torch.utils.data import DataLoader
 
+from fedmoe.datasets.base_dataset import BaseDataset
 from fedmoe.datasets.time_series_data import TimeSeriesData, TimeSeriesTorchDataset
 
 

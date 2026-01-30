@@ -1,7 +1,7 @@
 import torch
 
 from fedmoe.game.echo_state_game import EchoStateGame
-from fedmoe.metrics import MSEMetric
+from fedmoe.metrics.metrics import MSEMetric
 from fedmoe.server import Server
 from fedmoe.tests.utils import get_esn_client_manager
 

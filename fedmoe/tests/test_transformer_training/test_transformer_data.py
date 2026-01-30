@@ -6,7 +6,7 @@ import torch
 from experiments.utils import load_data
 from fedmoe.clients.transformer_client import TransformerClient
 from fedmoe.game.transformer_game import TransformerGame
-from fedmoe.metrics import RMSEMetric
+from fedmoe.metrics.metrics import RMSEMetric
 from fedmoe.server import Server
 from fedmoe.tests.utils import (
     get_data_and_target_sequences,

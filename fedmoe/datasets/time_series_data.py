@@ -2,10 +2,10 @@ from typing import Any
 
 import matplotlib.pyplot as plt
 import torch
-from fl4health.utils.dataset import BaseDataset
 from matplotlib.ticker import MaxNLocator
 from torch.utils.data import DataLoader
 
+from fedmoe.datasets.base_dataset import BaseDataset
 from fedmoe.datasets.data_matrix_generator import (
     InputGenerator,
     MultiDimensionalTargetGenerator,
